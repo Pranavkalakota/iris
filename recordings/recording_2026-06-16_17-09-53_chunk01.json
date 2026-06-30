@@ -1,0 +1,49 @@
+{
+  "audio_file": "recording_2026-06-16_17-09-53_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 38.944,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 12.957001209259033,
+  "realtime_factor": 0.33270853557053803,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 10.0,
+      "text": "Oh yeah, I'm currently wearing some compression legs and dying as you speak.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 10.0,
+      "end": 16.0,
+      "text": "Got to sneeze too.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 16.0,
+      "end": 27.0,
+      "text": "And, excuse me, currently I'm listening to a video about finance.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 27.0,
+      "end": 37.0,
+      "text": "I want to see if you can pick up on the finance or I'm going to be quiet.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

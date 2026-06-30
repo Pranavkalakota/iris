@@ -1,0 +1,22 @@
+{
+  "audio_file": "recording_2026-06-07_18-34-52_chunk01.wav",
+  "model": "small.en",
+  "duration_seconds": 9.184,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 1.7857530117034912,
+  "realtime_factor": 0.1944417477900143,
+  "segments": [
+    {
+      "start": 2.51,
+      "end": 9.05,
+      "text": "Yo, what's up? It's been a great day to just have some fun",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

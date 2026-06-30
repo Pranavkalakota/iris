@@ -1,0 +1,103 @@
+{
+  "audio_file": "live_2026-06-25_15-09-29.wav",
+  "model": "medium.en",
+  "duration_seconds": 144.135625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 16.699032306671143,
+  "realtime_factor": 0.11585638392084636,
+  "segments": [
+    {
+      "start": 14.35,
+      "end": 21.15,
+      "text": "Okay, okay, I have a meeting at 10 p.m.. Tonight, or actually 8 p.m.. With Joshua",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 21.95,
+      "end": 24.75,
+      "text": "I have to work on dynamics homework",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 26.95,
+      "end": 34.06,
+      "text": "I",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 3
+    },
+    {
+      "start": 34.06,
+      "end": 41.22,
+      "text": "Also have to make sure that I'm studying for the exam one which is next Thursday",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 42.26,
+      "end": 44.46,
+      "text": "I should also make sure that",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 45.18,
+      "end": 47.18,
+      "text": "I'm on track",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 47.78,
+      "end": 53.91,
+      "text": "for",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 53.91,
+      "end": 57.55,
+      "text": "The submission that's due tonight as well as make sure",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 60.13,
+      "end": 85.48,
+      "text": "The hey Jarvis take a photo works, too. Hey Jarvis take a photo",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 95.29,
+      "end": 102.41,
+      "text": "Take a photo of me",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

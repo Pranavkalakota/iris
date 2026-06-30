@@ -1,0 +1,220 @@
+{
+  "audio_file": "Weekly Meeting Example_new_diarizer_part_4.wav",
+  "model": "medium.en",
+  "duration_seconds": 98.45260770975057,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 68.37233829498291,
+  "realtime_factor": 0.6944695512439072,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.16,
+      "text": "Hello everyone, thank you guys for coming to our weekly student success meeting",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 4.8,
+      "end": 6.2,
+      "text": "And let's just get started",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 6.2,
+      "end": 11.44,
+      "text": "So I have our list of chronically absent students here and I've been noticing a troubling trend",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 11.44,
+      "end": 16.38,
+      "text": "A lot of students are skipping on Fridays. Does anyone have any idea what's going on?",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 16.88,
+      "end": 21.08,
+      "text": "I've heard some of my mentees talking about how it's really hard to get out of bed on Fridays",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 21.32,
+      "end": 27.04,
+      "text": "It might be good if we did something like a pancake breakfast to encourage them to come. I think that's a great idea",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 27.44,
+      "end": 29.44,
+      "text": "Let's try that next week",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 29.76,
+      "end": 34.16,
+      "text": "It might also be because a lot of students have been getting sick now that it's getting colder outside",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 34.16,
+      "end": 38.08,
+      "text": "I've had a number of students come by my office with symptoms like sniffling and coughing",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 38.08,
+      "end": 41.88,
+      "text": "We should put up posters with tips for not getting sick since it's almost flu season",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 41.88,
+      "end": 44.26,
+      "text": "Like, you know wash your hands after the bathroom stuff like that",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 44.26,
+      "end": 48.92,
+      "text": "I think that's a good idea and it'll be a good reminder for the teachers as well",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 49.04,
+      "end": 51.04,
+      "text": "So one other thing I wanted to talk about",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 51.36,
+      "end": 57.38,
+      "text": "There's a student I've noticed here John Smith. He's missed seven days already and it's only November",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 57.38,
+      "end": 61.86,
+      "text": "Does anyone have an idea what's going on with him? I might be able to fill in the gaps there",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 61.86,
+      "end": 64.62,
+      "text": "I talked to John today and he's really stressed out",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 64.74,
+      "end": 68.78,
+      "text": "He's been dealing with helping his parents take care of his younger siblings during the day",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 69.58,
+      "end": 73.02,
+      "text": "It might actually be a good idea if he spoke to the guidance counselor a little bit",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 73.02,
+      "end": 77.42,
+      "text": "I can talk to John today if you want to send him to my office after you meet with him",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 77.5,
+      "end": 79.82,
+      "text": "It's a lot to deal with for a middle schooler",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 80.58,
+      "end": 85.96,
+      "text": "Great. Thanks, and and I can help out with the family's childcare needs. I'll look for some free or low-cost",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 86.84,
+      "end": 92.8,
+      "text": "Resources in the community to share with John and he can share them with his family great. Well some really good ideas here today",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 93.52,
+      "end": 96.98,
+      "text": "Thanks for coming. And if no one has anything else, I think we can wrap up",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

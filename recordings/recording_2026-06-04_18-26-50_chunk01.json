@@ -1,0 +1,31 @@
+{
+  "audio_file": "recording_2026-06-04_18-26-50_chunk01.wav",
+  "model": "small.en",
+  "duration_seconds": 11.008,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 2.1828548908233643,
+  "realtime_factor": 0.19829713761113413,
+  "segments": [
+    {
+      "start": 1.39,
+      "end": 8.39,
+      "text": "Okay, so I'm across the room right now and I'm going to test out the audio from the microphone.",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 1
+    },
+    {
+      "start": 8.39,
+      "end": 11.39,
+      "text": "Hopefully it picks up. We will see.",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,148 @@
+{
+  "audio_file": "live_2026-06-29_13-57-16.wav",
+  "model": "medium.en",
+  "duration_seconds": 79.7593125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 28.2913920879364,
+  "realtime_factor": 0.354709578118999,
+  "segments": [
+    {
+      "start": 11.86,
+      "end": 17.66,
+      "text": "Whew",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 18.9,
+      "end": 24.46,
+      "text": "I'll start I'll start yapping. Okay, so my name is Hamza Akhtar",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.646,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 25.86,
+      "end": 27.86,
+      "text": "Or my buddies call me Hamza",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.646,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 28.74,
+      "end": 32.06,
+      "text": "currently working on Ali working with Ali on",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 33.02,
+      "end": 35.02,
+      "text": "determining the issue for",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 35.9,
+      "end": 37.54,
+      "text": "the iris",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 37.54,
+      "end": 38.7,
+      "text": "GUI",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 38.7,
+      "end": 41.66,
+      "text": "We're trying to figure out if it can receive",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 42.34,
+      "end": 46.06,
+      "text": "The audio video cleanly as well as",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 46.98,
+      "end": 53.79,
+      "text": "Make sure it's transcribing this conversation taking notes if I say a date or time",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 54.51,
+      "end": 58.15,
+      "text": "such as Thursday, I have a dynamics exam or",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 60.07,
+      "end": 63.31,
+      "text": "Tonight at 8 p.m. I have dinner with the fam",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 64.07,
+      "end": 67.95,
+      "text": "stuff like that and then reporting it back to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 68.79,
+      "end": 76.51,
+      "text": "And the audio tab where then we identify who is speaking in the conversation, so this is more of an architectural",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.71,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 77.15,
+      "end": 79.15,
+      "text": "Design that we're working on right now",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

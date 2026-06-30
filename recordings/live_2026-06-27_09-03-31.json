@@ -1,0 +1,76 @@
+{
+  "audio_file": "live_2026-06-27_09-03-31.wav",
+  "model": "medium.en",
+  "duration_seconds": 87.8970625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 13.936240911483765,
+  "realtime_factor": 0.15855183910706644,
+  "segments": [
+    {
+      "start": 9.23,
+      "end": 17.23,
+      "text": "okay okay so we're testing m5 this should be both audio and the video so",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 17.23,
+      "end": 23.33,
+      "text": "should be getting me like a video clip video clip of who I am as well as",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 23.33,
+      "end": 29.17,
+      "text": "transcription of what I'm saying there should be pretty interesting to see",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 29.17,
+      "end": 32.09,
+      "text": "what it does I don't know if it's running off the photo or if it's",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 32.09,
+      "end": 37.97,
+      "text": "running off the video we'll have to see what the logic is here but hey",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 37.97,
+      "end": 67.82,
+      "text": "Jarvis if you could take a photo of me that'd be great thank you I appreciate",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.664,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 67.82,
+      "end": 89.67,
+      "text": "appreciate it yeah",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

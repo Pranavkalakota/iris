@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-06-25_13-16-57.wav",
+  "model": "medium.en",
+  "duration_seconds": 116.992,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.054471254348755,
+  "realtime_factor": 0.04320356310131252,
+  "segments": [
+    {
+      "start": 14.19,
+      "end": 19.19,
+      "text": "Hey Jarvis, hey Jarvis, take a photo of me. My name is Pranak Kalakota.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

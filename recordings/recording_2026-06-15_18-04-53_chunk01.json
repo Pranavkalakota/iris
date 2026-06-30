@@ -1,0 +1,85 @@
+{
+  "audio_file": "recording_2026-06-15_18-04-53_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 60.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 24.807469129562378,
+  "realtime_factor": 0.41345781882603966,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.16,
+      "text": "I'm so black and jobless. We have hundreds of our breath like this guy",
+      "speaker": "ZAKI",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 2
+    },
+    {
+      "start": 4.96,
+      "end": 11.56,
+      "text": "I'm pretty sure he's on a call dude. I know he just hit stop moderating well. No he's",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 13.0,
+      "end": 18.98,
+      "text": "Yapping keep yeah, oh he happened. He got stuff to say I put the burgers in the back",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 19.56,
+      "end": 21.56,
+      "text": "We keep it long",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 21.8,
+      "end": 26.44,
+      "text": "What oh my god your entire monitor? Just got wiped out oh?",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 27.24,
+      "end": 32.44,
+      "text": "My god should I turn on a song don't worry. I can be their jukebox",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 48.75,
+      "end": 54.69,
+      "text": "What long file one minute make sure you know what you you said, huh",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 59.51,
+      "end": 61.51,
+      "text": "Everything",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": -1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,22 @@
+{
+  "audio_file": "recording_2026-06-16_16-11-35_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 11.008,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 4.925376653671265,
+  "realtime_factor": 0.44743610589310184,
+  "segments": [
+    {
+      "start": 0.78,
+      "end": 6.26,
+      "text": "This is just a recording to see how the mic quality is I think we damaged the microphone",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

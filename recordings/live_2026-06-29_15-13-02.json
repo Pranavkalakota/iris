@@ -1,0 +1,184 @@
+{
+  "audio_file": "live_2026-06-29_15-13-02.wav",
+  "model": "medium.en",
+  "duration_seconds": 316.732125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 76.68509030342102,
+  "realtime_factor": 0.24211339567598653,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 27.0,
+      "text": "in the club and I'll put my finger on it my name is humza I'm just like I",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 27.0,
+      "end": 33.76,
+      "text": "haven't done anything today so I'm just like hmm what do I pull out of my butt to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 33.76,
+      "end": 105.39,
+      "text": "say like I've done something is that and then can you put your hand on the SD",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 105.39,
+      "end": 221.3,
+      "text": "card so the latest um hey good morning my name is humza I just want to catch up",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 221.3,
+      "end": 229.22,
+      "text": "on a few things before the day gets busy so first of all the ESP 32 camera looks",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 229.22,
+      "end": 232.42,
+      "text": "like it's working right now very well the clips are coming through cleanly",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 232.42,
+      "end": 236.5,
+      "text": "and the transfer speed is much better than before I think the buffer size",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 236.5,
+      "end": 242.22,
+      "text": "change made a big difference I also wanted to mention that I spoke to the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 242.22,
+      "end": 253.14,
+      "text": "audio team yesterday about big word pipeline and they said that the EC APA",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 253.14,
+      "end": 260.58,
+      "text": "embeddings are looking more stable now especially for longer recordings it",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 260.58,
+      "end": 266.58,
+      "text": "shoulda based off that big word that should help with the voice matching",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 266.58,
+      "end": 270.18,
+      "text": "going forward on the Irish side we've been thinking about the memory system",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 270.18,
+      "end": 275.18,
+      "text": "chrome DB integration is solid but I think we need to test it more with",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 275.18,
+      "end": 281.46,
+      "text": "real conversations before we rely on it fully the llama summaries are decent",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 281.46,
+      "end": 287.18,
+      "text": "but sometimes they miss the key points anyway that's pretty much it",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 287.18,
+      "end": 292.86,
+      "text": "from my end let me know if you have anything from me today I'll be",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 292.86,
+      "end": 296.98,
+      "text": "around all morning so just ping me whenever talk to you soon Iris take",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.685,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 296.98,
+      "end": 301.86,
+      "text": "care",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 310.37,
+      "end": 316.36,
+      "text": "you sure it's the last time",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

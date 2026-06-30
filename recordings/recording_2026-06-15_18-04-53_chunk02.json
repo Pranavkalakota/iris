@@ -1,0 +1,49 @@
+{
+  "audio_file": "recording_2026-06-15_18-04-53_chunk02.wav",
+  "model": "medium.en",
+  "duration_seconds": 25.376,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.737252712249756,
+  "realtime_factor": 0.34431166110694184,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 2.92,
+      "text": "gotta do it doesn't matter what I do a ricochet for me and stick to you",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 2.92,
+      "end": 14.68,
+      "text": "anything that I say is rubber and the summary yes sir I plugged it in it's",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 14.68,
+      "end": 20.92,
+      "text": "about a pull off his entire desktop huh what is this wait I'm plug this real",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 20.92,
+      "end": 26.92,
+      "text": "quick that way it doesn't yank out his desktop okay I've got me some",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

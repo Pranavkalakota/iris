@@ -1,0 +1,10 @@
+{
+  "audio_file": "live_2026-06-25_15-08-37.wav",
+  "model": "medium.en",
+  "duration_seconds": 170.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 0.36624884605407715,
+  "realtime_factor": 0.002154404976788689,
+  "segments": []
+}

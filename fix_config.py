@@ -1,0 +1,5 @@
+content = open(r'C:\audio_stream\config_phase9.py', 'r', encoding='utf-8').read()
+content = content.replace('small.en', 'medium.en')
+content = content.replace('BEAM_SIZE = 5', 'BEAM_SIZE = 8')
+open(r'C:\audio_stream\config_phase9.py', 'w', encoding='utf-8').write(content)
+print('done')

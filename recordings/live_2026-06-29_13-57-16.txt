@@ -1,0 +1,15 @@
+[00:11.86 -> 00:17.66]  Whew
+[00:18.90 -> 00:24.46]  I'll start I'll start yapping. Okay, so my name is Hamza Akhtar
+[00:25.86 -> 00:27.86]  Or my buddies call me Hamza
+[00:28.74 -> 00:32.06]  currently working on Ali working with Ali on
+[00:33.02 -> 00:35.02]  determining the issue for
+[00:35.90 -> 00:37.54]  the iris
+[00:37.54 -> 00:38.70]  GUI
+[00:38.70 -> 00:41.66]  We're trying to figure out if it can receive
+[00:42.34 -> 00:46.06]  The audio video cleanly as well as
+[00:46.98 -> 00:53.79]  Make sure it's transcribing this conversation taking notes if I say a date or time
+[00:54.51 -> 00:58.15]  such as Thursday, I have a dynamics exam or
+[01:00.07 -> 01:03.31]  Tonight at 8 p.m. I have dinner with the fam
+[01:04.07 -> 01:07.95]  stuff like that and then reporting it back to
+[01:08.79 -> 01:16.51]  And the audio tab where then we identify who is speaking in the conversation, so this is more of an architectural
+[01:17.15 -> 01:19.15]  Design that we're working on right now

@@ -1,0 +1,19 @@
+[00:00.00 -> 00:27.00]  in the club and I'll put my finger on it my name is humza I'm just like I
+[00:27.00 -> 00:33.76]  haven't done anything today so I'm just like hmm what do I pull out of my butt to
+[00:33.76 -> 01:45.39]  say like I've done something is that and then can you put your hand on the SD
+[01:45.39 -> 03:41.30]  card so the latest um hey good morning my name is humza I just want to catch up
+[03:41.30 -> 03:49.22]  on a few things before the day gets busy so first of all the ESP 32 camera looks
+[03:49.22 -> 03:52.42]  like it's working right now very well the clips are coming through cleanly
+[03:52.42 -> 03:56.50]  and the transfer speed is much better than before I think the buffer size
+[03:56.50 -> 04:02.22]  change made a big difference I also wanted to mention that I spoke to the
+[04:02.22 -> 04:13.14]  audio team yesterday about big word pipeline and they said that the EC APA
+[04:13.14 -> 04:20.58]  embeddings are looking more stable now especially for longer recordings it
+[04:20.58 -> 04:26.58]  shoulda based off that big word that should help with the voice matching
+[04:26.58 -> 04:30.18]  going forward on the Irish side we've been thinking about the memory system
+[04:30.18 -> 04:35.18]  chrome DB integration is solid but I think we need to test it more with
+[04:35.18 -> 04:41.46]  real conversations before we rely on it fully the llama summaries are decent
+[04:41.46 -> 04:47.18]  but sometimes they miss the key points anyway that's pretty much it
+[04:47.18 -> 04:52.86]  from my end let me know if you have anything from me today I'll be
+[04:52.86 -> 04:56.98]  around all morning so just ping me whenever talk to you soon Iris take
+[04:56.98 -> 05:01.86]  care
+[05:10.37 -> 05:16.36]  you sure it's the last time

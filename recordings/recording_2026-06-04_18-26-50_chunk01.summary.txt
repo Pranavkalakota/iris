@@ -1,0 +1,2 @@
+Unknown 1: Testing audio from the microphone.
+Unknown 2: Hopefully picking up.

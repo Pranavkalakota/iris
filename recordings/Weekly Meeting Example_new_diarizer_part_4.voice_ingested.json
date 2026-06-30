@@ -1,0 +1,18 @@
+{
+  "ingested_at": 1782780910.600645,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\Weekly Meeting Example_new_diarizer_part_4.wav",
+  "clusters_total": 1,
+  "clusters_matched": 1,
+  "clusters_enrolled": 0,
+  "people": [
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 1.0,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    }
+  ]
+}

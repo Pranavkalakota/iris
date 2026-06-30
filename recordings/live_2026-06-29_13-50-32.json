@@ -1,0 +1,76 @@
+{
+  "audio_file": "live_2026-06-29_13-50-32.wav",
+  "model": "medium.en",
+  "duration_seconds": 134.27975,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 23.474714756011963,
+  "realtime_factor": 0.17481947021804822,
+  "segments": [
+    {
+      "start": 13.84,
+      "end": 34.58,
+      "text": "also introduce yourself yo yo this is Hamza I am the head of circle hardware",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 34.58,
+      "end": 43.74,
+      "text": "and intelligence today I have a meeting at 6 p.m. with Joshua Ryan and I have a",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 43.74,
+      "end": 51.34,
+      "text": "meeting current concurrently with Ali so we'll have to figure out how I manage both",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 51.34,
+      "end": 61.54,
+      "text": "of them I love pizza I also potentially have no I have an exam Thursday for",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 61.54,
+      "end": 83.3,
+      "text": "dynamics so I'm studying for that I got someone on me finger on a c-card right",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 83.3,
+      "end": 112.5,
+      "text": "now I'm I'm also kind of touching the antenna to you that should be the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.647,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 112.5,
+      "end": 133.35,
+      "text": "uploaded I don't know",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,36 @@
+{
+  "ingested_at": 1782780910.1188724,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\recording_2026-06-16_17-09-53_chunk01.wav",
+  "clusters_total": 3,
+  "clusters_matched": 1,
+  "clusters_enrolled": 2,
+  "people": [
+    {
+      "person_id": 123,
+      "name": "Unknown 54",
+      "similarity": 0.709,
+      "cluster_id": 1,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 126,
+      "name": "Unknown 57",
+      "similarity": 0.0,
+      "cluster_id": 2,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 127,
+      "name": "Unknown 58",
+      "similarity": 0.0,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    }
+  ]
+}

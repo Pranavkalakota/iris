@@ -1,0 +1,10 @@
+{
+  "audio_file": "recording_2026-06-27_13-08-24_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 22.24,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 0.2786574363708496,
+  "realtime_factor": 0.012529560987897915,
+  "segments": []
+}

@@ -1,0 +1,7 @@
+[00:09.23 -> 00:17.23]  okay okay so we're testing m5 this should be both audio and the video so
+[00:17.23 -> 00:23.33]  should be getting me like a video clip video clip of who I am as well as
+[00:23.33 -> 00:29.17]  transcription of what I'm saying there should be pretty interesting to see
+[00:29.17 -> 00:32.09]  what it does I don't know if it's running off the photo or if it's
+[00:32.09 -> 00:37.97]  running off the video we'll have to see what the logic is here but hey
+[00:37.97 -> 01:07.82]  Jarvis if you could take a photo of me that'd be great thank you I appreciate
+[01:07.82 -> 01:29.67]  appreciate it yeah

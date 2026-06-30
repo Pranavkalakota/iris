@@ -1,0 +1,10 @@
+{
+  "lat": 39.9594,
+  "lon": -86.0199,
+  "accuracy_m": 50000,
+  "city": "Fishers",
+  "region": "Indiana",
+  "country": "United States",
+  "source": "ip-api",
+  "timestamp_iso": "2026-06-27T20:33:43"
+}

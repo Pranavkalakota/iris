@@ -1,0 +1,49 @@
+{
+  "audio_file": "recording_2026-06-16_16-41-54_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 25.856,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 7.813384056091309,
+  "realtime_factor": 0.3021884303871948,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 1.0,
+      "text": "Here's me speaking.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1.0,
+      "end": 16.24,
+      "text": "Alright, so today we're going to be talking about Microsoft Windows and how it's so perfect.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 16.24,
+      "end": 24.88,
+      "text": "And now I've moved the microphone a little bit closer to me, about 5 inches away.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 24.88,
+      "end": 25.88,
+      "text": "I think you can pick up",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

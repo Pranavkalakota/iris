@@ -1,0 +1,94 @@
+{
+  "audio_file": "live_2026-06-29_13-40-54.wav",
+  "model": "medium.en",
+  "duration_seconds": 230.0285,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 21.603604555130005,
+  "realtime_factor": 0.09391707790612903,
+  "segments": [
+    {
+      "start": 1.07,
+      "end": 3.07,
+      "text": "Fuck",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 9.95,
+      "end": 25.97,
+      "text": "Yeah, my face should be in it",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 27.01,
+      "end": 30.01,
+      "text": "Are you able to upload a photo of me or no?",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 31.29,
+      "end": 32.97,
+      "text": "Because you'll need",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 32.97,
+      "end": 39.41,
+      "text": "You'll actually you probably need to upload a photo of me first so that he understands his humza who's speaking and not like",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.712,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    },
+    {
+      "start": 40.45,
+      "end": 42.45,
+      "text": "All of your Jacob or John",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 42.85,
+      "end": 176.71,
+      "text": "I mean fingers on SD card. All right. Well now it says it's two, but they're blue",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 199.86,
+      "end": 212.72,
+      "text": "Seen 79 times who's unknown 49 horse humza how much how many times this humza show?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.712,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    },
+    {
+      "start": 214.2,
+      "end": 228.23,
+      "text": "10 15 times no faces the face thing. That means that it doesn't it's not able to recognize",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.712,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

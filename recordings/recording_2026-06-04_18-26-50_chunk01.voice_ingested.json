@@ -1,0 +1,27 @@
+{
+  "ingested_at": 1782780909.4812431,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\recording_2026-06-04_18-26-50_chunk01.wav",
+  "clusters_total": 2,
+  "clusters_matched": 2,
+  "clusters_enrolled": 0,
+  "people": [
+    {
+      "person_id": 71,
+      "name": "Unknown 3",
+      "similarity": 0.686,
+      "cluster_id": 1,
+      "diarizer_kind": "strict",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 68,
+      "name": "Humza",
+      "similarity": 0.5,
+      "cluster_id": 0,
+      "diarizer_kind": "strict",
+      "new": false,
+      "reinforced": true
+    }
+  ]
+}

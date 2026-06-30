@@ -1,0 +1,58 @@
+{
+  "audio_file": "recording_2026-06-16_16-59-15_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 29.344,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 9.544081211090088,
+  "realtime_factor": 0.32524813287520743,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 8.64,
+      "text": "Hi, my name is Hamza, I'm four feet away from my concern and I'm just trying to see",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 8.64,
+      "end": 16.88,
+      "text": "even if the laptop, which is currently five inches away, is able to pick up a microwave",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 16.88,
+      "end": 20.0,
+      "text": "from blowing up my gas.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 20.0,
+      "end": 22.0,
+      "text": "Hopefully that's it.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 22.0,
+      "end": 29.28,
+      "text": "Also can't wait, I'm looking forward to trying these compressions.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

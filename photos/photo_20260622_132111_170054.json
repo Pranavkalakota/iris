@@ -1,0 +1,6 @@
+{
+  "taken_at": 1782159671.2879522,
+  "source": "screenshot",
+  "trigger_text": "hey iris take a photo",
+  "note": "esp32 fallback: couldn't reach the camera (timed out)"
+}

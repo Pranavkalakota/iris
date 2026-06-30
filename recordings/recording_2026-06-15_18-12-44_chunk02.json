@@ -1,0 +1,96 @@
+{
+  "audio_file": "recording_2026-06-15_18-12-44_chunk02.wav",
+  "model": "medium.en",
+  "duration_seconds": 60.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 38.78314971923828,
+  "realtime_factor": 0.6463858286539713,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 2.88,
+      "text": "best to do it in a run if you're nervous. I'm ready!"
+    },
+    {
+      "start": 2.88,
+      "end": 5.84,
+      "text": "Harry and Lily put their heads on Albus's trolley,"
+    },
+    {
+      "start": 5.84,
+      "end": 10.36,
+      "text": "Ginny joins James's trolley, and together the family run hand-in-hand"
+    },
+    {
+      "start": 10.36,
+      "end": 13.8,
+      "text": "into the barrier. Act one, scene two,"
+    },
+    {
+      "start": 13.8,
+      "end": 17.32,
+      "text": "platform nine and three-quarters, which is covered in a thick"
+    },
+    {
+      "start": 17.32,
+      "end": 21.44,
+      "text": "white steam pouring from the Hogwarts Express, and which is also"
+    },
+    {
+      "start": 21.44,
+      "end": 25.36,
+      "text": "busy, but instead of people in sharp suits going about their day,"
+    },
+    {
+      "start": 25.36,
+      "end": 29.58,
+      "text": "it is now wizards and witches and rogues mostly trying to work out how to say"
+    },
+    {
+      "start": 29.66,
+      "end": 33.06,
+      "text": "goodbye to their beloved progeny. Albus, this is it!"
+    },
+    {
+      "start": 33.06,
+      "end": 36.7,
+      "text": "Lily, wow! Platform nine and three-quarters,"
+    },
+    {
+      "start": 36.7,
+      "end": 39.9,
+      "text": "where are they? Are they here? Maybe they didn't come."
+    },
+    {
+      "start": 39.9,
+      "end": 43.1,
+      "text": "Harry points out Ron, Hermione, and their daughter, Rose."
+    },
+    {
+      "start": 43.1,
+      "end": 46.22,
+      "text": "Lily runs up to them. Uncle Ron!"
+    },
+    {
+      "start": 46.22,
+      "end": 50.7,
+      "text": "Uncle Ron! Ron turned towards Lily as Lily goes barreling up to him."
+    },
+    {
+      "start": 50.7,
+      "end": 54.98,
+      "text": "He picks her up in his arms. If it isn't my favorite, Potter,"
+    },
+    {
+      "start": 54.98,
+      "end": 58.66,
+      "text": "have you gotten my trick? Are you aware of"
+    },
+    {
+      "start": 58.66,
+      "end": 59.94,
+      "text": "the Weasleys wizard?"
+    }
+  ]
+}

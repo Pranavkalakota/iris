@@ -1,0 +1,40 @@
+{
+  "audio_file": "live_2026-06-28_22-20-24.wav",
+  "model": "medium.en",
+  "duration_seconds": 27.3030625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.937453985214233,
+  "realtime_factor": 0.2174647618820868,
+  "segments": [
+    {
+      "start": 2.0,
+      "end": 9.52,
+      "text": "Hello do we start like that okay? My name is humza",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.654,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 12.36,
+      "end": 17.32,
+      "text": "Just want to recap my day, so today. I did dynamics homework",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.654,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 18.88,
+      "end": 22.6,
+      "text": "I also made sure that",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.654,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

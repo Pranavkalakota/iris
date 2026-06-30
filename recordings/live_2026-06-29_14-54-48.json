@@ -1,0 +1,130 @@
+{
+  "audio_file": "live_2026-06-29_14-54-48.wav",
+  "model": "medium.en",
+  "duration_seconds": 117.6715,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 28.084668397903442,
+  "realtime_factor": 0.23867009766938846,
+  "segments": [
+    {
+      "start": 40.21,
+      "end": 45.17,
+      "text": "Actually, um right now I'm doing swelling so",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 47.09,
+      "end": 49.09,
+      "text": "Currently I'm watching a video",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 50.21,
+      "end": 61.01,
+      "text": "And then make sure that",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 62.61,
+      "end": 65.17,
+      "text": "Well, hi, my name is Hamza",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 66.53,
+      "end": 68.57,
+      "text": "I'm just gonna talk a little bit about my day",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 69.53,
+      "end": 72.37,
+      "text": "This morning. I woke up. I had a cup of",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 73.21,
+      "end": 75.21,
+      "text": "coffee, I",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 75.73,
+      "end": 83.21,
+      "text": "Don't like to have coffee or cream in my coffee, I like it just plain. I think it wakes up your hand a little bit easier",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 87.66,
+      "end": 89.66,
+      "text": "Then I had a cup of OJ",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 91.62,
+      "end": 94.22,
+      "text": "What else did I do? I had pancakes",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 96.66,
+      "end": 103.27,
+      "text": "And then for lunch I had fried chicken and then",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 104.07,
+      "end": 106.07,
+      "text": "Now for dinner",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 106.07,
+      "end": 112.11,
+      "text": "Low-key, I'm hoping I make some like cucumber salad",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

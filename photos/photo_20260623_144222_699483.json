@@ -1,0 +1,6 @@
+{
+  "taken_at": 1782250942.804334,
+  "source": "screenshot",
+  "trigger_text": "take a photo",
+  "note": "esp32 fallback: couldn't reach the camera ([WinError 10061] No connection could be made because the target machine actively refused it)"
+}

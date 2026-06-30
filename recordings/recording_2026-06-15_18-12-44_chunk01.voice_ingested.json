@@ -1,0 +1,18 @@
+{
+  "ingested_at": 1782780909.923506,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\recording_2026-06-15_18-12-44_chunk01.wav",
+  "clusters_total": 1,
+  "clusters_matched": 0,
+  "clusters_enrolled": 1,
+  "people": [
+    {
+      "person_id": 120,
+      "name": "Unknown 51",
+      "similarity": 0.0,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "taken_at": 1782320430.7470708,
+  "source": "screenshot",
+  "trigger_text": "take a photo",
+  "note": "esp32 fallback: the camera didn't respond in time"
+}

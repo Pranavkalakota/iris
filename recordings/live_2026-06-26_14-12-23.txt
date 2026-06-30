@@ -1,0 +1,12 @@
+[00:00.00 -> 00:08.66]  So whenever I say, hey, you can actually test it right now, too.
+[00:08.66 -> 00:11.66]  Listening on this.
+[00:11.66 -> 00:13.66]  Hey, Jarvis, take a photo of me.
+[00:13.66 -> 00:27.22]  Waiting for a photo to capture.
+[00:27.22 -> 00:29.22]  Share it, share it.
+[00:29.22 -> 00:31.22]  I just moved it, so it's a little bit blurry.
+[00:31.22 -> 00:40.22]  But we got it, so now you can actually, when you're having a conversation like this,
+[00:40.22 -> 00:42.22]  it's live transcription.
+[00:42.22 -> 00:44.22]  A little bit of a latency.
+[00:44.22 -> 00:50.22]  We might, again, all of this has been done on free API right now.
+[00:50.22 -> 00:55.22]  We'll transition the page when it comes closer to demo day.
+[00:55.22 -> 00:58.22]  Just so that it will be a little bit quicker reactions.

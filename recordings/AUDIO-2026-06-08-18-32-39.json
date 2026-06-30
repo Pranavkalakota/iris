@@ -1,0 +1,112 @@
+{
+  "audio_file": "AUDIO-2026-06-08-18-32-39.wav",
+  "model": "small.en",
+  "duration_seconds": 60.54266666666667,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.78810977935791,
+  "realtime_factor": 0.09560381294774886,
+  "segments": [
+    {
+      "start": 1.14,
+      "end": 5.66,
+      "text": "Yeah, this is oh it it. Oh, it's uploading. Let's go I",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 7.02,
+      "end": 10.1,
+      "text": "Hate these like ESP chips, bro",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 11.94,
+      "end": 18.74,
+      "text": "But like it's either this or you use art or Raspberry Pis which are in Linux",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 19.46,
+      "end": 21.46,
+      "text": "Which are also kind of shitty. Oh",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 26.51,
+      "end": 33.75,
+      "text": "Oh camera configuration fudge how",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 36.21,
+      "end": 38.21,
+      "text": "How is it like?",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 39.49,
+      "end": 41.49,
+      "text": "That's like the best",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 41.49,
+      "end": 44.61,
+      "text": "Yes, okay, at least for we're not getting a power",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 45.33,
+      "end": 47.49,
+      "text": "air, but we're getting a",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 48.33,
+      "end": 56.98,
+      "text": "All right, so we're able to connect to the flash loss is working fine. And then the camera is just failing mid configuration",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 58.74,
+      "end": 60.74,
+      "text": "So I'm gonna send this",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

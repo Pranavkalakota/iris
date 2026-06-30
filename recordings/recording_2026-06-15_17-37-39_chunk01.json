@@ -1,0 +1,58 @@
+{
+  "audio_file": "recording_2026-06-15_17-37-39_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 15.52,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 6.70108962059021,
+  "realtime_factor": 0.43177123844009085,
+  "segments": [
+    {
+      "start": 1.42,
+      "end": 6.42,
+      "text": "I don't know where this is now, I guess it's in the fort now.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 6.42,
+      "end": 8.42,
+      "text": "Who are you?",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 8.42,
+      "end": 9.42,
+      "text": "Stop.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 9.42,
+      "end": 10.42,
+      "text": "Stop.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 10.42,
+      "end": 12.42,
+      "text": "I don't need to talk.",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,22 @@
+{
+  "audio_file": "recording_2026-06-10_11-10-57_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 6.752,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.126103401184082,
+  "realtime_factor": 0.7591977786113866,
+  "segments": [
+    {
+      "start": 1.39,
+      "end": 6.59,
+      "text": "Hey, how's it going? I'm talking to Chris right now, and I'm in the basement.",
+      "speaker": "Humza",
+      "speaker_confidence": 1.0,
+      "speaker_kind": "strict",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

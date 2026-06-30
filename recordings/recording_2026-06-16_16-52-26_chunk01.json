@@ -1,0 +1,49 @@
+{
+  "audio_file": "recording_2026-06-16_16-52-26_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 19.776,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.133754253387451,
+  "realtime_factor": 0.41129420779669557,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.84,
+      "text": "four feet away also you have music playing too so there's",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 5.84,
+      "end": 10.64,
+      "text": "two things at once music is at 98 but i can't read what you see",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 10.64,
+      "end": 14.72,
+      "text": "okay you want to record okay yeah i got you 20 seconds recording here",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 14.72,
+      "end": 21.52,
+      "text": "i'm basically five feet away this is me talking",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

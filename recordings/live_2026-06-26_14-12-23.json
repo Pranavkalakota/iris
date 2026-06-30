@@ -1,0 +1,121 @@
+{
+  "audio_file": "live_2026-06-26_14-12-23.wav",
+  "model": "medium.en",
+  "duration_seconds": 58.1291875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 20.24093747138977,
+  "realtime_factor": 0.3482060964879265,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 8.66,
+      "text": "So whenever I say, hey, you can actually test it right now, too.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 8.66,
+      "end": 11.66,
+      "text": "Listening on this.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 11.66,
+      "end": 13.66,
+      "text": "Hey, Jarvis, take a photo of me.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 13.66,
+      "end": 27.22,
+      "text": "Waiting for a photo to capture.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 27.22,
+      "end": 29.22,
+      "text": "Share it, share it.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 29.22,
+      "end": 31.22,
+      "text": "I just moved it, so it's a little bit blurry.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 31.22,
+      "end": 40.22,
+      "text": "But we got it, so now you can actually, when you're having a conversation like this,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 40.22,
+      "end": 42.22,
+      "text": "it's live transcription.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 42.22,
+      "end": 44.22,
+      "text": "A little bit of a latency.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 44.22,
+      "end": 50.22,
+      "text": "We might, again, all of this has been done on free API right now.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 50.22,
+      "end": 55.22,
+      "text": "We'll transition the page when it comes closer to demo day.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 55.22,
+      "end": 58.22,
+      "text": "Just so that it will be a little bit quicker reactions.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.638,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

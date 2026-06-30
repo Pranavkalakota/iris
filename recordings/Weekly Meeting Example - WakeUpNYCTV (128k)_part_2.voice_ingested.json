@@ -1,0 +1,18 @@
+{
+  "ingested_at": 1782780910.2028685,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\Weekly Meeting Example - WakeUpNYCTV (128k)_part_2.wav",
+  "clusters_total": 1,
+  "clusters_matched": 0,
+  "clusters_enrolled": 1,
+  "people": [
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.0,
+      "cluster_id": 0,
+      "diarizer_kind": "weak",
+      "new": true,
+      "reinforced": false
+    }
+  ]
+}

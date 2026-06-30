@@ -1,0 +1,45 @@
+{
+  "ingested_at": 1782780910.2776275,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\Weekly Meeting Example_new_diarizer.wav",
+  "clusters_total": 4,
+  "clusters_matched": 4,
+  "clusters_enrolled": 0,
+  "people": [
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.705,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 1.0,
+      "cluster_id": 1,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.705,
+      "cluster_id": 2,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.766,
+      "cluster_id": 3,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    }
+  ]
+}

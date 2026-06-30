@@ -1,0 +1,130 @@
+{
+  "audio_file": "recording_2026-06-15_18-12-44_chunk01.wav",
+  "model": "medium.en",
+  "duration_seconds": 60.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 40.810567140579224,
+  "realtime_factor": 0.6801761190096537,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.0,
+      "text": "station full of people trying to go somewhere. Amongst the hustle and bustle",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 4.0,
+      "end": 8.94,
+      "text": "two large cases rattle at the top of two trolleys. They're being pushed by",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 8.94,
+      "end": 13.62,
+      "text": "two boys, James Potter and Albus Potter. Their mother, Ginny, follows after. A",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 13.62,
+      "end": 19.66,
+      "text": "37 year old man, Harry, and his daughter Lily on the shoulders. Dad, he",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 19.66,
+      "end": 23.78,
+      "text": "keeps saying it. James, give it a rest. I've only said he might be",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 23.78,
+      "end": 30.74,
+      "text": "Slytherin. And he might sew. Fine. You'll write to me, won't you? Every day if you",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 30.74,
+      "end": 35.26,
+      "text": "want us to. No, not every day. James says most people only get letters from home",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 35.26,
+      "end": 39.5,
+      "text": "about once a month. I don't want to... Well, we wrote to your brother three",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 39.5,
+      "end": 44.86,
+      "text": "times a week last year. What? James? Yes, you may not want to believe",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 44.86,
+      "end": 48.78,
+      "text": "everything he tells you about Hogwarts. He likes a laugh, your brother.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 48.78,
+      "end": 53.04,
+      "text": "Can I go now, please? All you have to do is walk straight into that wall",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 53.04,
+      "end": 58.2,
+      "text": "between platforms. Nine and ten. I'm so excited. Don't stop. Don't be scared.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 58.2,
+      "end": 62.08,
+      "text": "You'll crash into it. That's very important.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

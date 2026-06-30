@@ -1,0 +1,184 @@
+{
+  "audio_file": "live_2026-06-28_22-23-03.wav",
+  "model": "medium.en",
+  "duration_seconds": 97.748625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 35.37321138381958,
+  "realtime_factor": 0.36187937563131534,
+  "segments": [
+    {
+      "start": 9.97,
+      "end": 13.05,
+      "text": "Um, my name is Hamza I'm talking about",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 14.09,
+      "end": 18.21,
+      "text": "My day today, so I had a dynamics homework that I had to take",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 20.53,
+      "end": 22.53,
+      "text": "I also tried to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 23.73,
+      "end": 25.73,
+      "text": "Get ready for next week",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 26.41,
+      "end": 27.49,
+      "text": "Hamza",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 27.49,
+      "end": 31.66,
+      "text": "Yeah, my name is Hamza",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 36.46,
+      "end": 42.24,
+      "text": "Went to the library today. I also got a coffee at 10 a.m. I think I have a meeting on Thursday with Joshua",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 43.02,
+      "end": 45.34,
+      "text": "I also need to go to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 48.35,
+      "end": 50.35,
+      "text": "The barber shop to get a haircut",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 50.95,
+      "end": 55.67,
+      "text": "It's also apparent to me that right now with the current economy. I should probably stop investing",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 57.07,
+      "end": 60.35,
+      "text": "In property as we're about to hit another crash",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 61.67,
+      "end": 63.59,
+      "text": "so if I",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 63.59,
+      "end": 65.59,
+      "text": "invest in any property I'll lose",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 66.71,
+      "end": 68.71,
+      "text": "What?",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 71.43,
+      "end": 72.67,
+      "text": "Currently right now",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 72.67,
+      "end": 78.03,
+      "text": "I'm also talking to Ali in regards to the ESP32 projects right now is being a bitch",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 78.71,
+      "end": 81.79,
+      "text": "We have to put a finger on the SD card, which is stupid",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 82.51,
+      "end": 88.67,
+      "text": "So I need to figure out a way if it is current related or if it is pressure related",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.635,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 90.39,
+      "end": 94.53,
+      "text": "It's also 1 24 a.m. In the morning and I want to go to sleep so bad",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

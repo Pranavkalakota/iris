@@ -1,0 +1,112 @@
+{
+  "audio_file": "AUDIO-2026-06-08-18-32-39_part_2.wav",
+  "model": "medium.en",
+  "duration_seconds": 60.54266666666667,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 17.39811897277832,
+  "realtime_factor": 0.28736955160181776,
+  "segments": [
+    {
+      "start": 1.14,
+      "end": 5.62,
+      "text": "Yeah, oh I did oh, it's uploading let's go I",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 7.02,
+      "end": 10.12,
+      "text": "Hate these like ESP chips, bro",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 11.94,
+      "end": 15.62,
+      "text": "But like it's either this or you use our door or",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 16.46,
+      "end": 18.74,
+      "text": "Raspberry Pis which are in Linux",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 19.46,
+      "end": 21.46,
+      "text": "Which are also kind of shitty? Oh",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 26.55,
+      "end": 33.73,
+      "text": "Oh camera configuration fudge how",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 36.29,
+      "end": 38.29,
+      "text": "How is it like",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 41.49,
+      "end": 44.65,
+      "text": "Yes, okay, at least we're not getting a power",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 45.29,
+      "end": 47.29,
+      "text": "air, but we're getting a",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 50.62,
+      "end": 57.02,
+      "text": "Alright, so we're able to connect to the flash losses working fine. And then the camera is just failing made configuration",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 58.74,
+      "end": 60.74,
+      "text": "So I'm gonna send this",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

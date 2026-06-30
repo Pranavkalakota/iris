@@ -1,0 +1,72 @@
+{
+  "ingested_at": 1782780909.4647317,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\live_2026-06-29_14-54-48.wav",
+  "clusters_total": 7,
+  "clusters_matched": 2,
+  "clusters_enrolled": 5,
+  "people": [
+    {
+      "person_id": 90,
+      "name": "Unknown 22",
+      "similarity": 0.0,
+      "cluster_id": 5,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 91,
+      "name": "Unknown 23",
+      "similarity": 0.0,
+      "cluster_id": 6,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 92,
+      "name": "Unknown 24",
+      "similarity": 0.0,
+      "cluster_id": 3,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 71,
+      "name": "Unknown 3",
+      "similarity": 0.86,
+      "cluster_id": 0,
+      "diarizer_kind": "weak",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 93,
+      "name": "Unknown 25",
+      "similarity": 0.0,
+      "cluster_id": 4,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 94,
+      "name": "Unknown 26",
+      "similarity": 0.0,
+      "cluster_id": 2,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 71,
+      "name": "Unknown 3",
+      "similarity": 0.626,
+      "cluster_id": 1,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    }
+  ]
+}

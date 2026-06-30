@@ -1,0 +1,11 @@
+[00:01.14 -> 00:05.66]  Yeah, this is oh it it. Oh, it's uploading. Let's go I
+[00:07.02 -> 00:10.10]  Hate these like ESP chips, bro
+[00:11.94 -> 00:18.74]  But like it's either this or you use art or Raspberry Pis which are in Linux
+[00:19.46 -> 00:21.46]  Which are also kind of shitty. Oh
+[00:26.51 -> 00:33.75]  Oh camera configuration fudge how
+[00:36.21 -> 00:38.21]  How is it like?
+[00:39.49 -> 00:41.49]  That's like the best
+[00:41.49 -> 00:44.61]  Yes, okay, at least for we're not getting a power
+[00:45.33 -> 00:47.49]  air, but we're getting a
+[00:48.33 -> 00:56.98]  All right, so we're able to connect to the flash loss is working fine. And then the camera is just failing mid configuration
+[00:58.74 -> 01:00.74]  So I'm gonna send this
