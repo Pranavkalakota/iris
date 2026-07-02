@@ -1132,9 +1132,10 @@ def classify_memory(text: str,
 # Action intent classifier — chat-driven UI navigation
 # ─────────────────────────────────────────────────────────────────────────────
 # Detects when the user is asking IRIS to *do* something in the UI rather
-# than answer a question. Right now this covers two flows:
+# than answer a question. Right now this covers three flows:
 #   action_start_video — switch to Stream tab + click Start Listening
 #   action_start_audio — switch to Audio tab + click Start Recording
+#   action_open_email  — launch the default email client / webmail
 #
 # Both are tab-navigation shortcuts: nothing about the underlying tabs
 # changes, the chat just clicks the button for you. The chat reply names
@@ -1145,7 +1146,7 @@ def classify_memory(text: str,
 @dataclass
 class ActionIntent:
     kind: str = "none"
-    # kinds: action_start_video | action_start_audio | none
+    # kinds: action_start_video | action_start_audio | action_open_email | none
     corrected_text: str = ""
 
 
@@ -1172,6 +1173,16 @@ _ACTION_AUDIO_CUES = (
     "start listening to me", "start the audio",
     "record a conversation", "record this conversation",
     "start the recording",
+)
+
+# Phrases that trigger launching email. Kept narrow on purpose — "email"
+# alone is too common in ordinary conversation ("I'll email him later")
+# to be a safe trigger, so we require an explicit open/check verb next
+# to the noun.
+_ACTION_EMAIL_CUES = (
+    "open email", "open up email", "open my email", "open the email",
+    "check email", "check my email", "open gmail", "check gmail",
+    "open my inbox", "open inbox", "pull up my email", "pull up email",
 )
 
 
@@ -1223,4 +1234,147 @@ def classify_action(text: str) -> ActionIntent:
         intent.kind = "action_start_audio"
         return intent
 
+    if _has_any(low, _ACTION_EMAIL_CUES):
+        intent.kind = "action_open_email"
+        return intent
+
+    return intent
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Email read classifier — chat-driven Gmail content lookup
+# ─────────────────────────────────────────────────────────────────────────────
+# Distinct from action_open_email (classify_action above), which only
+# launches the browser tab with no content. This classifier fires when the
+# user wants an email's actual content surfaced in chat. Three ways a
+# request resolves:
+#   email_topic          — "read the email with handshake in it",
+#                           "email about the internship" -> search term
+#                           handed straight to Gmail's own query search
+#   email_ordinal         — "the second email", "third one" -> position
+#                           within the current unread list
+#   email_latest_unread   — no topic, no ordinal -> most recent unread
+
+
+@dataclass
+class EmailIntent:
+    kind: str = "none"
+    # kinds: email_topic | email_ordinal | email_latest_unread | none
+    corrected_text: str = ""
+    topic: str = ""
+    ordinal_index: int = -1
+
+
+_EMAIL_READ_CUES = (
+    "check email", "check my email", "check the email", "check gmail",
+    "read my email", "read email", "read my emails", "read the email",
+    "what's in my inbox", "whats in my inbox",
+    "what's in my email", "whats in my email",
+    "any new email", "any new emails",
+    "do i have email", "do i have any email", "do i have new email",
+    "pull up my email", "pull up email",
+)
+
+_EMAIL_ORDINAL_WORDS = {
+    "first": 0, "1st": 0,
+    "second": 1, "2nd": 1,
+    "third": 2, "3rd": 2,
+    "fourth": 3, "4th": 3,
+    "fifth": 4, "5th": 4,
+}
+
+# Words that anchor topic extraction to actually being about email — without
+# this, generic cues like bare "about " would false-positive on ordinary
+# conversation ("I was thinking about lunch").
+_EMAIL_CONTEXT_WORDS = ("email", "emails", "inbox", "gmail")
+
+
+def _extract_email_topic(text: str) -> str:
+    """Pull the search topic out of email-content lookups: 'read the email
+    with handshake in it', 'email about the internship', 'find the email
+    regarding X'. Returns "" if no clear topic anchor -- caller should fall
+    back to ordinal/latest resolution instead."""
+    low = text.lower()
+    if not any(w in low for w in _EMAIL_CONTEXT_WORDS):
+        return ""
+    # Wrap pattern: "... with X in it"
+    m = re.search(r"\bwith\s+(.+?)\s+in it\b", low)
+    if m:
+        start, end = m.span(1)
+        topic = text[start:end].strip(" ?.!\"'")
+        if topic:
+            return topic
+    # Prefix cues: tail after the cue phrase is the topic. Longer / more
+    # specific cues first so "email about " wins over a bare "about ".
+    for cue in ("email about ", "emails about ", "email regarding ",
+                "email containing ", "email mentioning ",
+                "about ", "regarding ", "containing ", "mentioning "):
+        idx = low.find(cue)
+        if idx != -1:
+            tail = text[idx + len(cue):].strip(" ?.!\"'")
+            tail = re.sub(r"^(the|a|an|that|some|my)\s+", "", tail,
+                          flags=re.I)
+            tail = re.sub(r"\s+in (it|the email|my (inbox|email))\s*$", "",
+                          tail, flags=re.I)
+            if tail:
+                return tail
+    return ""
+
+
+# Verbs that, combined with an email noun nearby, signal a read command
+# even when intervening words break the fixed phrase list -- e.g. "read
+# THE SECOND email" doesn't contain the literal substring "read email".
+# Same class of bug as classify_action's mid-phrase problem; fixed the
+# same way, with a word-distance check instead of a growing phrase list.
+_EMAIL_VERB_WORDS = ("read", "check", "pull", "look")
+_EMAIL_WHATS_IN_RE = re.compile(r"\bwhat'?s in\b|\bwhat is in\b")
+
+
+def _has_email_command_pattern(low: str) -> bool:
+    words = re.findall(r"[a-z']+", low)
+    noun_idxs = [i for i, w in enumerate(words)
+                 if w in ("email", "emails", "inbox", "gmail")]
+    verb_idxs = [i for i, w in enumerate(words) if w in _EMAIL_VERB_WORDS]
+    return any(abs(ni - vi) <= 4 for ni in noun_idxs for vi in verb_idxs)
+
+
+def _has_email_read_cue(low: str) -> bool:
+    if _has_any(low, _EMAIL_READ_CUES):
+        return True
+    if not any(w in low for w in _EMAIL_CONTEXT_WORDS):
+        return False  # no email noun at all -- never a read command
+    if _EMAIL_WHATS_IN_RE.search(low):
+        return True
+    return _has_email_command_pattern(low)
+
+
+def classify_email(text: str) -> EmailIntent:
+    """Decide whether the message wants an email's content read out in
+    chat. Fires on either an explicit read/check cue OR clear topic
+    phrasing ('email about X') -- the topic extractor is anchored to an
+    email-context word so it won't false-positive on ordinary chat like
+    'thinking about lunch'."""
+    corrected = correct_text(text or "")
+    low = corrected.lower().strip()
+    intent = EmailIntent(corrected_text=corrected)
+    if not low:
+        return intent
+
+    topic = _extract_email_topic(corrected)
+    has_cue = _has_email_read_cue(low)
+    if not (topic or has_cue):
+        return intent
+
+    if topic:
+        intent.kind = "email_topic"
+        intent.topic = topic
+        return intent
+
+    for word, idx in _EMAIL_ORDINAL_WORDS.items():
+        if word in low:
+            intent.kind = "email_ordinal"
+            intent.ordinal_index = idx
+            return intent
+
+    intent.kind = "email_latest_unread"
     return intent

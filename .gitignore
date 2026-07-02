@@ -5,3 +5,5 @@ __pycache__/
 *.wav
 *.ckpt
 *.bin
+credentials.json
+token.json

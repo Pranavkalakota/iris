@@ -76,6 +76,10 @@ try:
 except Exception:
     ivideos = None
 try:
+    import iris_email as iemail                          # type: ignore
+except Exception:
+    iemail = None
+try:
     import iris_fusion                                   # type: ignore
 except Exception:
     iris_fusion = None
@@ -725,7 +729,9 @@ class BubbleLabel(QLabel):
         self.setFont(f)
         self.setWordWrap(True)
         self.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse)
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.setOpenExternalLinks(True)
         self.setText(text)
     def setText(self, text: str) -> None:
         super().setText(text)
@@ -801,6 +807,32 @@ class ChatTab(QWidget):
             print("[video] iris_videos.py not found — the chat will not be "
                   "able to answer questions about saved video clips. Make "
                   "sure iris_videos.py is in the same folder as iris_gui.py.")
+        # Gmail store — lazy and defensive: missing credentials.json or a
+        # not-yet-completed OAuth flow must never crash chat startup, just
+        # disable the email feature until it's set up.
+        self._email = None
+        if iemail is not None:
+            try:
+                self._email = iemail.EmailStore()
+            except Exception as e:
+                print(f"[email] could not start EmailStore: {e}")
+                self._email = None
+        else:
+            print("[email] iris_email.py not found — the chat will not be "
+                  "able to read email. Make sure iris_email.py is in the "
+                  "same folder as iris_gui.py.")
+        # The last email a question resolved to — lets bare follow-ups like
+        # "read the third one" work without re-saying "email". Mirrors
+        # _active_video.
+        self._active_email: Optional[object] = None
+        # The last unread-list snapshot, so ordinal follow-ups ("the third
+        # one") resolve against the SAME list the user was just shown,
+        # rather than re-querying Gmail and possibly getting a different
+        # order if something new arrived in between.
+        self._last_email_list: list = []
+        # The last search topic, so a plain "the second one" after a topic
+        # search resolves within those results, not the unread list.
+        self._last_email_topic: str = ""
         # The last video clip a question resolved to — lets follow-ups like
         # "what color shirt was he wearing" work without re-saying "video".
         # Mirrors the _active (audio recording) and _active_photo patterns.
@@ -1196,6 +1228,45 @@ class ChatTab(QWidget):
             act_intent = None
         if act_intent is not None and act_intent.kind != "none":
             self._handle_action_intent(act_intent)
+            return
+        # An email read/check command ("read my email", "email about
+        # handshake", "the second one" — if an email context is already
+        # active). Checked before the video question path since email and
+        # video vocab don't overlap, order doesn't matter much here, but
+        # this keeps action-adjacent intents grouped together near the top.
+        try:
+            email_intent = iq.classify_email(text) if self._email is not None else None
+        except Exception:
+            email_intent = None
+        if email_intent is None and self._email is not None and self._active_email is not None:
+            # Bare follow-up with no email noun at all ("the third one",
+            # "read that one") — only valid if an email context is already
+            # active, same reasoning as _is_video_followup below.
+            if self._is_bare_ordinal_followup(low):
+                email_intent = self._classify_bare_ordinal(low)
+        if email_intent is not None and email_intent.kind != "none":
+            self._start_bg(lambda: self._answer_email_question(email_intent))
+            return
+        # An email read/check command ("read my email", "email about
+        # handshake"). Bare ordinal follow-ups ("the third one") with no
+        # email noun at all only route here if an email context is already
+        # active — same reasoning as the video follow-up check below.
+        # Reuses _ORDINAL_WORDS (already defined for video ordinals below).
+        email_intent = None
+        if self._email is not None:
+            try:
+                email_intent = iq.classify_email(text)
+            except Exception:
+                email_intent = None
+            if (email_intent is None or email_intent.kind == "none") \
+                    and self._active_email is not None:
+                for word, idx in self._ORDINAL_WORDS.items():
+                    if word in low:
+                        email_intent = iq.EmailIntent(
+                            kind="email_ordinal", ordinal_index=idx)
+                        break
+        if email_intent is not None and email_intent.kind != "none":
+            self._start_bg(lambda: self._answer_email_question(email_intent))
             return
         # A question ABOUT a saved video clip ("how many people were in the
         # video?", "who was in that clip?"). Intercept it here so it always
@@ -2198,6 +2269,9 @@ class ChatTab(QWidget):
         if kind == "action_start_audio":
             self._do_action_start_audio(app)
             return
+        if kind == "action_open_email":
+            self._do_action_open_email()
+            return
         # Unknown action — fall back to a generic note.
         self._append_iris("I'm not sure what action you wanted me to take.")
 
@@ -2211,6 +2285,17 @@ class ChatTab(QWidget):
                 return w
             w = w.parent()
         return None
+
+    def _do_action_open_email(self) -> None:
+        """Launch the default webmail in the system browser. No tab
+        switch needed — this doesn't live inside IRIS's own UI."""
+        import webbrowser
+        try:
+            webbrowser.open("https://mail.google.com")
+            self._append_iris("Opening your email.")
+        except Exception as e:
+            print(f"[chat-action] email launch failed: {e}")
+            self._append_iris("I couldn't open email — try launching it manually.")
 
     def _do_action_start_video(self, app) -> None:
         stream = getattr(app, "stream", None)
@@ -2681,6 +2766,59 @@ class ChatTab(QWidget):
                         self._active_video.path):
                     return c
         return clips[0]
+
+    def _answer_email_question(self, intent) -> str:
+        """Resolve an EmailIntent (topic search / ordinal / latest unread)
+        against Gmail and format the full message for the chat bubble.
+        No LLM in this path on purpose — full body verbatim was the
+        explicit ask, and paraphrasing risks dropping or inventing detail
+        from a real email the same way it would for a video description."""
+        if self._email is None:
+            return "Email isn't set up yet — credentials.json is missing."
+        kind = getattr(intent, "kind", "none")
+        msg = None
+        try:
+            if kind == "email_topic":
+                results = self._email.search(intent.topic, limit=5)
+                self._last_email_list = results
+                self._last_email_topic = intent.topic
+                msg = results[0] if results else None
+            elif kind == "email_ordinal":
+                idx = intent.ordinal_index
+                # Resolve against whatever list was last shown (unread OR
+                # a topic search) so "the third one" means the third item
+                # of what the user actually just saw, not a fresh re-query
+                # that could return a different order if mail arrived
+                # in between.
+                if self._last_email_list and idx < len(self._last_email_list):
+                    msg = self._last_email_list[idx]
+                else:
+                    msg = self._email.by_ordinal(idx)
+            elif kind == "email_latest_unread":
+                results = self._email.unread(limit=10)
+                self._last_email_list = results
+                self._last_email_topic = ""
+                msg = results[0] if results else None
+        except FileNotFoundError as e:
+            print(f"[email] {e}")
+            return str(e)
+        except Exception as e:
+            print(f"[email] fetch failed: {e}")
+            return f"I couldn't reach Gmail — {e}"
+
+        if msg is None:
+            if kind == "email_topic":
+                return f'I couldn\'t find any email about "{intent.topic}".'
+            return "There are no unread emails."
+
+        # Remember this message so a bare follow-up ("read the third one"
+        # asked right after) still has a live context — mirrors
+        # _active_video.
+        self._active_email = msg
+        return (f"From: {msg.sender}\n"
+                f"Subject: {msg.subject}\n"
+                f"Date: {msg.when()}\n\n"
+                f"{msg.body or msg.snippet or '(no body content)'}")
 
     def _answer_video_question(self, text: str) -> str:
         """Answer a question about saved video clips using their real analysis
