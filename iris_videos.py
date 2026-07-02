@@ -84,7 +84,7 @@ class VideoClip:
     people_names: list = field(default_factory=list)
     method: str = ""                            # "fusion" | "opencv" | ""
     note: str = ""
-
+    scene_description: str = ""                 # "" → never described yet
     @property
     def name(self) -> str:
         return os.path.basename(self.path)
@@ -92,6 +92,10 @@ class VideoClip:
     @property
     def analyzed(self) -> bool:
         return self.people_count is not None
+
+    @property
+    def described(self) -> bool:
+        return bool(self.scene_description)
 
     def when(self) -> str:
         try:
@@ -209,6 +213,7 @@ class VideoStore:
             people_names=list(meta.get("people_names", []) or []),
             method=meta.get("method", ""),
             note=meta.get("note", ""),
+            scene_description=meta.get("scene_description", ""),
         )
 
     # ── analysis ────────────────────────────────────────────────────────
@@ -244,6 +249,53 @@ class VideoStore:
             note=result.note,
         )
         return result
+
+    def describe(self, path: str, force: bool = False,
+                 frame_count: int = 4) -> str:
+        """On-demand scene description (who's visible, clothing, objects,
+        setting) for one clip. Cached in the sidecar — only ever costs an
+        LLaVA call once per clip unless force=True. Deliberately separate
+        from analyze(): this is heavier (a real vision-language model call,
+        several frames) and only runs when someone actually asks about the
+        clip's content, never automatically on arrival.
+
+        Returns '' if fusion/LLaVA isn't available or the clip can't be
+        opened — callers should treat that as 'description unavailable',
+        not 'nothing was in the clip'.
+        """
+        if not force:
+            existing = self._load_clip(path)
+            if existing.described:
+                return existing.scene_description
+
+        fusion = None
+        if self._fusion_getter is not None:
+            try:
+                fusion = self._fusion_getter()
+            except Exception:
+                fusion = None
+        if fusion is None or not hasattr(fusion, "describe_scene"):
+            print(f"[video] describe(): fusion/LLaVA not available for "
+                  f"{os.path.basename(path)}")
+            return ""
+
+        frames = _sample_frames_spread(path, frame_count)
+        if not frames:
+            print(f"[video] describe(): no readable frames sampled from "
+                  f"{os.path.basename(path)}")
+            return ""
+
+        try:
+            description = fusion.describe_scene(frames)
+        except Exception as e:
+            print(f"[video] describe_scene call failed: {e}")
+            return ""
+        if not description:
+            print(f"[video] describe(): LLaVA returned an empty "
+                  f"description for {os.path.basename(path)}")
+        else:
+            record_scene_description(path, description)
+        return description
 
     # ── context for the chat LLM ────────────────────────────────────────
     def describe_recent(self, limit: int = 5, analyze_missing: bool = True,
@@ -326,9 +378,30 @@ def record_analysis(clip_path: str, *, people_count: Optional[int],
     return meta
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# The analyser. Two backends, same output shape.
-# ─────────────────────────────────────────────────────────────────────────────
+def record_scene_description(clip_path: str, description: str) -> dict:
+    """Merge a scene description into the clip's sidecar without touching
+    whatever people/analysis fields are already there (or aren't yet —
+    this can run before or independently of record_analysis()). Never
+    raises."""
+    meta = read_sidecar(clip_path)
+    if "received_at" not in meta:
+        ts = _timestamp_from_name(clip_path)
+        if ts is None:
+            try:
+                ts = os.path.getmtime(clip_path)
+            except Exception:
+                ts = time.time()
+        meta["received_at"] = ts
+    meta["scene_description"] = description
+    meta["scene_described_at"] = time.time()
+    try:
+        with open(sidecar_path(clip_path), "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2)
+    except Exception:
+        pass
+    return meta
+
+
 def analyze_clip(path: str, fusion=None) -> VideoClip:
     """Count the distinct people in a clip. Prefers the fusion/DeepFace
     pipeline (names + registry side-effects); falls back to OpenCV. Always
@@ -362,7 +435,42 @@ def _open_capture(path):
     frame_step = max(1, int(fps))              # ~1 keyframe / second
     return cap, fps, frame_step
 
+def _sample_frames_spread(path: str, count: int = 4) -> list:
+    """Grab `count` frames evenly spread across the clip (e.g. at ~12%,
+    37%, 62%, 87% of total length) rather than bunched at the start.
 
+    Reads every frame sequentially and picks evenly from what's ACTUALLY
+    decodable, rather than trusting CAP_PROP_FRAME_COUNT — on corrupted or
+    truncated ESP32 clips that metadata can badly overstate the real frame
+    count (seen in practice: reported 1062 frames, only 44 actually
+    decodable), which silently produced zero sampled frames before. Caps
+    the read at a safety limit so a very long/corrupt file can't hang.
+    """
+    try:
+        import cv2
+    except Exception:
+        return []
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        cap.release()
+        return []
+
+    all_frames = []
+    SAFETY_CAP = 2000  # ~65s at 30fps — comfortably above the ~35s clips
+    while len(all_frames) < SAFETY_CAP:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        all_frames.append(frame)
+    cap.release()
+
+    if not all_frames:
+        return []
+
+    n = len(all_frames)
+    count = max(1, min(count, n))
+    targets = [int(n * (i + 1) / (count + 1)) for i in range(count)]
+    return [all_frames[min(t, n - 1)] for t in targets]
 def _analyze_with_fusion(path: str, fusion, received_at: float) -> VideoClip:
     import cv2
     cap, fps, step = _open_capture(path)

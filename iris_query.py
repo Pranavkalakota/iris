@@ -1158,7 +1158,7 @@ _ACTION_VIDEO_CUES = (
     "start listening", "start the stream", "start stream",
     "start recording video", "begin recording video",
     "record some video", "capture a video", "capture video",
-    "video record", "record some footage",
+    "record some footage",
 )
 
 # Phrases that trigger audio recording. Deliberately narrower than the
@@ -1199,8 +1199,18 @@ def classify_action(text: str) -> ActionIntent:
     # Catches things like 'record a 10 second video' / 'record me 30s of
     # footage' / 'can you record a video' that the fixed phrase list above
     # misses because of intervening words.
-    if re.search(r"\brecord(?:ing|ed|s)?\b", low) and (
-            "video" in low or "camera" in low or "footage" in low):
+    # Excluded when the message is really a LOOKUP about existing clips
+    # ("give me the latest video recording", "how many videos do I have")
+    # rather than a command to start a new one — those must never hijack
+    # the tab switch.
+    _LOOKUP_CUES = ("latest", "last video", "last recording", "recent",
+                    "show me", "give me", "list", "which video", "how many",
+                    "who was", "who's in", "whos in", "what happened",
+                    "can you see", "do you have", "access")
+    if (re.search(r"\brecord(?:ing|ed|s)?\b", low)
+            and ("video" in low or "camera" in low or "footage" in low)
+            and not low.strip().endswith("?")
+            and not _has_any(low, _LOOKUP_CUES)):
         intent.kind = "action_start_video"
         return intent
 

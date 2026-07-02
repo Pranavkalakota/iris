@@ -223,6 +223,21 @@ _LLAVA_PROMPT = (
     "role phrase, no preamble, no quotes, no explanation."
 )
 
+# Separate, wider prompt used to describe what's happening in a saved video
+# clip (not tied to any one person) — who's visible, what they're wearing,
+# and any notable objects/setting. Several frames spread across the clip
+# are sent together so the model can describe the clip as a whole rather
+# than one frozen instant.
+_SCENE_PROMPT = (
+    "These images are frames sampled across a short video clip from a "
+    "wearable camera, in time order. Describe in 2-4 plain sentences: who "
+    "is visible (how many people, and anything notable about their "
+    "clothing/appearance), what they appear to be doing, the setting, and "
+    "any notable objects. Be factual and concise — only describe what is "
+    "actually visible, do not guess names or invent details. No preamble, "
+    "no headers, no bullet points, plain prose only."
+)
+
 
 class _LlavaInference:
     def __init__(self, url: str, model: str):
@@ -293,6 +308,52 @@ class _LlavaInference:
         if len(text) > 80:
             text = text[:77] + "\u2026"
         return text
+
+    def describe_frames(self, images_bgr: list) -> str:
+        """Send several frames (sampled across a clip, in time order) in one
+        call and get back a short prose description of the scene. Unlike
+        infer_role(), this is NOT truncated to 80 chars — scene descriptions
+        need more room than a role phrase. Returns '' on any failure."""
+        client = self._ensure_client()
+        if client is None or not images_bgr:
+            return ""
+        try:
+            import cv2, base64
+            imgs_b64 = []
+            for img in images_bgr:
+                ok, buf = cv2.imencode(
+                    ".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                if ok:
+                    imgs_b64.append(base64.b64encode(buf.tobytes())
+                                    .decode("ascii"))
+            if not imgs_b64:
+                return ""
+        except Exception as e:
+            print(f"[llava] scene image encode failed: {e}")
+            return ""
+        with self._lock:
+            try:
+                resp = client.chat(
+                    model=self.model,
+                    messages=[{
+                        "role": "user",
+                        "content": _SCENE_PROMPT,
+                        "images": imgs_b64,
+                    }],
+                )
+            except Exception as e:
+                print(f"[llava] scene inference failed: {e}")
+                return ""
+        try:
+            msg = resp["message"] if isinstance(resp, dict) \
+                else getattr(resp, "message", None)
+            if isinstance(msg, dict):
+                text = msg.get("content", "") or ""
+            else:
+                text = getattr(msg, "content", "") or ""
+            return str(text).strip()
+        except Exception:
+            return ""
 
 
 # ── result types ────────────────────────────────────────────────────────
@@ -987,6 +1048,20 @@ class PeopleFusion:
         finally:
             with self._llava_inflight_lock:
                 self._llava_inflight.discard(person_id)
+
+    # ── on-demand clip scene description (people/clothing/objects) ────────
+    def describe_scene(self, frames: list) -> str:
+        """Public entry point for iris_videos.py: describe several frames
+        sampled from a saved clip (who's visible, clothing, objects,
+        setting) in 2-4 sentences. Reuses the same LLaVA client already
+        warmed up for role inference, just a different prompt. Blocking —
+        caller is expected to run this on a background thread; a few
+        frames through llava:7b on CPU can take a while."""
+        try:
+            return self.llava.describe_frames(frames)
+        except Exception as e:
+            print(f"[llava] describe_scene failed: {e}")
+            return ""
 
     # ── face-side folder hook ────────────────────────────────────────────
     def _archive_face_enrollments(self, image_bgr: np.ndarray,

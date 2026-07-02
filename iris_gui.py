@@ -2454,9 +2454,122 @@ class ChatTab(QWidget):
                 "were in", "people in", "person in", "in the video",
                 "in that video", "in the clip", "in that clip", "in the "
                 "footage", "count", "what happened", "what's in", "whats in",
-                "show me the video", "last video", "the video")
+                "show me the video", "last video", "the video", "latest",
+                "most recent", "newest")
         # A question mark alone also qualifies when a video noun is present.
         return low.strip().endswith("?") or any(c in low for c in cues)
+
+    @staticmethod
+    def _is_latest_video_question(low: str) -> bool:
+        """True when the user wants specifically the single most recent clip
+        ('latest video', 'give me the newest clip', etc). These must NEVER
+        be answered by handing Llama a multi-clip list and hoping it reads
+        the order correctly — smaller local models get this wrong even when
+        the list is already sorted newest-first. Resolve it in Python."""
+        if not any(w in low for w in ("video", "clip", "footage")):
+            return False
+        return any(c in low for c in (
+            "latest video", "latest clip", "latest footage",
+            "last video", "last clip", "most recent video",
+            "most recent clip", "newest video", "newest clip"))
+
+    _SCENE_FAST_CUES = (
+        "describe", "wearing", "happened", "happening", "doing",
+        "activity", "clothing", "objects", "what do you see",
+        "what did you see", "what's in", "whats in", "what was in",
+        "what were in", "tell me about", "look like",
+    )
+    _SCENE_CLASSIFY_MODEL = "llama3.2:1b"
+    _SCENE_CLASSIFY_PROMPT = (
+        "You classify a single chat message about saved video clips from a "
+        "wearable camera. Reply with EXACTLY one word, nothing else:\n"
+        "YES - the message asks for a VISUAL description of a clip's "
+        "content: who is visible, what they look like, what they're "
+        "wearing, what they're doing, objects, or the setting.\n"
+        "NO - the message only asks for simple facts: how many clips "
+        "exist, when something was recorded, how long a clip is, how many "
+        "people were detected (a number), or a filename.\n"
+        "Reply with exactly YES or NO, nothing else."
+    )
+
+    def _is_scene_description_question(self, low: str, text: str) -> bool:
+        """True when the user wants a visual description of what's IN a
+        clip — who's visible, clothing, objects, setting — not just facts
+        (name/time/people-count) that describe_recent() already covers.
+        This is the expensive path (a real LLaVA call on several frames),
+        so it only fires on genuinely descriptive phrasing.
+
+        Fast path: obvious keyword hit → True immediately, no extra call.
+        Fallback: ambiguous phrasing ('what's in the LATEST video', 'what
+        was the person DOING') that the keyword list doesn't catch gets
+        classified by a cheap llama3.2:1b yes/no call instead of trying to
+        keyword-match every possible English phrasing — that approach
+        doesn't scale, this generalizes to wording we never hardcoded."""
+        if not any(w in low for w in ("video", "clip", "footage")):
+            return False
+        if any(c in low for c in self._SCENE_FAST_CUES):
+            return True
+        if self._client is None:
+            return False
+        try:
+            resp = self._client.chat(
+                model=self._SCENE_CLASSIFY_MODEL,
+                messages=[
+                    {"role": "system", "content": self._SCENE_CLASSIFY_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                options={"num_predict": 3},
+            )
+            answer = resp["message"]["content"].strip().upper()
+            if "YES" in answer:
+                result = True
+            elif "NO" in answer:
+                result = False
+            else:
+                # Model didn't follow the YES/NO instruction (small models
+                # occasionally don't) — fail toward YES. Worst case is one
+                # extra (cached) LLaVA call; worst case of failing NO is
+                # silently giving the person a useless answer.
+                result = True
+            print(f"[video] scene classify: {text!r} -> {answer!r} "
+                  f"({'YES' if result else 'NO'})")
+            return result
+        except Exception as e:
+            print(f"[video] scene classify failed: {e}")
+            return False
+
+    _ORDINAL_WORDS = {
+        "first": 0, "1st": 0,
+        "second": 1, "2nd": 1,
+        "third": 2, "3rd": 2,
+        "fourth": 3, "4th": 3,
+        "fifth": 4, "5th": 4,
+    }
+
+    def _resolve_target_clip(self, low: str):
+        """Figure out which saved clip a video question is about.
+        Priority: an explicit filename mentioned in the message → an
+        ordinal ('the second video', '3rd clip' — position counted from
+        MOST RECENT, matching how describe_recent() lists them) → 'oldest'
+        / 'earliest' → default to the latest clip."""
+        if self._videos is None:
+            return None
+        try:
+            clips = self._videos.list_all(limit=10)
+        except Exception:
+            clips = []
+        if not clips:
+            return None
+        for c in clips:
+            stem = os.path.splitext(c.name)[0].lower()
+            if stem and stem in low:
+                return c
+        for word, idx in self._ORDINAL_WORDS.items():
+            if word in low:
+                return clips[idx] if idx < len(clips) else clips[-1]
+        if "oldest" in low or "earliest" in low:
+            return clips[-1]
+        return clips[0]
 
     def _answer_video_question(self, text: str) -> str:
         """Answer a question about saved video clips using their real analysis
@@ -2464,6 +2577,80 @@ class ChatTab(QWidget):
         in context regardless of how the classifier routed things."""
         if self._client is None:
             return "(ollama not connected)"
+        low = text.lower()
+
+        # A visual "what happened / what were they wearing / what's in the
+        # video" question — resolve which clip (explicit filename, ordinal
+        # position like 'second video', or default to latest), run the
+        # on-demand LLaVA scene description on it (slow — several
+        # vision-model calls), and hand ONLY that description to Llama to
+        # phrase as an answer.
+        if self._videos is not None and self._is_scene_description_question(low, text):
+            try:
+                clip = self._resolve_target_clip(low)
+            except Exception as e:
+                print(f"[video] clip resolution failed: {e}")
+                clip = None
+            if clip is None:
+                return "There are no saved video clips on disk yet."
+            try:
+                description = self._videos.describe(clip.path)
+            except Exception as e:
+                print(f"[video] describe() failed: {e}")
+                description = ""
+            if not description:
+                return (f"I found {clip.name} ({clip.when()}, "
+                        f"{clip.length()} long), but couldn't generate a "
+                        "visual description right now — the vision model "
+                        "may not be running (check Ollama has llava:7b "
+                        "available).")
+            vctx = (
+                f"Visual description of the video clip {clip.name} "
+                f"(recorded {clip.when()}, length {clip.length()}), "
+                f"generated by looking at several frames spread across "
+                f"the clip:\n{description}\n"
+                "Answer the user's question using only this description. "
+                "Do not invent details not mentioned in it.")
+            messages = [{"role": "system", "content": self._system_prompt},
+                        {"role": "system", "content": vctx}]
+            messages.extend(self.history)
+            try:
+                resp = self._client.chat(model=OLLAMA_MODEL, messages=messages)
+                return resp["message"]["content"].strip()
+            except Exception as exc:
+                return f"(ollama error: {exc})"
+
+        # "Latest video" is resolved deterministically — never left for the
+        # LLM to pick out of a list.
+        if self._videos is not None and self._is_latest_video_question(low):
+            try:
+                clip = self._videos.latest()
+            except Exception as e:
+                print(f"[video] latest() failed: {e}")
+                clip = None
+            if clip is None:
+                return "There are no saved video clips on disk yet."
+            try:
+                clip = self._videos.analyze(clip.path)
+            except Exception:
+                pass
+            vctx = (
+                "The single most recent saved ESP32 video clip is:\n"
+                f"filename: {clip.name}\n"
+                f"recorded: {clip.when()}\n"
+                f"length: {clip.length()}\n"
+                f"people detected: {clip.people_summary()}\n"
+                "This IS the latest clip on disk right now — do not "
+                "suggest or name any other clip.")
+            messages = [{"role": "system", "content": self._system_prompt},
+                        {"role": "system", "content": vctx}]
+            messages.extend(self.history)
+            try:
+                resp = self._client.chat(model=OLLAMA_MODEL, messages=messages)
+                return resp["message"]["content"].strip()
+            except Exception as exc:
+                return f"(ollama error: {exc})"
+
         vctx = ""
         if self._videos is not None:
             try:
