@@ -1278,6 +1278,14 @@ class ChatTab(QWidget):
         if email_intent is not None and email_intent.kind != "none":
             self._start_bg(lambda: self._answer_email_question(email_intent))
             return
+        # A question about the user's CURRENT location ("where am i",
+        # "what is my current location"). Answered from the freshest location
+        # fix (newest clip/recording sidecar, else a live Wi-Fi/IP lookup).
+        # Historical phrasings ("where was i yesterday") are excluded and fall
+        # through to the memory-recall classifier below.
+        if self._is_location_question(low):
+            self._start_bg(lambda: self._answer_location_question(text))
+            return
         # A question ABOUT a saved video clip ("how many people were in the
         # video?", "who was in that clip?"). Intercept it here so it always
         # gets the real clip data — otherwise phrasings like "who was in the
@@ -2915,6 +2923,76 @@ class ChatTab(QWidget):
         self._active_email = msg
         return self._format_email_message(msg)
 
+    # ── current-location Q&A (M6 §6.5) ──────────────────────────────────
+    def _is_location_question(self, low: str) -> bool:
+        """True for questions about where the user is RIGHT NOW. Historical
+        location questions are left to the memory-recall classifier."""
+        low = (low or "").strip()
+        if not low:
+            return False
+        historical = ("yesterday", "last night", "last week", "earlier",
+                      "this morning", "this afternoon", "was i", "were we",
+                      "have i been", "did i go")
+        if any(h in low for h in historical):
+            return False
+        triggers = ("where am i", "where are we", "current location",
+                    "my location", "what's my location", "what is my location",
+                    "where am i right now", "location right now",
+                    "what location am i", "where i am")
+        return any(t in low for t in triggers)
+
+    def _current_location(self) -> Optional[dict]:
+        """Freshest known location dict, or None. Prefers the newest clip's
+        .location.json (written live as clips arrive), then recent recordings,
+        then a live Wi-Fi→IP lookup (no OCR — no frames in this context)."""
+        # 1) newest saved video clip's sidecar
+        try:
+            if self._videos is not None:
+                clip = self._videos.latest()
+                if clip is not None:
+                    loc = load_location_sidecar(clip.path)
+                    if loc:
+                        return loc
+        except Exception:
+            pass
+        # 2) newest audio recordings' sidecars
+        try:
+            recs = sorted(self._all_recordings(),
+                          key=lambda r: r.mtime, reverse=True)
+            for r in recs[:5]:
+                loc = load_location_sidecar(r.path)
+                if loc:
+                    return loc
+        except Exception:
+            pass
+        # 3) live fallback: Wi-Fi SSID → ip-api (no frames → OCR skipped)
+        try:
+            import location_phase8            # type: ignore
+            return location_phase8.resolve_location(frames=None, fusion=None)
+        except Exception:
+            return None
+
+    def _answer_location_question(self, text: str) -> str:
+        loc = self._current_location()
+        if not loc:
+            return ("I can't determine your current location yet — no fix from "
+                    "signage (OCR), Wi-Fi, or IP is available right now.")
+        name = (loc.get("location") or loc.get("city") or "").strip()
+        if not name:
+            name = "an unnamed location"
+        source = loc.get("source", "?")
+        src_human = {
+            "ocr":  "a sign read from your camera (OCR)",
+            "wifi": "your connected Wi-Fi network",
+            "ip":   "IP-based geolocation",
+            "manual": "a manual override",
+        }.get(source, source)
+        extra = ""
+        city = (loc.get("city") or "").strip()
+        if city and city.lower() not in name.lower():
+            extra = f" ({city})"
+        return f"You're currently at {name}{extra}. Determined from {src_human}."
+
     def _answer_video_question(self, text: str) -> str:
         """Answer a question about saved video clips using their real analysis
         (people counts, recognised names, times). Guarantees the clip data is
@@ -4348,8 +4426,12 @@ class StreamTab(QWidget):
     _ORANGE = "#f59e0b"
     _CYAN   = "#06b6d4"
     _YELLOW = "#eab308"
+    # Thread-safe GUI marshaling: background clip workers emit through this so
+    # log/widget updates always run on the GUI thread (mirrors ChatTab).
+    _main_invoke = pyqtSignal(object)
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._main_invoke.connect(lambda fn: fn())
         self._import_constants()
         self._init_state()
         self._build_ui()
@@ -4682,6 +4764,23 @@ class StreamTab(QWidget):
         self.log_box.append(f"[{ts}] {msg}")
         sb = self.log_box.verticalScrollBar()
         sb.setValue(sb.maximum())
+
+    def _call_main(self, fn) -> None:
+        """Run fn on the GUI thread from any worker thread (see ChatTab)."""
+        try:
+            self._main_invoke.emit(fn)
+        except Exception:
+            pass
+
+    def _log_threadsafe(self, msg) -> None:
+        """Log from a background thread: prints to the console (always
+        visible) AND marshals the line into the Stream-tab log box on the
+        GUI thread so it renders reliably even off the main thread."""
+        try:
+            print(msg)
+        except Exception:
+            pass
+        self._call_main(lambda m=msg: self._log(m))
     # ── helpers ────────────────────────────────────────────────────────────
     def _fmt_time(self, seconds):
         seconds = max(0, int(seconds))
@@ -5192,9 +5291,10 @@ class StreamTab(QWidget):
         try:
             n = fusion.reconcile_clip(filepath)
             if n:
-                self._log(f"[reconcile] confirmed {n} conversation"
-                          f"{'s' if n != 1 else ''} from "
-                          f"{os.path.basename(filepath)}")
+                self._log_threadsafe(
+                    f"[reconcile] confirmed {n} conversation"
+                    f"{'s' if n != 1 else ''} from "
+                    f"{os.path.basename(filepath)}")
         except Exception as e:
             print(f"[reconcile] failed for "
                   f"{os.path.basename(filepath)}: {e}")
@@ -5238,9 +5338,10 @@ class StreamTab(QWidget):
             location = location_phase8.resolve_location(frames, fusion)
             if location:
                 location_phase8.save_location_sidecar(filepath, location)
-                self._log(f"[location] {os.path.basename(filepath)} → "
-                          f"{location.get('location','?')} "
-                          f"(source: {location.get('source','?')})")
+                self._log_threadsafe(
+                    f"[location] {os.path.basename(filepath)} → "
+                    f"{location.get('location','?')} "
+                    f"(source: {location.get('source','?')})")
                 # Center the Location tab on the fix if the map is available.
                 try:
                     tab = getattr(self, "location_tab", None)
@@ -5285,9 +5386,14 @@ class StreamTab(QWidget):
                 scene_description=scene,
             )
             if dec.is_new_event:
-                self._log(f"[event] new event {dec.event_id} — {dec.reason}")
+                self._log_threadsafe(
+                    f"[event] new event {dec.event_id} — {dec.reason}")
             elif dec.status in ("boundary_pending", "in_transit"):
-                self._log(f"[event] {dec.status}: {dec.reason}")
+                self._log_threadsafe(f"[event] {dec.status}: {dec.reason}")
+            else:
+                self._log_threadsafe(
+                    f"[event] {os.path.basename(filepath)}: same event "
+                    f"{dec.event_id}")
         except Exception as e:
             print(f"[event] detection failed for "
                   f"{os.path.basename(filepath)}: {e}")
