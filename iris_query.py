@@ -1253,13 +1253,13 @@ def classify_action(text: str) -> ActionIntent:
 #                           handed straight to Gmail's own query search
 #   email_ordinal         — "the second email", "third one" -> position
 #                           within the current unread list
-#   email_latest_unread   — no topic, no ordinal -> most recent unread
-
+#   email_latest          — no topic, no ordinal -> most recent email,
+#                           regardless of read/unread status
 
 @dataclass
 class EmailIntent:
     kind: str = "none"
-    # kinds: email_topic | email_ordinal | email_latest_unread | none
+    # kinds: email_topic | email_ordinal | email_latest | none
     corrected_text: str = ""
     topic: str = ""
     ordinal_index: int = -1
@@ -1308,7 +1308,9 @@ def _extract_email_topic(text: str) -> str:
     # specific cues first so "email about " wins over a bare "about ".
     for cue in ("email about ", "emails about ", "email regarding ",
                 "email containing ", "email mentioning ",
-                "about ", "regarding ", "containing ", "mentioning "):
+                "where it says ", "that says ", "which says ",
+                "about ", "regarding ", "containing ", "mentioning ",
+                "says "):
         idx = low.find(cue)
         if idx != -1:
             tail = text[idx + len(cue):].strip(" ?.!\"'")
@@ -1316,6 +1318,19 @@ def _extract_email_topic(text: str) -> str:
                           flags=re.I)
             tail = re.sub(r"\s+in (it|the email|my (inbox|email))\s*$", "",
                           tail, flags=re.I)
+            # Trailing filler that isn't part of the topic itself --
+            # "give any email about deepgram listed out" should search
+            # for "deepgram", not "deepgram listed out". Applied
+            # repeatedly since more than one filler phrase can stack
+            # ("... deepgram listed out please").
+            trailing_filler = re.compile(
+                r"\s+(listed out|listed|out loud|out|shown|displayed|"
+                r"please|for me|right now|now)\s*$", re.I)
+            while True:
+                new_tail = trailing_filler.sub("", tail)
+                if new_tail == tail:
+                    break
+                tail = new_tail
             if tail:
                 return tail
     return ""
@@ -1376,5 +1391,15 @@ def classify_email(text: str) -> EmailIntent:
             intent.ordinal_index = idx
             return intent
 
-    intent.kind = "email_latest_unread"
+    intent.kind = "email_latest"
     return intent
+
+def is_bare_email_check(text: str) -> bool:
+    """True if text is (close to) an exact 'check my email' style phrase
+    with nothing else in it that could be a topic. Used by iris_gui.py to
+    decide whether it's worth paying for a llama3.2:1b topic-extraction
+    call when classify_email's own cue-based extraction comes up empty —
+    no point asking the model to look for a topic in a message that is,
+    word for word, one of the recognized bare read/check cues."""
+    low = correct_text(text or "").lower().strip()
+    return low in _EMAIL_READ_CUES

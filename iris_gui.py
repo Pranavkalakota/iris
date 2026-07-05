@@ -833,6 +833,11 @@ class ChatTab(QWidget):
         # The last search topic, so a plain "the second one" after a topic
         # search resolves within those results, not the unread list.
         self._last_email_topic: str = ""
+        # Set when a topic search comes back with more than one match —
+        # the user is expected to reply with a bare number next ("4",
+        # "pick 4", "the third one") to pick which email they meant.
+        # Cleared as soon as any email intent resolves to a single message.
+        self._email_pending_pick: Optional[list] = None
         # The last video clip a question resolved to — lets follow-ups like
         # "what color shirt was he wearing" work without re-saying "video".
         # Mirrors the _active (audio recording) and _active_photo patterns.
@@ -1202,7 +1207,32 @@ class ChatTab(QWidget):
         self.input.clear()
         self._append_user(text)
         self.history.append({"role": "user", "content": text})
+        self._route_command(text)
+    def _route_command(self, text: str) -> None:
+        """Classify + dispatch a command, regardless of whether it arrived
+        as typed chat text or a heard wake-word phrase. This is the single
+        source of truth for 'what does IRIS do with this sentence' — the
+        UI-facing callers (_on_submit for typed text, handle_voice_trigger
+        for spoken commands) only differ in how they echo the input into
+        the chat log before handing off here."""
         low = text.lower().strip()
+        # (0) A reply that picks from a multi-match email topic search
+        # ("check email containing handshake" -> 4 results -> user says
+        # "4" or "the third one"). Checked before the recording pick-list
+        # since the two pending-pick lists are independent state and an
+        # email pick shouldn't fall through to _resolve_pending, which
+        # only knows about Recording objects.
+        if self._email_pending_pick and self._is_email_pick_reply(low):
+            msg = self._resolve_email_pending(low, self._email_pending_pick)
+            if msg is not None:
+                self._active_email = msg
+                self._email_pending_pick = None
+                self._append_iris(self._format_email_message(msg))
+                return
+            n = len(self._email_pending_pick)
+            self._append_iris(
+                f"I didn't catch which one. Reply with a number (1-{n}).")
+            return
         # (1) A reply that picks from the most recently shown list. The list is
         # kept after a pick so several recordings can be chosen from one list.
         if self._pending_pick and self._is_pick_reply(low):
@@ -1229,24 +1259,7 @@ class ChatTab(QWidget):
         if act_intent is not None and act_intent.kind != "none":
             self._handle_action_intent(act_intent)
             return
-        # An email read/check command ("read my email", "email about
-        # handshake", "the second one" — if an email context is already
-        # active). Checked before the video question path since email and
-        # video vocab don't overlap, order doesn't matter much here, but
-        # this keeps action-adjacent intents grouped together near the top.
-        try:
-            email_intent = iq.classify_email(text) if self._email is not None else None
-        except Exception:
-            email_intent = None
-        if email_intent is None and self._email is not None and self._active_email is not None:
-            # Bare follow-up with no email noun at all ("the third one",
-            # "read that one") — only valid if an email context is already
-            # active, same reasoning as _is_video_followup below.
-            if self._is_bare_ordinal_followup(low):
-                email_intent = self._classify_bare_ordinal(low)
-        if email_intent is not None and email_intent.kind != "none":
-            self._start_bg(lambda: self._answer_email_question(email_intent))
-            return
+
         # An email read/check command ("read my email", "email about
         # handshake"). Bare ordinal follow-ups ("the third one") with no
         # email noun at all only route here if an email context is already
@@ -1254,10 +1267,7 @@ class ChatTab(QWidget):
         # Reuses _ORDINAL_WORDS (already defined for video ordinals below).
         email_intent = None
         if self._email is not None:
-            try:
-                email_intent = iq.classify_email(text)
-            except Exception:
-                email_intent = None
+            email_intent = self._classify_email_intent(text)
             if (email_intent is None or email_intent.kind == "none") \
                     and self._active_email is not None:
                 for word, idx in self._ORDINAL_WORDS.items():
@@ -1379,13 +1389,19 @@ class ChatTab(QWidget):
         """Entry point for a wake-word trigger heard via live audio
         (AudioTab's live transcription listener), as opposed to typed chat
         text or the manual button. Posts a bubble showing what was heard,
-        then reuses the exact same capture path as every other trigger
-        source — nothing about the capture itself differs by source."""
+        then hands off to the exact same classifier/dispatch chain typed
+        text goes through (_route_command) — so "check email" said aloud
+        does the same thing as "check email" typed. Photo requests are
+        just one branch _route_command can land on now, not the only
+        possible outcome of a voice trigger."""
+        if self.busy:
+            return
         heard = (phrase or "").strip()
+        if not heard:
+            return
         self._append_user(f"\U0001F3A4 (heard) {heard}")
         self.history.append({"role": "user", "content": heard})
-        mode = iq.photo_capture_mode(heard) if iq is not None else "camera"
-        self._trigger_photo_capture(heard or "voice trigger", mode=mode)
+        self._route_command(heard)
     @staticmethod
     def _wants_esp32_selfie(text: str) -> bool:
         """A photo request that targets the user (e.g. "take a picture of
@@ -1870,6 +1886,28 @@ class ChatTab(QWidget):
         year, month = mo
         name = [k for k, v in iq.MONTHS.items() if v == month][0].capitalize()
         return f"{name}" + (f" {year}" if year else "")
+    # ── Email pick-reply detection + resolution (multi-match topic search) ──
+    @staticmethod
+    def _is_email_pick_reply(low: str) -> bool:
+        if re.fullmatch(r"\s*#?\d{1,2}\s*", low):
+            return True
+        if re.search(r"\b(?:pick|option|number|choice|no\.?|#)\s*\d{1,2}\b",
+                     low):
+            return True
+        if re.search(r"\b\d{1,2}(?:st|nd|rd|th)\b", low):
+            return True
+        words = ("first", "second", "third", "fourth", "fifth", "sixth",
+                  "seventh", "eighth", "ninth", "tenth")
+        return any(re.search(rf"\b{w}\b", low) for w in words)
+    def _resolve_email_pending(self, low: str, cands: list):
+        idx = self._parse_ordinal(low)
+        if idx is None:
+            m = re.search(r"\d{1,2}", low)
+            if m:
+                idx = int(m.group())
+        if idx is not None and 1 <= idx <= len(cands):
+            return cands[idx - 1]
+        return None
     # ── Pick-reply detection + resolution (multi-pick from one list) ─────
     @staticmethod
     def _is_pick_reply(low: str) -> bool:
@@ -2767,12 +2805,68 @@ class ChatTab(QWidget):
                     return c
         return clips[0]
 
+    _EMAIL_TOPIC_MODEL = "llama3.2:1b"
+    _EMAIL_TOPIC_PROMPT = (
+        "You extract a search topic from a chat message asking to check "
+        "email. Reply with EXACTLY the topic keyword or short phrase the "
+        "user wants to search for in their email, and nothing else -- no "
+        "quotes, no punctuation, no explanation.\n"
+        "If the message is a bare request to check/read email with no "
+        "specific topic at all (e.g. 'check my email', 'what's in my "
+        "inbox'), reply with exactly: NONE"
+    )
+    def _classify_email_intent(self, text: str):
+        """iq.classify_email() handles the fast, hardcoded topic-cue path
+        ('email about X', 'containing X', 'where it says X', ...). When
+        that comes back as 'email_latest' -- no topic and no ordinal
+        matched -- a longer sentence might still be naming a topic in
+        phrasing nobody hardcoded a cue for. Rather than growing the cue
+        list forever, hand those to a cheap llama3.2:1b extraction call
+        instead. The model's answer is validated before being trusted --
+        small models often ignore 'reply with exactly X', so anything
+        that doesn't look like a clean short topic is discarded and the
+        intent is left as email_latest rather than searching Gmail for
+        something half-invented."""
+        try:
+            intent = iq.classify_email(text)
+        except Exception:
+            return None
+        if intent is None or intent.kind != "email_latest":
+            return intent
+        if self._client is None or iq.is_bare_email_check(text):
+            return intent
+        try:
+            resp = self._client.chat(
+                model=self._EMAIL_TOPIC_MODEL,
+                messages=[
+                    {"role": "system", "content": self._EMAIL_TOPIC_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                options={"num_predict": 20},
+            )
+            answer = resp["message"]["content"].strip().strip(' "\'.')
+            answer = re.sub(r'^(topic:|the topic is|search for)\s*', '',
+                             answer, flags=re.I).strip(' "\'.')
+            valid = (
+                answer
+                and answer.upper() != "NONE"
+                and len(answer.split()) <= 6
+                and answer.lower() != text.lower().strip()
+            )
+            print(f"[email] topic fallback: {text!r} -> {answer!r} "
+                  f"({'used' if valid else 'discarded'})")
+            if valid:
+                intent.kind = "email_topic"
+                intent.topic = answer
+        except Exception as e:
+            print(f"[email] topic fallback failed: {e}")
+        return intent
     def _answer_email_question(self, intent) -> str:
-        """Resolve an EmailIntent (topic search / ordinal / latest unread)
+        """Resolve an EmailIntent (topic search / ordinal / latest)
         against Gmail and format the full message for the chat bubble.
-        No LLM in this path on purpose — full body verbatim was the
-        explicit ask, and paraphrasing risks dropping or inventing detail
-        from a real email the same way it would for a video description."""
+        Read/unread status is never a filter here — "check email" means
+        the newest mail, full stop, and a topic search matches read and
+        unread mail alike."""
         if self._email is None:
             return "Email isn't set up yet — credentials.json is missing."
         kind = getattr(intent, "kind", "none")
@@ -2782,22 +2876,29 @@ class ChatTab(QWidget):
                 results = self._email.search(intent.topic, limit=5)
                 self._last_email_list = results
                 self._last_email_topic = intent.topic
+                if len(results) > 1:
+                    self._email_pending_pick = results
+                    lines = [f'Found {len(results)} emails about '
+                             f'"{intent.topic}":']
+                    for i, m in enumerate(results, 1):
+                        lines.append(f"{i}. {m.subject or '(no subject)'} "
+                                     f"\u2014 {m.sender}")
+                    lines.append("Which one? Just say the number.")
+                    return "\n".join(lines)
+                self._email_pending_pick = None
                 msg = results[0] if results else None
             elif kind == "email_ordinal":
                 idx = intent.ordinal_index
-                # Resolve against whatever list was last shown (unread OR
-                # a topic search) so "the third one" means the third item
-                # of what the user actually just saw, not a fresh re-query
-                # that could return a different order if mail arrived
-                # in between.
                 if self._last_email_list and idx < len(self._last_email_list):
                     msg = self._last_email_list[idx]
                 else:
                     msg = self._email.by_ordinal(idx)
-            elif kind == "email_latest_unread":
-                results = self._email.unread(limit=10)
+                self._email_pending_pick = None
+            elif kind == "email_latest":
+                results = self._email.latest(limit=10)
                 self._last_email_list = results
                 self._last_email_topic = ""
+                self._email_pending_pick = None
                 msg = results[0] if results else None
         except FileNotFoundError as e:
             print(f"[email] {e}")
@@ -2809,16 +2910,10 @@ class ChatTab(QWidget):
         if msg is None:
             if kind == "email_topic":
                 return f'I couldn\'t find any email about "{intent.topic}".'
-            return "There are no unread emails."
+            return "There's no email in your inbox."
 
-        # Remember this message so a bare follow-up ("read the third one"
-        # asked right after) still has a live context — mirrors
-        # _active_video.
         self._active_email = msg
-        return (f"From: {msg.sender}\n"
-                f"Subject: {msg.subject}\n"
-                f"Date: {msg.when()}\n\n"
-                f"{msg.body or msg.snippet or '(no body content)'}")
+        return self._format_email_message(msg)
 
     def _answer_video_question(self, text: str) -> str:
         """Answer a question about saved video clips using their real analysis

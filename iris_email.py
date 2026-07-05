@@ -199,12 +199,24 @@ class EmailStore:
         msgs.sort(key=lambda m: m.internal_ts, reverse=True)
         return msgs
 
+    def latest(self, limit: int = 10) -> list[EmailMessage]:
+        """Most recent messages newest first, restricted to the Primary
+        tab — same category:primary reasoning as unread() above, but with
+        no is:unread filter. This is the "check email" / "read my email"
+        default: read state doesn't matter, just what's newest."""
+        ids = self._list_ids("in:inbox category:primary", max_results=limit)
+        msgs = [self._fetch_full(i) for i in ids]
+        msgs.sort(key=lambda m: m.internal_ts, reverse=True)
+        return msgs
+
     def latest_unread(self) -> Optional[EmailMessage]:
         msgs = self.unread(limit=1)
         return msgs[0] if msgs else None
 
     def by_ordinal(self, index: int) -> Optional[EmailMessage]:
-        """index is 0-based, counted from most recent unread — matches
-        _EMAIL_ORDINAL_WORDS in iris_query.py ('first'->0, 'second'->1...)."""
-        msgs = self.unread(limit=max(index + 1, 5))
+        """index is 0-based, counted from the most recent mail overall
+        (read or unread) — matches _EMAIL_ORDINAL_WORDS in iris_query.py
+        ('first'->0, 'second'->1...). Only hit when there's no active
+        _last_email_list to resolve against in iris_gui.py."""
+        msgs = self.latest(limit=max(index + 1, 5))
         return msgs[index] if index < len(msgs) else None
