@@ -108,6 +108,306 @@ def _cfg(attr: str, default):
 OLLAMA_URL   = _cfg("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = _cfg("OLLAMA_MODEL", "llama3.2:3b")
 
+# ═════════════════════════════════════════════════════════════════════════════
+# --- IRIS cloud-provider feature: ADD ---
+# Unified chat client that routes to a cloud provider (OpenAI, Anthropic,
+# Google Gemini, Azure OpenAI) when configured, falling back to local Ollama
+# on failure or when no cloud provider is selected.
+#
+# Selection is driven entirely by iris_api_keys.json, which the About System
+# tab manages. We re-read that file on every chat call so flipping providers
+# is a live change — no restart required.
+#
+# Cloud routing is scoped to the primary OLLAMA_MODEL only. Lightweight calls
+# using a different Ollama model (e.g. the small llama3.2:1b scene classifier)
+# always stay local — no point burning cloud tokens on a yes/no.
+#
+# On any cloud failure we fall back to local Ollama silently, with a stderr
+# note so the user can see what went wrong.
+# ═════════════════════════════════════════════════════════════════════════════
+
+_API_KEYS_FILE = "iris_api_keys.json"
+
+_CLOUD_MODEL_DEFAULTS = {
+    "openai":    "gpt-4o-mini",
+    "anthropic": "claude-haiku-4-5",
+    "google":    "gemini-2.5-flash",
+    "azure":     "gpt-4o-mini",
+}
+
+_CLOUD_PROVIDER_PRIORITY = ("openai", "anthropic", "google", "azure")
+
+
+def _read_api_keys_file() -> dict:
+    """Read iris_api_keys.json fresh from disk. Returns {} on failure so
+    callers can treat 'no file' and 'malformed file' the same way."""
+    try:
+        if os.path.exists(_API_KEYS_FILE):
+            with open(_API_KEYS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception as e:
+        print(f"[cloud] failed to read {_API_KEYS_FILE}: {e}")
+    return {}
+
+
+def _resolve_provider(api_keys: dict) -> tuple:
+    """Return (provider_name, api_key). 'ollama' with empty key means
+    'stay local'. Priority order:
+
+    1. use_cloud must be True — otherwise always ollama
+    2. If 'provider' is explicitly set and its key is present → that one
+    3. Otherwise the first provider in _CLOUD_PROVIDER_PRIORITY that has
+       a non-empty key
+    4. Otherwise fall back to ollama
+    """
+    if not api_keys.get("use_cloud"):
+        return ("ollama", "")
+    preferred = str(api_keys.get("provider") or "").strip().lower()
+    if preferred and preferred != "auto":
+        key = str(api_keys.get(preferred) or "").strip()
+        if key:
+            return (preferred, key)
+        # Preferred is set but has no key — fall through to auto
+    for p in _CLOUD_PROVIDER_PRIORITY:
+        key = str(api_keys.get(p) or "").strip()
+        if key:
+            return (p, key)
+    return ("ollama", "")
+
+
+class _UnifiedChatClient:
+    """Ollama-compatible wrapper. Presents the same
+    .chat(model=..., messages=..., **kwargs) -> dict interface as
+    ollama.Client, so no existing call site needs to change.
+
+    Returned dict is shaped like Ollama's response — {"message":
+    {"content": str}} — plus a "_iris_provider" tag naming which provider
+    served the response (useful for logging / About System status).
+
+    Cloud routing only applies when the request's model == OLLAMA_MODEL.
+    Any other model (e.g. the small llama3.2:1b yes/no scene classifier)
+    stays local so cloud tokens aren't wasted on lightweight calls.
+    """
+
+    def __init__(self, ollama_host: str):
+        self._ollama_host = ollama_host
+        self._ollama = OllamaClient(host=ollama_host) if OllamaClient else None
+        # Cache cloud SDK clients so we don't rebuild connection pools on
+        # every message. Keyed on (provider, api_key, ...azure params).
+        self._client_cache: dict = {}
+        self._cache_lock = threading.Lock()
+        # For AboutSystemTab: which provider served the most recent call
+        self._last_provider: str = "ollama"
+
+    @property
+    def last_provider(self) -> str:
+        return self._last_provider
+
+    # ── Public API — Ollama-shaped .chat() ────────────────────────────────
+    def chat(self, model: str, messages: list, **kwargs) -> dict:
+        # Lightweight calls (small classifiers etc.) always stay local.
+        if model != OLLAMA_MODEL:
+            return self._call_ollama(model, messages, **kwargs)
+
+        api_keys = _read_api_keys_file()
+        provider, api_key = _resolve_provider(api_keys)
+
+        if provider == "ollama":
+            return self._call_ollama(model, messages, **kwargs)
+
+        # Try the selected cloud provider; fall back to Ollama on any error.
+        try:
+            text = self._call_cloud(provider, api_key, api_keys,
+                                    messages, **kwargs)
+            self._last_provider = provider
+            return {"message": {"content": text},
+                    "_iris_provider": provider}
+        except Exception as e:
+            print(f"[cloud] {provider} call failed ({e}) — "
+                  f"falling back to local Ollama")
+            return self._call_ollama(model, messages, **kwargs)
+
+    # ── Provider dispatch ─────────────────────────────────────────────────
+    def _call_ollama(self, model, messages, **kwargs) -> dict:
+        if self._ollama is None:
+            raise RuntimeError(
+                "ollama python package not installed — pip install ollama")
+        resp = self._ollama.chat(model=model, messages=messages, **kwargs)
+        self._last_provider = "ollama"
+        try:
+            # ollama returns a dict — attach our provider tag for logging
+            resp["_iris_provider"] = "ollama"
+        except Exception:
+            pass
+        return resp
+
+    def _call_cloud(self, provider, api_key, api_keys,
+                    messages, **kwargs) -> str:
+        if provider in ("openai", "azure"):
+            return self._call_openai_family(
+                provider, api_key, api_keys, messages, **kwargs)
+        if provider == "anthropic":
+            return self._call_anthropic(
+                api_key, api_keys, messages, **kwargs)
+        if provider == "google":
+            return self._call_gemini(
+                api_key, api_keys, messages, **kwargs)
+        raise ValueError(f"unknown provider: {provider}")
+
+    # ── Cache + model override helpers ────────────────────────────────────
+    def _get_cached_client(self, key, factory):
+        with self._cache_lock:
+            if key not in self._client_cache:
+                self._client_cache[key] = factory()
+            return self._client_cache[key]
+
+    def _resolve_model(self, provider: str, api_keys: dict) -> str:
+        """Users can override the default cloud model per provider by
+        adding e.g. 'openai_model': 'gpt-4.1-mini' to iris_api_keys.json.
+        Falls back to _CLOUD_MODEL_DEFAULTS otherwise."""
+        override = str(api_keys.get(f"{provider}_model", "") or "").strip()
+        return override or _CLOUD_MODEL_DEFAULTS.get(provider, OLLAMA_MODEL)
+
+    # ── OpenAI + Azure ────────────────────────────────────────────────────
+    def _call_openai_family(self, provider, api_key, api_keys,
+                            messages, **kwargs):
+        try:
+            import openai
+        except ImportError:
+            raise RuntimeError(
+                "openai package not installed — pip install openai")
+
+        model = self._resolve_model(provider, api_keys)
+
+        if provider == "azure":
+            endpoint = str(api_keys.get("azure_endpoint") or "").strip()
+            api_version = (str(api_keys.get("azure_api_version") or "").strip()
+                           or "2024-08-01-preview")
+            deployment = str(api_keys.get("azure_deployment") or "").strip()
+            if not endpoint:
+                raise RuntimeError(
+                    "azure_endpoint missing from iris_api_keys.json — "
+                    "add \"azure_endpoint\": \"https://<name>.openai.azure.com\"")
+            client = self._get_cached_client(
+                ("azure", api_key, endpoint, api_version),
+                lambda: openai.AzureOpenAI(
+                    api_key=api_key,
+                    azure_endpoint=endpoint,
+                    api_version=api_version))
+            # Azure uses deployment name as the model identifier
+            model = deployment or model
+        else:
+            client = self._get_cached_client(
+                ("openai", api_key),
+                lambda: openai.OpenAI(api_key=api_key))
+
+        create_kwargs = {"model": model, "messages": messages}
+        opts = kwargs.get("options") or {}
+        if "temperature" in opts:
+            create_kwargs["temperature"] = opts["temperature"]
+        if "num_predict" in opts:
+            create_kwargs["max_tokens"] = max(1, int(opts["num_predict"]))
+        if kwargs.get("format") == "json":
+            create_kwargs["response_format"] = {"type": "json_object"}
+
+        resp = client.chat.completions.create(**create_kwargs)
+        return resp.choices[0].message.content or ""
+
+    # ── Anthropic ─────────────────────────────────────────────────────────
+    def _call_anthropic(self, api_key, api_keys, messages, **kwargs):
+        try:
+            import anthropic
+        except ImportError:
+            raise RuntimeError(
+                "anthropic package not installed — pip install anthropic")
+
+        model = self._resolve_model("anthropic", api_keys)
+        client = self._get_cached_client(
+            ("anthropic", api_key),
+            lambda: anthropic.Anthropic(api_key=api_key))
+
+        # Anthropic requires system messages separate from the conversation.
+        system_parts, conv = [], []
+        for m in messages:
+            role = m.get("role")
+            content = m.get("content", "")
+            if role == "system":
+                system_parts.append(content)
+            elif role in ("user", "assistant"):
+                conv.append({"role": role, "content": content})
+
+        create_kwargs = {
+            "model": model,
+            "messages": conv or [{"role": "user", "content": "Hello"}],
+            "max_tokens": 4096,
+        }
+        if system_parts:
+            create_kwargs["system"] = "\n\n".join(system_parts)
+        opts = kwargs.get("options") or {}
+        if "temperature" in opts:
+            create_kwargs["temperature"] = opts["temperature"]
+        if "num_predict" in opts:
+            create_kwargs["max_tokens"] = max(1, int(opts["num_predict"]))
+
+        resp = client.messages.create(**create_kwargs)
+        # Concatenate any text blocks (usually just one)
+        parts = []
+        for block in getattr(resp, "content", []) or []:
+            text = getattr(block, "text", None)
+            if text:
+                parts.append(text)
+        return "".join(parts)
+
+    # ── Google Gemini ─────────────────────────────────────────────────────
+    def _call_gemini(self, api_key, api_keys, messages, **kwargs):
+        try:
+            from google import genai
+            from google.genai import types as genai_types
+        except ImportError:
+            raise RuntimeError(
+                "google-genai package not installed — pip install google-genai")
+
+        model = self._resolve_model("google", api_keys)
+        client = self._get_cached_client(
+            ("google", api_key),
+            lambda: genai.Client(api_key=api_key))
+
+        system_parts, contents = [], []
+        for m in messages:
+            role = m.get("role")
+            content = m.get("content", "")
+            if role == "system":
+                system_parts.append(content)
+            elif role == "user":
+                contents.append({"role": "user",
+                                 "parts": [{"text": content}]})
+            elif role == "assistant":
+                contents.append({"role": "model",
+                                 "parts": [{"text": content}]})
+
+        config_kwargs = {}
+        if system_parts:
+            config_kwargs["system_instruction"] = "\n\n".join(system_parts)
+        opts = kwargs.get("options") or {}
+        if "temperature" in opts:
+            config_kwargs["temperature"] = opts["temperature"]
+        if "num_predict" in opts:
+            config_kwargs["max_output_tokens"] = max(1, int(opts["num_predict"]))
+        if kwargs.get("format") == "json":
+            config_kwargs["response_mime_type"] = "application/json"
+
+        config = (genai_types.GenerateContentConfig(**config_kwargs)
+                  if config_kwargs else None)
+        resp = client.models.generate_content(
+            model=model,
+            contents=contents or "Hello",
+            config=config,
+        )
+        return (getattr(resp, "text", "") or "").strip()
+# --- end ADD ---
+
+
 
 def _try_parse_attributes_json(raw: str) -> dict:
     """Best-effort JSON parse of Llama attribute-extraction output. Handles
@@ -1255,7 +1555,13 @@ class ChatTab(QWidget):
                               log=False)
             return
         try:
-            self._client = OllamaClient(host=OLLAMA_URL)
+            # --- IRIS cloud-provider feature: ADD ---
+            # Was: self._client = OllamaClient(host=OLLAMA_URL)
+            # Now: unified wrapper that routes to cloud providers when a
+            # key is present and use_cloud is on in iris_api_keys.json,
+            # falling back to local Ollama on any failure.
+            self._client = _UnifiedChatClient(ollama_host=OLLAMA_URL)
+            # --- end ADD ---
             self._append_iris(
                 f"Session started. Connected to {OLLAMA_MODEL}. "
                 f"Ask me anything — including about your audio recordings, "
@@ -7908,8 +8214,11 @@ class AboutSystemTab(QWidget):
         toggle_row = QHBoxLayout()
         toggle_row.setContentsMargins(0, 6, 0, 0)
         self._cloud_toggle = QCheckBox(
-            "Use cloud provider instead of local Ollama (preference only — "
-            "live routing requires a future ChatTab change)")
+            # --- IRIS cloud-provider feature: EDIT ---
+            # Was: "…preference only — live routing requires a future ChatTab change"
+            # Now: routing is wired live; only the label changes.
+            "Use a cloud provider instead of local Ollama "
+            "(reads iris_api_keys.json live — no restart needed)")
         self._cloud_toggle.setChecked(
             bool(self._api_keys.get("use_cloud", False)))
         self._cloud_toggle.setStyleSheet(
@@ -7919,6 +8228,78 @@ class AboutSystemTab(QWidget):
         toggle_row.addWidget(self._cloud_toggle)
         toggle_row.addStretch(1)
         lay.addLayout(toggle_row)
+
+        # --- IRIS cloud-provider feature: ADD ---
+        # Preferred provider dropdown. "auto" = pick the first one that has
+        # a non-empty key (priority: openai → anthropic → google → azure).
+        # Selecting a specific provider makes it stick even if you also
+        # have other keys entered.
+        prov_row = QHBoxLayout()
+        prov_row.setContentsMargins(0, 2, 0, 0)
+        prov_lbl = QLabel("preferred provider")
+        prov_lbl.setFixedWidth(140)
+        prov_lbl.setStyleSheet(f"color:{TEXT_MUTED}; background:transparent;"
+                               f"border:none; font-family:'{FONT_MONO}',"
+                               f"'Consolas',monospace; font-size:11px;")
+        prov_row.addWidget(prov_lbl)
+        self._provider_combo = QComboBox()
+        self._provider_combo.addItems(
+            ["auto (first available)", "openai", "anthropic",
+             "google", "azure"])
+        saved = str(self._api_keys.get("provider") or "auto").lower()
+        combo_idx = {"auto": 0, "openai": 1, "anthropic": 2,
+                     "google": 3, "azure": 4}.get(saved, 0)
+        self._provider_combo.setCurrentIndex(combo_idx)
+        self._provider_combo.setStyleSheet(
+            "QComboBox {"
+            f"color: {TEXT_PRIMARY}; background: rgba(255,255,255,0.04);"
+            f"border: 1px solid {GLASS_BORDER_SOFT}; border-radius: 8px;"
+            f"padding: 4px 10px; font-family: '{FONT_MONO}',"
+            f"'Consolas',monospace; font-size: 11px;"
+            "}"
+            "QComboBox:hover { background: rgba(255,255,255,0.07); }"
+            "QComboBox QAbstractItemView {"
+            f"color: {TEXT_PRIMARY}; background: #1a1d23;"
+            f"selection-background-color: rgba(94,234,212,0.20);"
+            f"border: 1px solid {GLASS_BORDER_SOFT};"
+            "}")
+        self._provider_combo.currentIndexChanged.connect(
+            self._on_provider_combo_changed)
+        prov_row.addWidget(self._provider_combo, 1)
+        lay.addLayout(prov_row)
+
+        # Live "active" status label — polled from _refresh_active_provider
+        active_row = QHBoxLayout()
+        active_row.setContentsMargins(0, 4, 0, 0)
+        active_key_lbl = QLabel("active right now")
+        active_key_lbl.setFixedWidth(140)
+        active_key_lbl.setStyleSheet(
+            f"color:{TEXT_MUTED}; background:transparent; border:none;"
+            f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:11px;")
+        active_row.addWidget(active_key_lbl)
+        self._active_provider_lbl = QLabel("local ollama")
+        self._active_provider_lbl.setStyleSheet(
+            f"color:{ACCENT}; background:transparent; border:none;"
+            f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:11px;")
+        active_row.addWidget(self._active_provider_lbl, 1)
+        lay.addLayout(active_row)
+
+        # Small footnote about how routing works + optional model overrides
+        footnote = QLabel(
+            "Model per provider defaults to a fast/cheap tier "
+            "(gpt-4o-mini, claude-haiku-4-5, gemini-2.5-flash). Override "
+            "by adding e.g. \"openai_model\": \"gpt-4.1-mini\" to "
+            "iris_api_keys.json. Cloud only routes the main chat model; "
+            "small helper calls (yes/no classifier etc.) always stay local.")
+        footnote.setWordWrap(True)
+        footnote.setStyleSheet(
+            f"color:{TEXT_DIM}; background:transparent; border:none;"
+            f"font-family:'{FONT_SANS}'; font-size:10px; padding-top:6px;")
+        lay.addWidget(footnote)
+
+        # First render before any polling kicks in
+        QTimer.singleShot(50, self._refresh_active_provider)
+        # --- end ADD ---
 
         return frame
 
@@ -7972,11 +8353,57 @@ class AboutSystemTab(QWidget):
         data = dict(self._api_keys)
         if hasattr(self, "_cloud_toggle"):
             data["use_cloud"] = bool(self._cloud_toggle.isChecked())
+        # --- IRIS cloud-provider feature: ADD ---
+        # Persist the preferred provider dropdown selection alongside keys
+        if hasattr(self, "_provider_combo"):
+            idx = self._provider_combo.currentIndex()
+            data["provider"] = {0: "auto", 1: "openai", 2: "anthropic",
+                                3: "google", 4: "azure"}.get(idx, "auto")
+        # --- end ADD ---
         try:
             with open(self._KEYS_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             print(f"[about-system] failed to save {self._KEYS_FILE}: {e}")
+        # --- IRIS cloud-provider feature: ADD ---
+        # Any save may have changed active-provider status → refresh label.
+        if hasattr(self, "_active_provider_lbl"):
+            QTimer.singleShot(0, self._refresh_active_provider)
+        # --- end ADD ---
+
+    # --- IRIS cloud-provider feature: ADD ---
+    def _on_provider_combo_changed(self, _idx: int) -> None:
+        """User picked a different preferred provider from the dropdown."""
+        self._save_keys_to_disk()
+
+    def _refresh_active_provider(self) -> None:
+        """Re-read iris_api_keys.json and update the 'active right now'
+        label. Called on every stats poll so the label stays live even if
+        the user edits the JSON file directly."""
+        if not hasattr(self, "_active_provider_lbl"):
+            return
+        try:
+            keys = _read_api_keys_file()
+            provider, key = _resolve_provider(keys)
+        except Exception:
+            provider, key = ("ollama", "")
+        if provider == "ollama":
+            self._active_provider_lbl.setText("local ollama")
+            self._active_provider_lbl.setStyleSheet(
+                f"color:{ACCENT}; background:transparent; border:none;"
+                f"font-family:'{FONT_MONO}','Consolas',monospace; "
+                "font-size:11px;")
+        else:
+            model = (str(keys.get(f"{provider}_model", "") or "").strip()
+                     or _CLOUD_MODEL_DEFAULTS.get(provider, "?"))
+            key_preview = ("*" * max(0, len(key) - 4) + key[-4:]) if key else ""
+            self._active_provider_lbl.setText(
+                f"{provider}  →  {model}    key: {key_preview}")
+            self._active_provider_lbl.setStyleSheet(
+                f"color:{COLOR_STATUS_ON}; background:transparent; border:none;"
+                f"font-family:'{FONT_MONO}','Consolas',monospace; "
+                "font-size:11px;")
+    # --- end ADD ---
 
     # ── Polling ──────────────────────────────────────────────────────────
     def _start_timers(self) -> None:
@@ -7998,6 +8425,11 @@ class AboutSystemTab(QWidget):
         QTimer.singleShot(400, self._poll_models)
 
     def _poll_stats(self) -> None:
+        # --- IRIS cloud-provider feature: ADD ---
+        # Refresh the active-provider label alongside the CPU/RAM stats so
+        # it stays live if the user edits iris_api_keys.json externally.
+        self._refresh_active_provider()
+        # --- end ADD ---
         if self._psutil is None:
             return
         try:
@@ -8416,4 +8848,3 @@ def main() -> int:
             pass
 if __name__ == "__main__":
     sys.exit(main())
-

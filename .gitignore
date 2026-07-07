@@ -7,3 +7,4 @@ __pycache__/
 *.bin
 credentials.json
 token.json
+iris_api_keys.json
