@@ -483,9 +483,9 @@ ESP32_CAMERA_WAIT_SECONDS = float(_cfg("ESP32_CAMERA_WAIT_SECONDS", 20.0))
 # ─────────────────────────────────────────────────────────────────────────────
 # Palette
 # ─────────────────────────────────────────────────────────────────────────────
-BG_TOP        = "#0b1120"
-BG_MID        = "#121a2e"
-BG_BOT        = "#1c1838"
+BG_TOP        = "#0e1015"
+BG_MID        = "#14171e"
+BG_BOT        = "#0e1015"
 TEXT_PRIMARY  = "#e6edf3"
 TEXT_MUTED    = "#9ca3af"
 TEXT_DIM      = "#6b7280"
@@ -501,29 +501,31 @@ COLOR_STATUS_ON  = "#10b981"
 COLOR_STATUS_OFF = "#6b7280"
 COLOR_DANGER     = "#ef4444"
 COLOR_RECORDING  = "#dc2626"
-GLASS_FILL_TOP = "rgba(255,255,255,0.13)"
-GLASS_FILL_MID = "rgba(255,255,255,0.055)"
-GLASS_FILL_BOT = "rgba(255,255,255,0.03)"
-GLASS_BORDER   = "rgba(255,255,255,0.14)"
-GLASS_BORDER_SOFT = "rgba(255,255,255,0.08)"
-BUBBLE_BORDER  = "rgba(255,255,255,0.24)"
-WINDOW_RADIUS  = 22
-WINDOW_OUTLINE = QColor(255, 255, 255, 42)
+GLASS_FILL_TOP = "rgba(255,255,255,0.16)"
+GLASS_FILL_MID = "rgba(255,255,255,0.06)"
+GLASS_FILL_BOT = "rgba(255,255,255,0.022)"
+GLASS_BORDER   = "rgba(255,255,255,0.11)"
+GLASS_BORDER_SOFT = "rgba(255,255,255,0.06)"
+BUBBLE_BORDER  = "rgba(255,255,255,0.18)"
+WINDOW_RADIUS  = 26
+WINDOW_OUTLINE = QColor(255, 255, 255, 30)
 FONT_MONO = "Cascadia Code"
 FONT_SANS = "Segoe UI"
-def _glass_gradient_qss(radius: int = 16,
+def _glass_gradient_qss(radius: int = 18,
                         top: str = GLASS_FILL_TOP,
                         mid: str = GLASS_FILL_MID,
                         bot: str = GLASS_FILL_BOT,
                         border: str = GLASS_BORDER) -> str:
+    # A bright top sheen band held briefly, then a soft fade — the specular
+    # highlight that reads as "liquid glass".
     return (
         f"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-        f"stop:0 {top}, stop:0.45 {mid}, stop:1 {bot});"
+        f"stop:0 {top}, stop:0.07 {top}, stop:0.5 {mid}, stop:1 {bot});"
         f"border: 1px solid {border};"
         f"border-radius: {radius}px;"
     )
-def _add_glass_shadow(w: QWidget, blur: int = 26, dy: int = 6,
-                      alpha: int = 150) -> None:
+def _add_glass_shadow(w: QWidget, blur: int = 32, dy: int = 7,
+                      alpha: int = 105) -> None:
     eff = QGraphicsDropShadowEffect(w)
     eff.setBlurRadius(blur)
     eff.setXOffset(0)
@@ -916,10 +918,10 @@ def _photos_dir() -> str:
 # Glass widget primitives
 # ─────────────────────────────────────────────────────────────────────────────
 class GlassFrame(QFrame):
-    def __init__(self, parent=None, radius: int = 16,
+    def __init__(self, parent=None, radius: int = 18,
                  top=GLASS_FILL_TOP, mid=GLASS_FILL_MID, bot=GLASS_FILL_BOT,
                  border=GLASS_BORDER, shadow: bool = True,
-                 blur: int = 26, dy: int = 6, shadow_alpha: int = 150):
+                 blur: int = 32, dy: int = 7, shadow_alpha: int = 110):
         super().__init__(parent)
         self.setObjectName("glass")
         self.setStyleSheet(
@@ -964,7 +966,7 @@ class SnapshotCard(GlassFrame):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 8, 0, 6)
         lay.setSpacing(2)
-        cam = QLabel("\U0001F4F7")
+        cam = QLabel("")
         cam.setAlignment(Qt.AlignmentFlag.AlignCenter)
         cam.setStyleSheet(f"color:{TEXT_DIM}; background:transparent;"
                           "border:none; font-size:22px;")
@@ -1013,7 +1015,7 @@ class PhotoThumb(GlassFrame):
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation))
         else:
-            pic.setText("\U0001F4F7")
+            pic.setText("")
             pic.setStyleSheet(pic.styleSheet() + f"color:{TEXT_DIM}; font-size:24px;")
         lay.addWidget(pic)
         cap_lbl = QLabel(caption)
@@ -1081,6 +1083,29 @@ class GradientBackground(QWidget):
 # Tab 1 — Chat (glass). Recording understanding via iris_query; session history
 # via iris_sessions. Rendering + threading are Qt.
 # ─────────────────────────────────────────────────────────────────────────────
+class _SessionRow(QFrame):
+    """Clickable sidebar session row. A QFrame (not a QPushButton) so a
+    word-wrapped topic label sizes correctly and never clips its text."""
+    def __init__(self, on_click=None):
+        super().__init__()
+        self._on_click = on_click
+        self.setObjectName("srow")
+        if on_click is not None:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setStyleSheet(
+            "QFrame#srow { background: transparent; border: none;"
+            " border-radius: 8px; }"
+            "QFrame#srow:hover { background: rgba(255,255,255,0.06); }")
+
+    def mousePressEvent(self, ev):
+        if self._on_click is not None:
+            try:
+                self._on_click()
+            except Exception:
+                pass
+        super().mousePressEvent(ev)
+
+
 class ChatTab(QWidget):
     _main_invoke = pyqtSignal(object)
     def __init__(self, parent=None, controller=None, audio_gui=None,
@@ -1276,6 +1301,7 @@ class ChatTab(QWidget):
             lay.insertWidget(idx, self._section(label)); idx += 1
             for s in visible:
                 row = self._session_label(self._format_session_label(s),
+                                          self._session_timestamp(s),
                                           active=(s.id == active_id), sid=s.id)
                 lay.insertWidget(idx, row); idx += 1
                 any_shown = True
@@ -1290,23 +1316,41 @@ class ChatTab(QWidget):
             f"font-family:'{FONT_SANS}'; font-size:9px; font-weight:700;"
             "padding: 14px 4px 4px 4px; letter-spacing:1px;")
         return lbl
-    def _session_label(self, text: str, active: bool = False,
+    def _session_label(self, topic: str, stamp: str = "",
+                       active: bool = False,
                        sid: Optional[str] = None) -> QWidget:
+        # Row is a QFrame (not a QPushButton) so the word-wrapped topic label
+        # gets its full height — text is never clipped top or bottom.
         dot = "\u25CF" if active else "\u25CB"
         color = ACCENT if active else TEXT_MUTED
         weight = "700" if active else "400"
-        btn = QPushButton(f"{dot}  {text}")
-        btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet(
-            "QPushButton {"
+        row = _SessionRow(
+            on_click=(lambda i=sid: self._load_session(i))
+            if sid is not None else None)
+        col = QVBoxLayout(row)
+        col.setContentsMargins(6, 5, 6, 6)
+        col.setSpacing(3)
+        top = QHBoxLayout()
+        top.setContentsMargins(0, 0, 0, 0)
+        top.setSpacing(7)
+        dot_lbl = QLabel(dot)
+        dot_lbl.setStyleSheet(
+            f"color:{color}; background:transparent; border:none; font-size:11px;")
+        top.addWidget(dot_lbl, 0, Qt.AlignmentFlag.AlignTop)
+        topic_lbl = QLabel(topic)
+        topic_lbl.setWordWrap(True)
+        topic_lbl.setStyleSheet(
             f"color:{color}; background:transparent; border:none;"
-            f"font-family:'{FONT_SANS}'; font-size:12px; font-weight:{weight};"
-            "text-align:left; padding: 4px 4px; }"
-            "QPushButton:hover { background: rgba(255,255,255,0.06);"
-            "border-radius:8px; }")
-        if sid is not None:
-            btn.clicked.connect(lambda _=False, i=sid: self._load_session(i))
-        return btn
+            f"font-family:'{FONT_SANS}'; font-size:12px; font-weight:{weight};")
+        top.addWidget(topic_lbl, 1)
+        col.addLayout(top)
+        if stamp:
+            time_lbl = QLabel(stamp)
+            time_lbl.setStyleSheet(
+                f"color:{TEXT_DIM}; background:transparent; border:none;"
+                f"font-family:'{FONT_SANS}'; font-size:10px; padding-left:19px;")
+            col.addWidget(time_lbl)
+        return row
 
     # ── sidebar search + rich labels (M8, Tab 1) ────────────────────────
     def _on_sidebar_search(self, text: str) -> None:
@@ -1400,21 +1444,131 @@ class ChatTab(QWidget):
                          name="SidebarMemSearch").start()
 
     def _format_session_label(self, s) -> str:
-        """Blueprint sidebar label: "location · person · HH:MM". Falls back to
-        the session title when no location/person context is known yet."""
+        """Context/location session label (M8): "Talking to Mom", "Coffee Shop",
+        "Home" — decoupled from the user's prompt text — with an
+        [Mon DD - h:MM AM/PM] US-Eastern timestamp is rendered on its own
+        line by _session_label()."""
         try:
-            when = s.when().strftime("%H:%M")
+            import iris_sessions                          # type: ignore
+            base = iris_sessions.session_label(s)
         except Exception:
-            when = ""
-        loc = (getattr(s, "location", "") or "").strip().lower()
-        people = getattr(s, "people", None) or []
-        person = (str(people[0]).strip().lower() if people else "")
-        parts = [p for p in (loc, person) if p]
-        if parts:
-            parts.append(when)
-            return " · ".join(p for p in parts if p)
-        title = (getattr(s, "title", "") or "session").strip()
-        return f"{title} · {when}" if when else title
+            base = "chat"
+        return base
+
+    def _session_timestamp(self, s) -> str:
+        """Session time as [Mon DD - h:MM AM/PM] in US Eastern (EST/EDT),
+        12-hour (non-military)."""
+        ts = getattr(s, "updated", None)
+        if not ts:
+            try:
+                ts = s.when().timestamp()
+            except Exception:
+                return ""
+        import datetime
+        try:
+            from zoneinfo import ZoneInfo
+            dt = datetime.datetime.fromtimestamp(ts, ZoneInfo("America/New_York"))
+        except Exception:
+            from datetime import timezone, timedelta
+            dt = datetime.datetime.fromtimestamp(ts, timezone(timedelta(hours=-5)))
+        hour = dt.strftime("%I").lstrip("0") or "12"
+        return f"[{dt.strftime('%b %d')} - {hour}:{dt.strftime('%M %p')}]"
+
+    # ── background LLM session summary (cached one-line topic) ──────────
+    def _maybe_generate_session_summary(self) -> None:
+        """Kick off a background Ollama pass to write a short one-line topic for
+        the current session (e.g. "planning a trip to Chicago"). Cheap +
+        debounced: only runs when the summary is missing or several new user
+        messages have arrived since it was last generated, and never more than
+        once at a time per session."""
+        if (self._client is None or self._sessions is None
+                or self._session is None):
+            return
+        s = self._session
+        user_msgs = [m for m in (s.messages or [])
+                     if isinstance(m, dict) and m.get("role") == "user"
+                     and (m.get("content") or "").strip()]
+        if not user_msgs:
+            return
+        last_n = getattr(s, "summary_msg_count", 0) or 0
+        has_summary = bool((getattr(s, "summary", "") or "").strip())
+        # Generate when missing, or after 3+ new user turns since last time.
+        if has_summary and (len(user_msgs) - last_n) < 3:
+            return
+        inflight = getattr(self, "_summary_inflight", None)
+        if inflight is None:
+            inflight = self._summary_inflight = set()
+        if s.id in inflight:
+            return
+        inflight.add(s.id)
+        threading.Thread(
+            target=self._session_summary_worker,
+            args=(s.id, list(s.messages), len(user_msgs)),
+            daemon=True, name="SessionSummary").start()
+
+    def _session_summary_worker(self, sid: str, msgs: list,
+                                ucount: int) -> None:
+        try:
+            transcript = self._summary_transcript(msgs)
+            if not transcript.strip():
+                return
+            prompt = (
+                "In 3 to 6 words, write a short lowercase title describing what "
+                "this conversation is mainly about. Reply with ONLY the title — "
+                "no quotes, no ending punctuation. Examples: planning a trip to "
+                "chicago; debugging a python script; questions about taxes.\n\n"
+                f"Conversation:\n{transcript}\n\nTitle:")
+            try:
+                resp = self._client.chat(
+                    model=OLLAMA_MODEL,
+                    messages=[{"role": "user", "content": prompt}])
+                raw = (resp["message"]["content"] or "")
+            except Exception as e:
+                print(f"[session-summary] ollama failed: {e}")
+                return
+            summary = self._clean_summary(raw)
+            if not summary:
+                return
+            if self._sessions is not None and self._sessions.set_summary(
+                    sid, summary, ucount):
+                self._call_main(self._refresh_sidebar)
+        except Exception as e:
+            print(f"[session-summary] worker failed: {e}")
+        finally:
+            try:
+                self._summary_inflight.discard(sid)
+            except Exception:
+                pass
+
+    @staticmethod
+    def _summary_transcript(msgs: list) -> str:
+        """Compact transcript (last ~10 turns) for the summary prompt."""
+        lines = []
+        for m in (msgs or [])[-10:]:
+            if not isinstance(m, dict):
+                continue
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue
+            who = "User" if m.get("role") == "user" else "Iris"
+            lines.append(f"{who}: {content}")
+        return "\n".join(lines)[:1600]
+
+    @staticmethod
+    def _clean_summary(text: str) -> str:
+        """Normalise the model's reply into a short, clean lowercase phrase."""
+        t = (text or "").replace("\r", " ").strip()
+        # first non-empty line only
+        for line in t.split("\n"):
+            if line.strip():
+                t = line.strip()
+                break
+        t = re.sub(r"^(title|topic)\s*:\s*", "", t, flags=re.I)
+        t = t.strip(" \t\"'`.\u201c\u201d\u2014-")
+        words = t.split()
+        if len(words) > 8:
+            t = " ".join(words[:8])
+        return t.lower().strip(" .\"'")
 
     def _update_session_context(self) -> None:
         """Attach location / people to the current session so its sidebar row
@@ -1559,30 +1713,8 @@ class ChatTab(QWidget):
         self.status_dot.setStyleSheet(
             f"color:{ACCENT}; background:transparent; border:none; font-size:13px;")
         ib.addWidget(self.status_dot)
-        mic = QPushButton("\U0001F399")
-        mic.setCursor(Qt.CursorShape.PointingHandCursor)
-        mic.setFixedSize(38, 38)
-        mic.setStyleSheet(
-            "QPushButton {"
-            f"background: qlineargradient(x1:0,y1:0,x2:0,y2:1,"
-            f"stop:0 rgba({_rgb(ACCENT)},0.95), stop:1 rgba({_rgb(ACCENT_HOVER)},0.95));"
-            f"color:{BG_TOP}; border:none; border-radius:19px; font-size:16px; }}"
-            f"QPushButton:hover {{ background: {ACCENT_HOVER}; }}")
-        _add_glass_shadow(mic, blur=16, dy=3, alpha=130)
-        ib.addWidget(mic)
-        camera_btn = QPushButton("\U0001F4F7")
-        camera_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        camera_btn.setFixedSize(38, 38)
-        camera_btn.setToolTip("Take a photo now")
-        camera_btn.setStyleSheet(
-            "QPushButton {"
-            f"background: rgba(255,255,255,0.08);"
-            f"border: 1px solid {GLASS_BORDER_SOFT};"
-            "border-radius:19px; font-size:15px; }"
-            "QPushButton:hover { background: rgba(255,255,255,0.14); }")
-        _add_glass_shadow(camera_btn, blur=14, dy=3, alpha=110)
-        camera_btn.clicked.connect(self._on_manual_photo_button)
-        ib.addWidget(camera_btn)
+        # Mic + photo buttons removed for a cleaner input bar (M8 UI polish).
+        # Photo capture still works via "take a photo" or the wake word.
         lay.addSpacing(6)
         lay.addWidget(input_bar)
         return pane
@@ -2032,7 +2164,7 @@ class ChatTab(QWidget):
         photo request takes a screenshot of the current screen; if you
         want a photo "of me" via the ESP32 camera, ask in chat or use the
         wake word."""
-        self._append_user("\U0001F4F7 take a photo")
+        self._append_user("take a photo")
         self.history.append({"role": "user", "content": "take a photo"})
         self._trigger_photo_capture("manual capture", mode="camera")
     def handle_voice_trigger(self, phrase: str) -> None:
@@ -2049,7 +2181,7 @@ class ChatTab(QWidget):
         heard = (phrase or "").strip()
         if not heard:
             return
-        self._append_user(f"\U0001F3A4 (heard) {heard}")
+        self._append_user(f"(heard) {heard}")
         self.history.append({"role": "user", "content": heard})
         self._route_command(heard)
     @staticmethod
@@ -2085,7 +2217,7 @@ class ChatTab(QWidget):
                     # Remember the trigger text so the arrival handler can
                     # tag the PhotoStore entry with it.
                     self._pending_esp32_trigger = trigger_text
-                    msg = "\U0001F4F8 Taking a picture\u2026"
+                    msg = "Taking a picture\u2026"
                     self._append_iris(msg)
                     self.history.append({"role": "assistant", "content": msg})
                     stream_cb()
@@ -2115,7 +2247,7 @@ class ChatTab(QWidget):
             self.history.append({"role": "assistant", "content": msg})
             return
         self._photos.record(path, source="webcam", trigger_text=trigger_text)
-        msg = "\U0001F4F8 Got it \u2014 snapped a photo."
+        msg = "Got it \u2014 snapped a photo."
         self._append_iris(msg, photo_paths=[path])
         self.history.append({"role": "assistant", "content": msg})
     def _capture_screenshot_now(self, trigger_text: str,
@@ -2129,7 +2261,7 @@ class ChatTab(QWidget):
             return
         self._photos.record(path, source="screenshot",
                             trigger_text=trigger_text, note=note)
-        msg = "\U0001F4F8 Got it — saved a screenshot."
+        msg = "Got it — saved a screenshot."
         if note:
             msg += f" {note}"
         self._append_iris(msg, photo_paths=[path])
@@ -2161,7 +2293,7 @@ class ChatTab(QWidget):
                 dest = found
             self._photos.record(dest, source="esp32", trigger_text=trigger_text)
             time.sleep(0.3)   # let the file fully flush before Qt loads the thumbnail
-            msg = "\U0001F4F8 Got it \u2014 photo received from the ESP32 camera."
+            msg = "Got it \u2014 photo received from the ESP32 camera."
             self._call_main(lambda d=dest, m=msg: self._append_iris(
                 m, photo_paths=[d]))
             return ""  # empty: _finish_response will remove the thinking bubble cleanly
@@ -2185,7 +2317,7 @@ class ChatTab(QWidget):
                    "screenshot fallback failed too."
         self._photos.record(path, source="screenshot", trigger_text=trigger_text,
                             note=f"esp32 fallback: {reason}")
-        return f"\U0001F4F8 Took a screenshot instead \u2014 {reason}. See it " \
+        return f"Took a screenshot instead \u2014 {reason}. See it " \
                "in the Photos tab."
     def _on_esp32_photo_arrived(self, jpeg_path: str) -> None:
         """Called by IrisApp once the ESP32 receiver has saved a new JPEG.
@@ -2210,7 +2342,7 @@ class ChatTab(QWidget):
                                 trigger_text=trigger_text)
         except Exception:
             pass
-        msg = "\U0001F4F8 Here's the photo from the ESP32 camera."
+        msg = "Here's the photo from the ESP32 camera."
         self._append_iris(msg, photo_paths=[dest])
         self.history.append({"role": "assistant", "content": msg})
     # ── Photo selection + lookup ──────────────────────────────────────────
@@ -2220,7 +2352,7 @@ class ChatTab(QWidget):
         Photos tab gallery."""
         self._active_photo = photo
         tag = _photo_source_label(photo.source, verbose=True)
-        msg = f"\U0001F4F7 That photo was taken {photo.when()}, captured {tag}"
+        msg = f"That photo was taken {photo.when()}, captured {tag}"
         if photo.trigger_text:
             msg += f" (triggered by \u201c{photo.trigger_text}\u201d)"
         msg += (".\n\nI can tell you when or how it was captured, or you can "
@@ -2237,7 +2369,7 @@ class ChatTab(QWidget):
         if not photos:
             self._append_iris(
                 "I don't see any photos yet. Say \u201chey iris, take a "
-                "photo\u201d or use the \U0001F4F7 button.")
+                "photo\u201d or use the button.")
             return
         action = intent.photo_action
         if action == "latest":
@@ -2277,7 +2409,7 @@ class ChatTab(QWidget):
             self.select_photo(photos[0])
             return
         shown = photos[:8]
-        lines = [f"\U0001F4F8 {len(photos)} photo{'s' if len(photos) != 1 else ''} "
+        lines = [f"{len(photos)} photo{'s' if len(photos) != 1 else ''} "
                 f"for {label}:"]
         for p in shown:
             tag = _photo_source_label(p.source)
@@ -2466,6 +2598,10 @@ class ChatTab(QWidget):
             f"color:{ACCENT}; background:transparent; border:none; font-size:13px;")
         try:
             self._refresh_suggestions()
+        except Exception:
+            pass
+        try:
+            self._maybe_generate_session_summary()
         except Exception:
             pass
         try:
@@ -2674,7 +2810,7 @@ class ChatTab(QWidget):
     # ── Handle a chosen recording ────────────────────────────────────────
     def _handle_recording(self, rec: Recording) -> str:
         self._active = rec
-        header = f"\U0001F4FC {rec.name} \u00b7 {rec.length()} \u00b7 {rec.when()}\n\n"
+        header = f"{rec.name} \u00b7 {rec.length()} \u00b7 {rec.when()}\n\n"
         if rec.has_transcript:
             return self._summarize_recording(rec)
         if rec.duration_sec is not None and rec.duration_sec <= 0:
@@ -2724,7 +2860,7 @@ class ChatTab(QWidget):
                           lambda: self._poll_transcription(path, attempts + 1))
     def _post_auto_summary(self, rec: Recording) -> None:
         label = self._append_iris(
-            f"\u2705 {rec.name} finished transcribing. Summarizing\u2026")
+            f"{rec.name} finished transcribing. Summarizing\u2026")
         def run():
             reply = self._summarize_recording(rec)
             self._call_main(lambda: self._safe_set(label, reply))
@@ -2764,7 +2900,7 @@ class ChatTab(QWidget):
         return False
     # ── Summaries (single + many) ────────────────────────────────────────
     def _summarize_recording(self, rec: Recording) -> str:
-        header = f"\U0001F4FC {rec.name} \u00b7 {rec.length()} \u00b7 {rec.when()}\n\n"
+        header = f"{rec.name} \u00b7 {rec.length()} \u00b7 {rec.when()}\n\n"
         if not rec.has_transcript:
             return (header + "This recording hasn't been transcribed yet. Open "
                     "the Audio tab, select it, and run transcription first.")
@@ -2799,7 +2935,7 @@ class ChatTab(QWidget):
         self._start_bg(
             lambda: self._do_summarize_many(capped, label, note))
     def _do_summarize_many(self, recs, label: str, note: str) -> str:
-        header = f"\U0001F4CA {label}{note} \u2014 {len(recs)} recording(s)\n\n"
+        header = f"{label}{note} \u2014 {len(recs)} recording(s)\n\n"
         transcribed = [r for r in recs if r.has_transcript]
         missing = [r for r in recs if not r.has_transcript]
         if not transcribed:
@@ -2891,7 +3027,7 @@ class ChatTab(QWidget):
         m = re.search(r"\b(?:at|around|near|by|@)\s*(\d{1,2}):([0-5]\d)\b", low)
         if rec is not None and m:
             secs = int(m.group(1)) * 60 + int(m.group(2))
-            head = f"\U0001F4FC {rec.name}\n\n"
+            head = f"{rec.name}\n\n"
             if rec.segments:
                 seg = iq.lookup_offset(rec, secs)
                 if seg is not None:
@@ -2911,7 +3047,7 @@ class ChatTab(QWidget):
             if topic:
                 hits = iq.find_topic_in_recording(topic, rec)
                 if hits:
-                    lines = [f"\U0001F4FC {rec.name} \u2014 \u201c{topic}\u201d "
+                    lines = [f"{rec.name} \u2014 \u201c{topic}\u201d "
                              "comes up here:"]
                     for start, spk, txt in hits[:4]:
                         when = (iq.fmt_offset(start) if start is not None
@@ -2927,7 +3063,7 @@ class ChatTab(QWidget):
                         f"{rec.name}.")
         if (rec is not None and not rec.has_transcript
                 and self._is_about_recording(low)):
-            return (f"\U0001F4FC {rec.name} isn't transcribed yet, so I can't "
+            return (f"{rec.name} isn't transcribed yet, so I can't "
                     "answer from it. It's transcribing now \u2014 I'll post the "
                     "summary automatically when it's ready, or ask again in a "
                     "moment.")
@@ -2999,10 +3135,9 @@ class ChatTab(QWidget):
             self._append_iris(
                 "I can't find the Stream tab. Try clicking it manually.")
             return
-        # Tab indexes are fixed in IrisApp: chat=0, audio=1, location=2,
-        # people=3, stream=4, photos=5.
+        # Tabs are switched by name (order-independent) via select_name().
         try:
-            app.tabbar._select(4)
+            app.tabbar.select_name("stream")
         except Exception as e:
             print(f"[chat-action] tab switch failed: {e}")
 
@@ -3033,7 +3168,7 @@ class ChatTab(QWidget):
                 "I can't find the Audio tab. Try clicking it manually.")
             return
         try:
-            app.tabbar._select(1)
+            app.tabbar.select_name("audio")
         except Exception as e:
             print(f"[chat-action] tab switch failed: {e}")
 
@@ -4313,9 +4448,9 @@ class PeopleTab(QWidget):
                                   accent=_rgb(ACCENT), fg=ACCENT))
         head.addWidget(_audio_btn("\u21bb Refresh", self.refresh, height=30,
                                   accent=_rgb(ACCENT), fg=ACCENT))
-        head.addWidget(_audio_btn("\U0001F4C2 DB folder",
+        head.addWidget(_audio_btn("DB folder",
                                   self._open_db_folder, height=30))
-        head.addWidget(_audio_btn("\U0001F5D1 Reset all",
+        head.addWidget(_audio_btn("Reset all",
                                   self._reset_all_people, height=30,
                                   accent=_rgb(COLOR_DANGER), fg=COLOR_DANGER))
         lay.addLayout(head)
@@ -4386,17 +4521,17 @@ class PeopleTab(QWidget):
         self.table.itemSelectionChanged.connect(self._update_action_buttons)
         lay.addWidget(self.table, 1)
         actions = QHBoxLayout()
-        self.btn_profile = _audio_btn("\U0001F464  Profile",
+        self.btn_profile = _audio_btn("Profile",
                                       self._edit_profile_selected, height=30,
                                       accent=_rgb(ACCENT), fg=ACCENT)
-        self.btn_convos = _audio_btn("\U0001F4AC  Conversations",
+        self.btn_convos = _audio_btn("Conversations",
                                      self._show_conversations_selected,
                                      height=30)
-        self.btn_rename = _audio_btn("\u270e  Rename", self._rename_selected, height=30)
-        self.btn_role   = _audio_btn("\U0001F4DD  Edit role", self._edit_role_selected, height=30)
-        self.btn_merge  = _audio_btn("\u2702  Merge into\u2026", self._merge_selected,
+        self.btn_rename = _audio_btn("Rename", self._rename_selected, height=30)
+        self.btn_role   = _audio_btn("Edit role", self._edit_role_selected, height=30)
+        self.btn_merge  = _audio_btn("Merge into\u2026", self._merge_selected,
                                      height=30, accent=_rgb(BADGE_VOICE_FG), fg=BADGE_VOICE_FG)
-        self.btn_delete = _audio_btn("\U0001F5D1  Delete", self._delete_selected,
+        self.btn_delete = _audio_btn("Delete", self._delete_selected,
                                      height=30, accent=_rgb(COLOR_DANGER), fg=COLOR_DANGER)
         for b in (self.btn_profile, self.btn_convos, self.btn_rename,
                   self.btn_role, self.btn_merge, self.btn_delete):
@@ -4882,7 +5017,7 @@ class PeopleTab(QWidget):
             if getattr(result, "skipped", False):
                 msg = f"{name}  \u2014  skipped"
             elif getattr(result, "error", ""):
-                msg = f"{name}  \u26a0  {result.error}"
+                msg = f"{name}  {result.error}"
             else:
                 bits = []
                 if mat: bits.append(f"{mat} matched")
@@ -6350,7 +6485,7 @@ class ManageSpeakersDialog(QDialog):
             w = item.widget()
             if w:
                 w.deleteLater()
-        title = QLabel("\U0001F464  Saved Speaker Profiles")
+        title = QLabel("Saved Speaker Profiles")
         title.setStyleSheet(f"color:{TEXT_PRIMARY}; font-size:16px;"
                             "font-weight:700;")
         self._root.addWidget(title)
@@ -6723,11 +6858,11 @@ class AudioTab(QWidget):
                                      self._on_record_clicked,
                                      accent=_rgb(COLOR_DANGER), fg="#fca5a5",
                                      height=46, bold=True)
-        self.btn_monitor = _audio_btn("\U0001F50A  Start Monitoring",
+        self.btn_monitor = _audio_btn("Start Monitoring",
                                       self._on_monitor_clicked, height=40)
-        self.btn_wake = _audio_btn("\U0001F399  Start Live Transcription",
+        self.btn_wake = _audio_btn("Start Live Transcription",
                                    self._on_live_transcribe_clicked, height=40)
-        self.btn_manage = _audio_btn("\U0001F464  Manage Speakers",
+        self.btn_manage = _audio_btn("Manage Speakers",
                                      self._open_manage_speakers, height=36)
         lay.addSpacing(4)
         lay.addWidget(self.btn_record)
@@ -6793,7 +6928,7 @@ class AudioTab(QWidget):
         # to the bottom of the panel and is also used for live segments.
         self.txt_live_together = None
         btns = QHBoxLayout()
-        btns.addWidget(_audio_btn("\U0001F464 Tag Speaker",
+        btns.addWidget(_audio_btn("Tag Speaker",
                                   self._on_tag_speaker_manual, height=30))
         btns.addStretch(1)
         btns.addWidget(_audio_btn("\u21bb Re-summarize",
@@ -6825,12 +6960,12 @@ class AudioTab(QWidget):
         head = QHBoxLayout()
         head.addWidget(self._h("Recordings"))
         head.addStretch(1)
-        for text, cmd in [("\u21bb", self._refresh_all),
-                          ("\u25B6", self._on_play_clicked),
-                          ("\U0001F4DD", self._on_transcribe_clicked),
-                          ("\U0001F4C2", self._on_open_folder),
-                          ("\u2B06", self._on_import_file)]:
-            head.addWidget(_audio_btn(text, cmd, width=36, height=32,
+        for text, cmd, bw in [("\u21bb", self._refresh_all, 36),
+                              ("\u25B6", self._on_play_clicked, 36),
+                              ("transcribe", self._on_transcribe_clicked, 96),
+                              ("folder", self._on_open_folder, 68),
+                              ("import", self._on_import_file, 68)]:
+            head.addWidget(_audio_btn(text, cmd, width=bw, height=32,
                                       accent=_rgb(ACCENT), fg=ACCENT))
         lay.addLayout(head)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
@@ -6901,10 +7036,10 @@ class AudioTab(QWidget):
             self.lbl_rec_duration.setText(f"{m:02d}:{s:02d}")
             self.lbl_rec_chunk.setText(str(evt.get("chunk", "--")))
         elif et == "monitor_started":
-            self.btn_monitor.setText("\U0001F507  Stop Monitoring")
+            self.btn_monitor.setText("Stop Monitoring")
             self.dot_monitor.set(on=True, text="Monitoring: on")
         elif et == "monitor_stopped":
-            self.btn_monitor.setText("\U0001F50A  Start Monitoring")
+            self.btn_monitor.setText("Start Monitoring")
             self.dot_monitor.set(on=False, text="Monitoring: off")
         elif et == "chunk_finalized":
             self._refresh_all()
@@ -6948,7 +7083,7 @@ class AudioTab(QWidget):
             try:
                 self.txt_summary.setPlainText(
                     "Pick a recording from the list first, then click the "
-                    "transcribe button (\U0001F4DD).")
+                    "transcribe button .")
             except Exception:
                 pass
             return
@@ -7138,7 +7273,7 @@ class AudioTab(QWidget):
             "and summarized so the chat can answer questions about it.")
         self._live_elapsed = 0.0
         self._live_segment_index = 0
-        self.btn_wake.setText("\U0001F507  Stop Live Transcription")
+        self.btn_wake.setText("Stop Live Transcription")
         self.dot_wake.set(on=True,
                           text=f"Live transcription: listening ({source})\u2026")
         if self._wake_owns_mic:
@@ -7152,7 +7287,7 @@ class AudioTab(QWidget):
             pass
     def _stop_live_transcription(self) -> None:
         self._wake_active = False
-        self.btn_wake.setText("\U0001F399  Start Live Transcription")
+        self.btn_wake.setText("Start Live Transcription")
         self.dot_wake.set(on=False, text="Live transcription: off")
         if self._wake_owns_mic and hasattr(self.controller, "stop_mic_capture"):
             try:
@@ -7503,12 +7638,12 @@ class AudioTab(QWidget):
             self._show_content(None)
     def _make_row(self, path: str) -> QPushButton:
         base = os.path.splitext(path)[0]
-        flags = ""
-        if os.path.exists(base + ".txt"):            flags += "\u2713"
-        if os.path.exists(base + ".embeddings.npz"): flags += "\U0001F464"
-        if os.path.exists(base + ".summary.txt"):    flags += "\U0001F4CB"
-        if os.path.exists(base + ".location.json"):  flags += "\U0001F4CD"
-        if not flags:                                flags = "\u22EF"
+        parts = []
+        if os.path.exists(base + ".txt"):            parts.append("T")
+        if os.path.exists(base + ".embeddings.npz"): parts.append("V")
+        if os.path.exists(base + ".summary.txt"):    parts.append("S")
+        if os.path.exists(base + ".location.json"):  parts.append("L")
+        flags = " ".join(parts) if parts else "\u00b7"
         dur = self._wav_duration(path)
         m, s = divmod(int(dur), 60)
         name = os.path.basename(path)
@@ -7579,7 +7714,7 @@ class AudioTab(QWidget):
         jp = os.path.splitext(path)[0] + ".json"
         if not os.path.exists(jp):
             self.txt_transcript.setPlainText(
-                "No transcript yet. Click \U0001F4DD to generate one.")
+                "No transcript yet. Click to generate one.")
             return
         try:
             with open(jp, "r", encoding="utf-8") as f:
@@ -7903,8 +8038,8 @@ class LocationTab(QWidget):
 # ChatTab uses, both pointed at the same <recordings root>/photos folder.
 # ─────────────────────────────────────────────────────────────────────────────
 class PhotosTab(QWidget):
-    THUMB = 150
-    COLS = 5
+    THUMB = 168
+    COLS = 4
     def __init__(self, parent, app_config, on_select=None):
         super().__init__(parent)
         self.cfg = app_config
@@ -7938,7 +8073,7 @@ class PhotosTab(QWidget):
         head.addStretch(1)
         head.addWidget(_audio_btn("\u21bb Refresh", self.refresh, height=30,
                                   accent=_rgb(ACCENT), fg=ACCENT))
-        head.addWidget(_audio_btn("\U0001F4C2 Open folder", self._open_folder,
+        head.addWidget(_audio_btn("Open folder", self._open_folder,
                                   height=30))
         lay.addLayout(head)
         scroll = QScrollArea()
@@ -7949,49 +8084,92 @@ class PhotosTab(QWidget):
             "QScrollBar:vertical{width:8px;background:transparent;}"
             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
             "border-radius:4px;}")
-        self._grid_holder = QWidget()
-        self._grid_holder.setStyleSheet("background: transparent;")
-        self._grid = QGridLayout(self._grid_holder)
-        self._grid.setContentsMargins(2, 2, 2, 2)
-        self._grid.setHorizontalSpacing(10)
-        self._grid.setVerticalSpacing(10)
-        scroll.setWidget(self._grid_holder)
+        self._sections_holder = QWidget()
+        self._sections_holder.setStyleSheet("background: transparent;")
+        self._sections = QVBoxLayout(self._sections_holder)
+        self._sections.setContentsMargins(4, 4, 4, 4)
+        self._sections.setSpacing(4)
+        self._sections.addStretch(1)
+        scroll.setWidget(self._sections_holder)
         lay.addWidget(scroll, 1)
         self._empty_note = QLabel(
             "No photos yet. Say \u201chey iris, take a photo\u201d in the "
-            "Chat tab, or use the \U0001F4F7 button there.")
+            "Chat tab to capture one.")
         self._empty_note.setWordWrap(True)
         self._empty_note.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._empty_note.setStyleSheet(
             f"color:{TEXT_MUTED}; background:transparent; border:none;"
             f"font-family:'{FONT_SANS}'; font-size:12px; padding: 30px;")
         lay.addWidget(self._empty_note)
-    def _clear_grid(self) -> None:
-        while self._grid.count():
-            item = self._grid.takeAt(0)
+    def _clear_sections(self) -> None:
+        while self._sections.count():
+            item = self._sections.takeAt(0)
             w = item.widget()
-            if w:
+            if w is not None:
                 w.deleteLater()
-    def refresh(self) -> None:
-        if self._store is None:
-            self.lbl_count.setText("(iris_photos.py missing)")
-            return
-        self._clear_grid()
-        photos = self._store.list_all()         # already newest-first
-        self.lbl_count.setText(
-            f"{len(photos)} photo{'s' if len(photos) != 1 else ''}")
-        self._empty_note.setVisible(not photos)
-        cols = self.COLS
+
+    def _build_date_section(self, header: str, photos, cols: int) -> QWidget:
+        """One dated block: a small date header above a grid of that day's
+        photos."""
+        sec = QWidget()
+        sec.setStyleSheet("background: transparent;")
+        v = QVBoxLayout(sec)
+        v.setContentsMargins(0, 6, 0, 6)
+        v.setSpacing(8)
+        hl = QLabel(header.upper())
+        hl.setStyleSheet(
+            f"color:{TEXT_DIM}; background:transparent; border:none;"
+            f"font-family:'{FONT_SANS}'; font-size:10px; font-weight:700;"
+            "letter-spacing:1px; padding:2px 2px;")
+        v.addWidget(hl)
+        holder = QWidget()
+        holder.setStyleSheet("background: transparent;")
+        grid = QGridLayout(holder)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(18)
         for i, p in enumerate(photos):
             tag = _photo_source_label(p.source)
             caption = f"{p.when()}\n{tag}"
             on_click = ((lambda ph=p: self._on_select(ph))
                        if self._on_select is not None else None)
-            thumb = PhotoThumb(self._grid_holder, p.path, caption,
+            thumb = PhotoThumb(holder, p.path, caption,
                                size=self.THUMB, on_click=on_click)
-            self._grid.addWidget(thumb, i // cols, i % cols,
-                                 Qt.AlignmentFlag.AlignLeft
-                                 | Qt.AlignmentFlag.AlignTop)
+            grid.addWidget(thumb, i // cols, i % cols,
+                           Qt.AlignmentFlag.AlignLeft
+                           | Qt.AlignmentFlag.AlignTop)
+        grid.setColumnStretch(cols, 1)
+        v.addWidget(holder)
+        return sec
+    def refresh(self) -> None:
+        if self._store is None:
+            self.lbl_count.setText("(iris_photos.py missing)")
+            return
+        self._clear_sections()
+        photos = self._store.list_all()         # already newest-first
+        self.lbl_count.setText(
+            f"{len(photos)} photo{'s' if len(photos) != 1 else ''}")
+        self._empty_note.setVisible(not photos)
+        cols = self.COLS
+        # Group by calendar date (newest date first; photos already newest-first).
+        from datetime import datetime
+        groups = []            # [(header, [Photo, ...]), ...]
+        cur_key = None
+        for p in photos:
+            try:
+                d = datetime.fromtimestamp(p.taken_at)
+                key = d.strftime("%Y-%m-%d")
+                header = d.strftime("%A, %b %d")
+            except Exception:
+                key, header = "unknown", "Unknown date"
+            if key != cur_key:
+                cur_key = key
+                groups.append((header, []))
+            groups[-1][1].append(p)
+        for header, plist in groups:
+            self._sections.addWidget(
+                self._build_date_section(header, plist, cols))
+        self._sections.addStretch(1)
     def _open_folder(self) -> None:
         if self._store is None:
             return
@@ -8730,6 +8908,7 @@ class TabBar(QWidget):
     def __init__(self, parent, labels: list[str]):
         super().__init__(parent)
         self._buttons: list[QPushButton] = []
+        self._labels = list(labels)
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 14, 0, 6)
         lay.setSpacing(6)
@@ -8766,6 +8945,13 @@ class TabBar(QWidget):
                     "}"
                     "QPushButton:hover { background: rgba(255,255,255,0.06); }")
         self.changed.emit(idx)
+
+    def select_name(self, name: str) -> None:
+        """Switch to a tab by name — robust to tab reordering."""
+        try:
+            self._select(self._labels.index(name))
+        except Exception:
+            pass
 # ─────────────────────────────────────────────────────────────────────────────
 # Title strip — macOS-style traffic-light controls + live session timer.
 # The whole strip is the window's drag handle (frameless windows have none).
@@ -8831,8 +9017,8 @@ class TitleBar(QWidget):
 # Main IRIS window — a single rounded, frameless "bubble" floating on the desktop
 # ─────────────────────────────────────────────────────────────────────────────
 class IrisApp(QWidget):
-    TAB_NAMES = ["chat", "audio", "location", "people", "stream", "photos",
-                 "about system"]   # ── IRIS about-system feature: ADD ──
+    TAB_NAMES = ["chat", "photos", "people", "audio", "location", "stream",
+                 "about system"]   # M8: Chat, Photos, People prioritized
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
@@ -8865,11 +9051,11 @@ class IrisApp(QWidget):
         # Audio tab built next so the chat can drive it for auto-transcription.
         self.audio = AudioTab(self, controller, config,
                               location_tab=self.location,
-                              switch=lambda: self.tabbar._select(1))
+                              switch=lambda: self.tabbar.select_name("audio"))
         # Chat first in the stack; it can switch to the audio tab + drive it.
         self.chat = ChatTab(
             self, controller=controller, audio_gui=self.audio,
-            switch_to_audio=lambda: self.tabbar._select(1))
+            switch_to_audio=lambda: self.tabbar.select_name("audio"))
         # Set up the stream tab first so the chat can route ESP32 selfies
         # to it. The stream tab handles its own ESP32 networking exactly
         # like terminal.py and is the right home for "of me" photos.
@@ -8898,7 +9084,7 @@ class IrisApp(QWidget):
         # (screenshot) inside _trigger_photo_capture.
         def _stream_photo_callback():
             try:
-                self.tabbar._select(4)            # switch to stream tab
+                self.tabbar.select_name("stream")  # switch to stream tab
                 self.stream._request_photo()
             except Exception as e:
                 print(f"[iris] stream photo callback failed: {e}")
@@ -8909,7 +9095,7 @@ class IrisApp(QWidget):
         def _on_esp32_photo_arrived(jpeg_path):
             try:
                 self.chat._on_esp32_photo_arrived(jpeg_path)
-                self.tabbar._select(0)            # back to chat tab
+                self.tabbar.select_name("chat")            # back to chat tab
                 if hasattr(self, "photos"):
                     try:
                         self.photos.refresh()
@@ -8929,25 +9115,23 @@ class IrisApp(QWidget):
                 except Exception:
                     pass
             self.chat.handle_voice_trigger(phrase)
-            self.tabbar._select(0)
+            self.tabbar.select_name("chat")
         self.audio.set_wake_callback(_on_wake_trigger)
-        self.stack.addWidget(self.chat)
-        self.stack.addWidget(self.audio)
-        self.stack.addWidget(self.location)
         self.people = PeopleTab(self, controller)
-        self.stack.addWidget(self.people)
-        self.stack.addWidget(self.stream)
         def _select_photo_from_gallery(photo):
             self.chat.select_photo(photo)
-            self.tabbar._select(0)
+            self.tabbar.select_name("chat")
         self.photos = PhotosTab(self, config, on_select=_select_photo_from_gallery)
-        self.stack.addWidget(self.photos)
-        # --- IRIS about-system feature: ADD ---
         # M8 System Dashboard — CPU/RAM/model status + API keys panel.
-        # Always the last tab; index matches TAB_NAMES.
         self.about_system = AboutSystemTab(self, controller=controller)
-        self.stack.addWidget(self.about_system)
-        # --- end ADD ---
+        # Tab order (M8): Chat, Photos, People, then Audio, Location, Stream, About.
+        self.stack.addWidget(self.chat)          # 0 chat
+        self.stack.addWidget(self.photos)        # 1 photos
+        self.stack.addWidget(self.people)        # 2 people
+        self.stack.addWidget(self.audio)         # 3 audio
+        self.stack.addWidget(self.location)      # 4 location
+        self.stack.addWidget(self.stream)        # 5 stream
+        self.stack.addWidget(self.about_system)  # 6 about system
         self.tabbar.changed.connect(self.stack.setCurrentIndex)
         self.stack.setCurrentIndex(0)
         # Bottom-right resize grip (frameless windows lose native resizing)
