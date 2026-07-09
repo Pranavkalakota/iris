@@ -2,9 +2,9 @@
 Phase 9 main controller.
 
 Pipeline after a chunk closes:
-  1. Whisper transcribes  → chunk.json
-  2. Diarizer tags speakers → chunk.json (updated), chunk.embeddings.npz
-  3. Summarizer summarizes → chunk.summary.txt
+  1. Whisper transcribes  -> chunk.json
+  2. Diarizer tags speakers -> chunk.json (updated), chunk.embeddings.npz
+  3. Summarizer summarizes -> chunk.summary.txt
 
 All three run in background threads with independent queues. The GUI
 receives events for each stage completing.
@@ -29,7 +29,6 @@ from diarizer_phase9 import Diarizer
 from summarizer_phase9 import Summarizer
 from speakers_phase9 import SpeakerDB
 from location_phase8 import LocationService, save_location_sidecar
-# AudioStreamGUI is now a frame; AudioStreamWindow is the standalone wrapper.
 from gui_phase9 import AudioStreamWindow
 
 
@@ -87,12 +86,20 @@ class Controller:
         self.mic = None
         self._transcribe_only: set = set()
         self._wake_listener = None
+        # --- IRIS wake-word: ADD ---
+        # Option B: a secondary SpeechRecognition-based listener runs in
+        # parallel with openwakeword. Both fire the same on_wake callback,
+        # coalesced by _on_wake_debounced so a double-fire within 2s only
+        # produces one downstream trigger.
+        self._wake_fallback = None
+        self._wake_debounce_ts = 0.0
+        self._wake_debounce_lock = threading.Lock()
+        # --- IRIS wake-word: END ---
 
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._client_was_seen = False
 
-    # ---------- lifecycle ----------
     def start(self):
         self.reader.start()
         self.transcriber.start()
@@ -234,12 +241,6 @@ class Controller:
         self.file_player = None
 
     def start_mic_capture(self) -> bool:
-        # Option B (default): the ESP32 is the microphone. Its audio already
-        # flows into the ring buffer via WifiReader, so we deliberately do NOT
-        # open a Windows audio device. Leaving self.mic = None makes peek_level()
-        # and peek_audio_wav() read from the ring buffer (the ESP32 stream).
-        # Set USE_PC_MIC = True in config_phase9.py to capture from a local
-        # Windows microphone instead (Option A).
         use_pc_mic = getattr(config, "USE_PC_MIC", False)
         if not use_pc_mic:
             print("[iris] mic capture: using ESP32 ring buffer (USE_PC_MIC=False)")
@@ -268,30 +269,61 @@ class Controller:
                     pass
                 self.mic = None
 
+    # --- IRIS wake-word: CHANGE ---
+    # Option B: openwakeword remains the primary detector; a Google
+    # SpeechRecognition listener runs in parallel as a backup. Both fire
+    # _on_wake_debounced, which coalesces double-fires within 2s so
+    # downstream sees exactly one trigger per utterance.
+    def _on_wake_debounced(self, on_wake, phrase: str) -> None:
+        with self._wake_debounce_lock:
+            now = time.time()
+            if now - self._wake_debounce_ts < 2.0:
+                return
+            self._wake_debounce_ts = now
+        try:
+            on_wake(phrase)
+        except Exception:
+            pass
+
     def start_wake_listener(self, on_wake) -> bool:
         with self._lock:
             if self._wake_listener is not None:
                 return True
+            debounced = lambda phrase: self._on_wake_debounced(on_wake, phrase)
             try:
-                # Option B (default): feed wake detection from the ESP32 ring
-                # buffer. Set USE_PC_MIC = True in config to use a Windows mic.
                 use_pc_mic = getattr(config, "USE_PC_MIC", False)
                 if use_pc_mic:
-                    listener = _WakeWordListener(on_wake=on_wake)
+                    listener = _WakeWordListener(on_wake=debounced)
                 else:
                     listener = _WakeWordListener(
-                        on_wake=on_wake,
+                        on_wake=debounced,
                         ring=self.ring,
                         ring_sample_rate=config.SAMPLE_RATE,
                     )
                 listener.start()
                 self._wake_listener = listener
-                print("[iris] wake word listener started (hey_jarvis)")
-                return True
+                print("[iris] wake word listener started (openwakeword primary)")
             except Exception as e:
-                print(f"[iris] wake word listener failed to start: {e}")
+                print(f"[iris] openwakeword listener failed to start: {e}")
                 self._wake_listener = None
                 return False
+            # Option B backup: SpeechRecognition + Google. Off by default
+            # if USE_GOOGLE_WAKE_BACKUP is False in config_phase9.py; on
+            # otherwise. Failures here don't affect the primary path.
+            try:
+                if getattr(config, "USE_GOOGLE_WAKE_BACKUP", True):
+                    fallback = _SpeechRecognitionWakeListener(
+                        on_wake=debounced,
+                        ring=self.ring,
+                        ring_sample_rate=config.SAMPLE_RATE,
+                    )
+                    fallback.start()
+                    self._wake_fallback = fallback
+                    print("[iris] google speech backup wake listener started")
+            except Exception as e:
+                print(f"[iris] backup wake listener disabled: {e}")
+                self._wake_fallback = None
+            return True
 
     def stop_wake_listener(self) -> None:
         with self._lock:
@@ -301,6 +333,13 @@ class Controller:
                 except Exception:
                     pass
                 self._wake_listener = None
+            if self._wake_fallback is not None:
+                try:
+                    self._wake_fallback.stop()
+                except Exception:
+                    pass
+                self._wake_fallback = None
+    # --- IRIS wake-word: END ---
 
     def peek_level(self) -> float:
         mic = self.mic
@@ -357,26 +396,19 @@ class Controller:
                     ])
             samples = samples.astype(np.float32)
 
-            # Diagnostic: print the raw ESP32 audio level so we can tell whether
-            # the signal is just quiet (fixable via gain) or essentially silent
-            # (ESP32 / network problem). Comment out once tuned.
             _raw_rms = float(np.sqrt(np.mean(samples ** 2))) if samples.size else 0.0
             _raw_peak = float(np.max(np.abs(samples))) if samples.size else 0.0
             print(f"[iris] ESP32 audio window: rms={_raw_rms:.0f} peak={_raw_peak:.0f} "
                   f"n={samples.size}")
 
-            # ESP32 mic audio is often low-gain. Apply adaptive gain so Whisper
-            # gets a healthy signal. Normalize peak toward ~60% of full scale,
-            # but cap the multiplier so we don't blow up pure silence/noise.
             gain = float(getattr(config, "LIVE_AUDIO_GAIN", 0.0))
             if gain > 0.0:
-                # fixed manual gain if configured
                 samples = samples * gain
             else:
                 peak = float(np.max(np.abs(samples))) if samples.size else 0.0
                 if peak > 1.0:
                     target_peak = 0.6 * 32767.0
-                    auto_gain = min(8.0, target_peak / peak)  # cap at 8x
+                    auto_gain = min(8.0, target_peak / peak)
                     samples = samples * auto_gain
 
             samples = np.clip(samples, -32768, 32767).astype(np.int16)
@@ -483,14 +515,10 @@ class _MicCapture:
         return devices
 
     def _pick_device_and_rate(self, sd):
-        # Returns (device_index, sample_rate, channels).
-        # Priority: MME input devices first (most compatible on Windows),
-        # then DirectSound, then WASAPI, then anything else.
         rates_to_try = [44100, 48000, self._req_sr, 32000, 16000]
         seen = set()
         rates_to_try = [r for r in rates_to_try if not (r in seen or seen.add(r))]
 
-        # Group input devices by host API name priority
         api_priority = ["MME", "DirectSound", "WASAPI"]
         try:
             host_apis = sd.query_hostapis()
@@ -506,7 +534,6 @@ class _MicCapture:
                     return rank
             return len(api_priority)
 
-        # Sort: MME first, mic-named entries before stereo mix within same API
         input_devs = [
             (i, d) for i, d in all_devs if d["max_input_channels"] > 0
         ]
@@ -521,7 +548,7 @@ class _MicCapture:
             print(f"       [{i}] {d['name']} ({api_name})")
 
         for i, d in input_devs:
-            for ch in (2, 1):  # try stereo first for Stereo Mix, mono as fallback
+            for ch in (2, 1):
                 for r in rates_to_try:
                     try:
                         sd.check_input_settings(device=i, channels=ch,
@@ -539,7 +566,7 @@ class _MicCapture:
         device, sr, channels = self._pick_device_and_rate(sd)
         if device is None or sr is None:
             raise RuntimeError(
-                "no input device accepted any sample rate — check Windows Sound "
+                "no input device accepted any sample rate - check Windows Sound "
                 "Settings > Privacy > Microphone (must be ON) and that the device "
                 "is not in exclusive mode. Devices printed above.")
         self._sr = sr
@@ -563,8 +590,7 @@ class _MicCapture:
     def _callback(self, indata, frames, time_info, status):
         try:
             if status:
-                print(f"[mic] cb status={status}")  # only print on problems
-            # For stereo (e.g. Stereo Mix), average channels down to mono.
+                print(f"[mic] cb status={status}")
             if indata.ndim > 1 and indata.shape[1] > 1:
                 mono = indata.mean(axis=1).astype(np.int16)
             elif indata.ndim > 1:
@@ -618,8 +644,6 @@ class _MicCapture:
         if s is None:
             return 0.0
         rms = float(np.sqrt(np.mean(s.astype(np.float32) ** 2)))
-        # int16 speech RMS is typically 300-4000; divisor of 3000 gives a
-        # responsive bar. The old 8000 divisor made speech show as near-zero.
         return min(1.0, rms / 3000.0)
 
     def peek_wav(self, seconds: float, dest_path: str) -> bool:
@@ -651,14 +675,12 @@ class _WakeWordListener(threading.Thread):
     SAMPLE_RATE   = 16000
     CHUNK_SAMPLES = 1280
     THRESHOLD     = 0.5
-    INPUT_DEVICE_INDEX = 10  # Realtek HD Audio Mic input — set to None to auto-detect
+    INPUT_DEVICE_INDEX = 10
 
     def __init__(self, on_wake, ring=None, ring_sample_rate=16000):
         super().__init__(daemon=True, name="WakeWordListener")
         self._on_wake = on_wake
         self._stop_event = threading.Event()
-        # Option B: read ESP32 audio from the ring buffer instead of a Windows
-        # audio device. When ring is provided, run() uses _run_from_ring().
         self._ring = ring
         self._ring_sr = int(ring_sample_rate) if ring_sample_rate else 16000
 
@@ -680,7 +702,6 @@ class _WakeWordListener(threading.Thread):
             print(f"[wake] failed to load hey_jarvis model: {e}")
             return
 
-        # Option B: ESP32 audio comes via the ring buffer.
         if self._ring is not None:
             self._run_from_ring(oww)
             return
@@ -746,7 +767,7 @@ class _WakeWordListener(threading.Thread):
                 continue
 
         if stream is None or actual_rate is None:
-            print("[wake] no usable input device — wake listener inactive")
+            print("[wake] no usable input device - wake listener inactive")
             pa.terminate()
             return
 
@@ -790,17 +811,9 @@ class _WakeWordListener(threading.Thread):
             print("[wake] listener stopped")
 
     def _run_from_ring(self, oww) -> None:
-        """Option B: poll the ESP32 ring buffer for audio and run wake detection.
-
-        The ring buffer holds int16 mono samples at self._ring_sr. We pull
-        CHUNK_SAMPLES-worth (scaled to the ring's rate), resample to 16 kHz for
-        openWakeWord, and check the score.
-        """
         ring = self._ring
         src_sr = self._ring_sr
-        # how many source samples correspond to one 16k chunk of CHUNK_SAMPLES
         src_chunk = max(1, int(round(self.CHUNK_SAMPLES * src_sr / self.SAMPLE_RATE)))
-        last_read_idx = None
 
         print(f"[wake] listening for 'hey jarvis' on ESP32 ring buffer "
               f"@ {src_sr} Hz (chunk={src_chunk})")
@@ -845,11 +858,126 @@ class _WakeWordListener(threading.Thread):
                     pass
                 self._stop_event.wait(timeout=2.0)
             else:
-                # pace the loop to roughly the chunk duration so we don't spin
                 self._stop_event.wait(
                     timeout=self.CHUNK_SAMPLES / self.SAMPLE_RATE * 0.5)
 
         print("[wake] ring listener stopped")
+
+
+# --- IRIS wake-word: ADD ---
+class _SpeechRecognitionWakeListener(threading.Thread):
+    """Google-speech-based wake listener that runs in PARALLEL with the
+    openwakeword listener (Option B). Reads 3-second WAV chunks from the
+    ESP32 ring buffer, sends them to Google's free speech API, and looks
+    for 'hey jarvis' / 'hi jarvis' / 'okay jarvis' / 'jarvis' in the
+    returned text.
+
+    This is the safety net: if openwakeword misclassifies (a whisper,
+    thick accent, unusually noisy room), Google's ASR often still
+    catches the phrase. Controller._on_wake_debounced collapses
+    double-fires from both listeners into one downstream trigger.
+
+    Requires: pip install SpeechRecognition
+    Fails gracefully (prints a note, exits the thread) if the library or
+    network is unavailable.
+    """
+    SAMPLE_RATE = 16000
+    CHUNK_SECONDS = 3.0
+    WAKE_PHRASES = ("hey jarvis", "hi jarvis", "okay jarvis",
+                     "hey jervis", "jarvis")
+
+    def __init__(self, on_wake, ring=None, ring_sample_rate=16000):
+        super().__init__(daemon=True, name="SRWakeListener")
+        self._on_wake = on_wake
+        self._stop_event = threading.Event()
+        self._ring = ring
+        self._ring_sr = int(ring_sample_rate) if ring_sample_rate else 16000
+
+    def stop(self) -> None:
+        self._stop_event.set()
+
+    def run(self) -> None:
+        try:
+            import speech_recognition as sr
+        except ImportError as e:
+            print(f"[wake-backup] SpeechRecognition not installed: {e}\n"
+                  f"              Run: pip install SpeechRecognition")
+            return
+
+        if self._ring is None:
+            print("[wake-backup] no ring buffer supplied; backup exits")
+            return
+
+        recognizer = sr.Recognizer()
+        recognizer.energy_threshold = 300
+        recognizer.dynamic_energy_threshold = True
+
+        print(f"[wake-backup] listening for 'hey jarvis' via Google speech "
+              f"(3s windows, ring @ {self._ring_sr} Hz)")
+
+        import io as _io
+        import wave as _wave
+
+        while not self._stop_event.is_set():
+            samples = self._grab_seconds(self.CHUNK_SECONDS)
+            if samples is None:
+                self._stop_event.wait(timeout=0.5)
+                continue
+            audio = samples.astype(np.float32)
+            if self._ring_sr != self.SAMPLE_RATE:
+                target_len = max(1, int(round(
+                    len(audio) * self.SAMPLE_RATE / self._ring_sr)))
+                idx = np.linspace(0, len(audio) - 1, target_len)
+                audio = np.interp(idx, np.arange(len(audio)), audio)
+            pcm = np.clip(audio, -32768, 32767).astype(np.int16)
+
+            buf = _io.BytesIO()
+            with _wave.open(buf, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(self.SAMPLE_RATE)
+                wf.writeframes(pcm.tobytes())
+            buf.seek(0)
+
+            try:
+                with sr.AudioFile(buf) as source:
+                    audio_data = recognizer.record(source)
+                text = recognizer.recognize_google(audio_data).lower()
+            except sr.UnknownValueError:
+                continue
+            except sr.RequestError as e:
+                print(f"[wake-backup] google API error: {e}; backing off 5s")
+                self._stop_event.wait(timeout=5.0)
+                continue
+            except Exception:
+                continue
+
+            if any(p in text for p in self.WAKE_PHRASES):
+                print(f"[wake-backup] 'hey jarvis' heard (via google): {text!r}")
+                try:
+                    self._on_wake("hey jarvis")
+                except Exception:
+                    pass
+                self._stop_event.wait(timeout=2.0)
+            else:
+                self._stop_event.wait(timeout=0.3)
+
+        print("[wake-backup] listener stopped")
+
+    def _grab_seconds(self, seconds: float):
+        n = int(seconds * self._ring_sr)
+        if n <= 0:
+            return None
+        ring = self._ring
+        with ring._lock:
+            if ring._count < n:
+                return None
+            start = (ring._write_idx - n) % ring._capacity
+            if start + n <= ring._capacity:
+                return ring._buf[start:start + n].copy()
+            wrap = ring._capacity - start
+            return np.concatenate([ring._buf[start:], ring._buf[:n - wrap]])
+# --- IRIS wake-word: END ---
 
 
 def main() -> int:

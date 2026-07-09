@@ -980,57 +980,101 @@ class SnapshotCard(GlassFrame):
         lay.addWidget(cap)
         lay.addStretch(1)
 class PhotoThumb(GlassFrame):
-    """An actual image preview card — used for captured photos (chat inline
-    confirmation + the Photos tab gallery). Separate from SnapshotCard, which
-    stays a placeholder-style icon card used elsewhere. Optionally clickable
-    (used by the Photos tab to make a photo the active chat reference) —
-    existing call sites that don't pass on_click are unaffected.
-    Fixed width AND height so QGridLayout can never stretch it to fill a row
-    (that was the cause of the tall vertical-bar bug — a grid cell with only
-    one row of content stretches to fill the whole scroll area unless the
-    widget inside refuses to grow)."""
+    """An image preview card used both in the Photos tab gallery and
+    inline in chat.
+
+    --- IRIS photos-ui: CHANGE ---
+    Rebuilt so the gallery reads like a proper photo grid instead of a
+    jagged card list:
+      - Square thumbnail with `cover` cropping (KeepAspectRatioByExpanding
+        + centered crop). All cells now line up regardless of source
+        aspect ratio.
+      - Rounded 10px corners, subtle 1px border for definition.
+      - Single-line caption ("9:34 AM · screenshot") — bold time, dim
+        source — so cards are shorter and the grid gets denser.
+      - Hover state: subtle white tint + slight lift.
+    """
     def __init__(self, parent, image_path: str, caption: str,
-                 size: int = 140, on_click=None):
-        super().__init__(parent, radius=10, blur=18, dy=4, shadow_alpha=120)
+                 size: int = 180, on_click=None):
+        super().__init__(parent, radius=12, blur=20, dy=4, shadow_alpha=110)
         self._on_click = on_click
+        self._hovering = False
         if on_click is not None:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        cap_h = 34                          # room for two short caption lines
+        cap_h = 26
         self.setFixedSize(size, size + cap_h)
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(6, 6, 6, 6)
-        lay.setSpacing(4)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        # Image cell — cover crop, rounded, subtle border.
         pic = QLabel()
         pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pic.setFixedSize(size - 12, size - 12)
-        pic.setStyleSheet("background: rgba(0,0,0,0.25); border-radius:8px;"
-                          "border:none;")
+        pic.setFixedSize(size, size)
+        pic.setStyleSheet(
+            "background: rgba(0,0,0,0.30);"
+            "border-top-left-radius:12px; border-top-right-radius:12px;"
+            "border-bottom-left-radius:0; border-bottom-right-radius:0;"
+            "border: 1px solid rgba(255,255,255,0.06);"
+        )
         pm = QPixmap()
         pm.load(image_path)
         if pm.isNull():
             pm.load(image_path, "JPEG")
         if not pm.isNull():
-            pic.setPixmap(pm.scaled(
-                size - 12, size - 12,
+            # cover-crop: scale so the shorter side matches, then center-crop.
+            scaled = pm.scaled(
+                size, size,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-                Qt.TransformationMode.SmoothTransformation))
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            if scaled.width() > size or scaled.height() > size:
+                x = max(0, (scaled.width() - size) // 2)
+                y = max(0, (scaled.height() - size) // 2)
+                scaled = scaled.copy(x, y, size, size)
+            pic.setPixmap(scaled)
         else:
-            pic.setText("")
-            pic.setStyleSheet(pic.styleSheet() + f"color:{TEXT_DIM}; font-size:24px;")
+            pic.setText("no preview")
+            pic.setStyleSheet(pic.styleSheet()
+                              + f"color:{TEXT_DIM}; font-size:11px;")
         lay.addWidget(pic)
+        # Caption strip below the image — compact, single line.
+        cap_wrap = QWidget()
+        cap_wrap.setFixedHeight(cap_h)
+        cap_wrap.setStyleSheet(
+            "background: rgba(10,14,28,0.55);"
+            "border-bottom-left-radius:12px;"
+            "border-bottom-right-radius:12px;"
+            "border: 1px solid rgba(255,255,255,0.06); border-top: none;"
+        )
+        cap_layout = QHBoxLayout(cap_wrap)
+        cap_layout.setContentsMargins(10, 0, 10, 0)
+        cap_layout.setSpacing(6)
         cap_lbl = QLabel(caption)
-        cap_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        cap_lbl.setWordWrap(True)
-        cap_lbl.setFixedHeight(cap_h - 4)
-        cap_lbl.setStyleSheet(f"color:{TEXT_PRIMARY}; background:transparent;"
-                              f"border:none; font-family:'{FONT_MONO}',"
-                              "'Consolas',monospace; font-size:11px;")
-        lay.addWidget(cap_lbl)
+        cap_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft
+                              | Qt.AlignmentFlag.AlignVCenter)
+        cap_lbl.setStyleSheet(
+            f"color:{TEXT_PRIMARY}; background:transparent; border:none;"
+            f"font-family:'{FONT_SANS}'; font-size:11px;")
+        cap_layout.addWidget(cap_lbl)
+        cap_layout.addStretch(1)
+        lay.addWidget(cap_wrap)
+
+    def enterEvent(self, event) -> None:
+        self._hovering = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self._hovering = False
+        self.update()
+        super().leaveEvent(event)
+
     def mousePressEvent(self, event) -> None:
         if self._on_click is not None and \
                 event.button() == Qt.MouseButton.LeftButton:
             self._on_click()
         super().mousePressEvent(event)
+    # --- IRIS photos-ui: END ---
 class SuggestionChip(QPushButton):
     def __init__(self, parent, text: str, on_click):
         super().__init__(text, parent)
@@ -1493,9 +1537,17 @@ class ChatTab(QWidget):
             return
         last_n = getattr(s, "summary_msg_count", 0) or 0
         has_summary = bool((getattr(s, "summary", "") or "").strip())
-        # Generate when missing, or after 3+ new user turns since last time.
-        if has_summary and (len(user_msgs) - last_n) < 3:
+        # --- IRIS session-labels: CHANGE ---
+        # Was: only generate when missing OR 3+ new user turns since last
+        # time. That let the very first prompt sit as the session name
+        # for the whole conversation. Now:
+        #   - fire immediately when NO summary exists (even for turn #1)
+        #   - re-fire after 2+ new turns so the label follows topic shifts
+        # The sidebar prefers face/location context over the summary
+        # anyway, so this only kicks in when the session has neither.
+        if has_summary and (len(user_msgs) - last_n) < 2:
             return
+        # --- IRIS session-labels: END ---
         inflight = getattr(self, "_summary_inflight", None)
         if inflight is None:
             inflight = self._summary_inflight = set()
@@ -1513,12 +1565,31 @@ class ChatTab(QWidget):
             transcript = self._summary_transcript(msgs)
             if not transcript.strip():
                 return
+            # --- IRIS session-labels: CHANGE ---
+            # Prompt now steers the model toward CONTEXT phrases
+            # ('talking to mom', 'at coffee shop', 'planning trip')
+            # rather than paraphrasing the user's first prompt. Longer
+            # answers get truncated anyway; short and lowercase reads
+            # cleaner in the sidebar.
             prompt = (
-                "In 3 to 6 words, write a short lowercase title describing what "
-                "this conversation is mainly about. Reply with ONLY the title — "
-                "no quotes, no ending punctuation. Examples: planning a trip to "
-                "chicago; debugging a python script; questions about taxes.\n\n"
-                f"Conversation:\n{transcript}\n\nTitle:")
+                "You write a short 2-5 word lowercase context label for "
+                "the sidebar of a chat app. The label should describe "
+                "WHAT THIS CONVERSATION IS ABOUT or WHO IT'S WITH, not "
+                "quote the user's first message.\n\n"
+                "Good examples:\n"
+                "  - talking to mom\n"
+                "  - at coffee shop\n"
+                "  - planning trip to chicago\n"
+                "  - debugging python bug\n"
+                "  - questions about email\n"
+                "  - reviewing yesterday's meeting\n\n"
+                "Bad examples (do NOT do this):\n"
+                "  - what day is it today\n"
+                "  - hi\n"
+                "  - can you help me\n\n"
+                "Reply with ONLY the label — no quotes, no punctuation.\n\n"
+                f"Conversation:\n{transcript}\n\nLabel:")
+            # --- IRIS session-labels: END ---
             try:
                 resp = self._client.chat(
                     model=OLLAMA_MODEL,
@@ -2199,6 +2270,18 @@ class ChatTab(QWidget):
             self._do_content(intent)
             return
         # k == "none"
+        # --- IRIS llm-router: ADD ---
+        # Last-chance fallback: nothing in the hardcoded classifier
+        # tree matched, but the message might still be a normal request
+        # ('yo can u snap a pic', 'iris film me for 10 seconds', 'wut is
+        # in my inbox'). Hand it to the Llama-1B intent router — cheap,
+        # typo-tolerant, and routes to the appropriate handler when it
+        # can. Falls back to plain chat if the router says 'chat' or
+        # the model isn't reachable.
+        routed = self._llm_route_intent(text)
+        if routed is not None:
+            return
+        # --- IRIS llm-router: END ---
         if self._active is not None or self._active_photo is not None:
             self._start_bg(lambda: self._answer_followup(text))
             return
@@ -3979,6 +4062,135 @@ class ChatTab(QWidget):
                     "Try again in a moment.")
     # --- IRIS email-summary: END ---
 
+    # --- IRIS llm-router: ADD ---
+    _INTENT_ROUTER_MODEL = "llama3.2:1b"
+    _INTENT_ROUTER_PROMPT = (
+        "You are IRIS's intent router. Given the user's chat message, "
+        "reply with ONE JSON object and nothing else:\n"
+        "{\"intent\":\"date|time|photo_take|photo_lookup|video_take|"
+        "video_lookup|email|recording|memory|location|chat\",\"detail\":\"\"}\n"
+        "Definitions:\n"
+        " - date/time  = user is asking what day/date/time it is right now\n"
+        " - photo_take = user is asking IRIS to take a picture/selfie/"
+        "screenshot right now\n"
+        " - photo_lookup = user is asking about EXISTING photos already saved\n"
+        " - video_take = user is asking IRIS to record/start a video right now\n"
+        " - video_lookup = user is asking about existing recorded video clips\n"
+        " - email      = user is asking about their email (read/find/summarize)\n"
+        " - recording  = user is asking about saved audio recordings or "
+        "transcripts\n"
+        " - memory     = user is asking about past conversations, people, "
+        "places, or things they said\n"
+        " - location   = user is asking where they are right now\n"
+        " - chat       = normal conversation, none of the above apply\n"
+        "Return ONLY the JSON. No markdown, no prose, no explanation."
+    )
+
+    def _llm_route_intent(self, text: str):
+        """Ollama-backed universal fallback for _dispatch_intent. Called
+        when every hardcoded classifier returned kind='none'. Ask
+        llama3.2:1b which handler to invoke and dispatch accordingly.
+
+        Returns True if the router successfully dispatched (caller
+        should stop), None if it fell through (caller should continue
+        with its own fallback — typically _ask_ollama)."""
+        if self._client is None:
+            return None
+        # Skip on bare greetings — no need to burn tokens on 'hi'.
+        low = (text or "").lower().strip().rstrip("?!.")
+        if not low or low in {"hi", "hello", "hey", "yo", "sup", "hola",
+                              "howdy", "hiya", "morning", "afternoon",
+                              "evening", "thanks", "thank you", "ty"}:
+            return None
+        try:
+            resp = self._client.chat(
+                model=self._INTENT_ROUTER_MODEL,
+                messages=[
+                    {"role": "system", "content": self._INTENT_ROUTER_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                options={"num_predict": 60, "temperature": 0.0},
+            )
+            raw = (resp["message"]["content"] or "").strip()
+        except Exception as e:
+            print(f"[router] llm call failed: {e}")
+            return None
+
+        m = re.search(r"\{[^{}]*\}", raw)
+        if not m:
+            print(f"[router] no JSON in response: {raw!r}")
+            return None
+        try:
+            payload = json.loads(m.group(0))
+        except Exception:
+            print(f"[router] invalid JSON: {raw!r}")
+            return None
+        intent = str(payload.get("intent", "")).lower().strip()
+        print(f"[router] {text!r} -> {intent!r}")
+
+        if intent in ("date", "time"):
+            self._answer_date_question(text)
+            return True
+        if intent == "photo_take":
+            self._trigger_photo_capture(text, mode="camera")
+            return True
+        if intent == "video_take":
+            try:
+                iact = iq.ActionIntent(kind="action_start_video",
+                                        corrected_text=text)
+                self._handle_action_intent(iact)
+                return True
+            except Exception:
+                return None
+        if intent == "email":
+            # Re-run email classifier + LLM extraction, then dispatch.
+            ei = self._classify_email_intent(text) if hasattr(
+                self, "_classify_email_intent") else None
+            if ei is not None and ei.kind != "none":
+                self._start_bg(lambda: self._answer_email_question(ei))
+                return True
+            # No specific intent extracted — default to latest.
+            try:
+                latest = iq.EmailIntent(kind="email_latest",
+                                         corrected_text=text)
+                self._start_bg(lambda: self._answer_email_question(latest))
+                return True
+            except Exception:
+                return None
+        if intent == "location":
+            self._start_bg(lambda: self._answer_location_question(text))
+            return True
+        if intent == "photo_lookup":
+            self._do_photo_query(iq.Intent(kind="photo_query",
+                                            photo_action="all",
+                                            corrected_text=text))
+            return True
+        if intent == "recording":
+            # Point at the latest recording as the safest fallback.
+            rec = iq.latest(self._all_recordings())
+            if rec is None:
+                self._append_iris("I don't see any recordings yet.")
+                return True
+            self._start_bg(lambda: self._handle_recording(rec))
+            return True
+        if intent == "video_lookup":
+            self._start_bg(lambda: self._answer_video_question(text))
+            return True
+        if intent == "memory":
+            try:
+                mem = iq.classify_memory(text,
+                                          known_names=self._known_people_names(),
+                                          today=datetime.now())
+                if mem.kind == "none":
+                    mem.kind = "topic"
+                self._start_bg(lambda: self._handle_memory_query(mem, text))
+                return True
+            except Exception:
+                return None
+        # intent == 'chat' or unknown -> let caller ask Ollama normally.
+        return None
+    # --- IRIS llm-router: END ---
+
     # --- IRIS date-question: ADD ---
     def _answer_date_question(self, text: str) -> None:
         """Reply with the actual date + time. Called before the recording
@@ -4013,7 +4225,8 @@ class ChatTab(QWidget):
 
     # --- IRIS photo-followup: ADD ---
     _PHOTO_CONFIDENT_CUES = (
-        "show me", "list", "pull up", "open the photo", "open my photo",
+        "show me", "show my", "show all", "list", "pull up",
+        "open the photo", "open my photo",
         "display", "gallery",
         "latest photo", "last photo", "newest photo", "most recent photo",
         "latest picture", "last picture", "newest picture",
@@ -8375,8 +8588,15 @@ class LocationTab(QWidget):
 # ChatTab uses, both pointed at the same <recordings root>/photos folder.
 # ─────────────────────────────────────────────────────────────────────────────
 class PhotosTab(QWidget):
-    THUMB = 168
+    # --- IRIS photos-ui: CHANGE ---
+    # Bigger, denser thumbs. Column count is now computed from the
+    # viewport width in refresh() so a wide window fills nicely and a
+    # narrow one drops to 2 columns instead of clipping.
+    THUMB = 180
     COLS = 4
+    MIN_COLS = 2
+    THUMB_WIDTH_INCL_GUTTER = 200        # 180 + 20 gutter
+    # --- IRIS photos-ui: END ---
     def __init__(self, parent, app_config, on_select=None):
         super().__init__(parent)
         self.cfg = app_config
@@ -8447,27 +8667,40 @@ class PhotosTab(QWidget):
 
     def _build_date_section(self, header: str, photos, cols: int) -> QWidget:
         """One dated block: a small date header above a grid of that day's
-        photos."""
+        photos.
+
+        --- IRIS photos-ui: CHANGE ---
+        Header padding, section spacing, and caption format all tightened
+        so the gallery reads as one continuous grid rather than a set of
+        disjointed card lists.
+        """
         sec = QWidget()
         sec.setStyleSheet("background: transparent;")
         v = QVBoxLayout(sec)
-        v.setContentsMargins(0, 6, 0, 6)
-        v.setSpacing(8)
+        v.setContentsMargins(0, 10, 0, 4)
+        v.setSpacing(10)
         hl = QLabel(header.upper())
         hl.setStyleSheet(
             f"color:{TEXT_DIM}; background:transparent; border:none;"
-            f"font-family:'{FONT_SANS}'; font-size:10px; font-weight:700;"
-            "letter-spacing:1px; padding:2px 2px;")
+            f"font-family:'{FONT_SANS}'; font-size:10px; font-weight:800;"
+            "letter-spacing:1.6px; padding: 0 2px 4px 2px;")
         v.addWidget(hl)
         holder = QWidget()
         holder.setStyleSheet("background: transparent;")
         grid = QGridLayout(holder)
         grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(18)
-        grid.setVerticalSpacing(18)
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(12)
         for i, p in enumerate(photos):
             tag = _photo_source_label(p.source)
-            caption = f"{p.when()}\n{tag}"
+            # Single-line caption: bold time, dim source.
+            try:
+                from datetime import datetime as _dt
+                t = _dt.fromtimestamp(p.taken_at)
+                time_str = t.strftime("%I:%M %p").lstrip("0")
+            except Exception:
+                time_str = p.when()
+            caption = f"{time_str}  ·  {tag}"
             on_click = ((lambda ph=p: self._on_select(ph))
                        if self._on_select is not None else None)
             thumb = PhotoThumb(holder, p.path, caption,
@@ -8478,6 +8711,8 @@ class PhotosTab(QWidget):
         grid.setColumnStretch(cols, 1)
         v.addWidget(holder)
         return sec
+        # --- IRIS photos-ui: END ---
+
     def refresh(self) -> None:
         if self._store is None:
             self.lbl_count.setText("(iris_photos.py missing)")
@@ -8487,7 +8722,17 @@ class PhotosTab(QWidget):
         self.lbl_count.setText(
             f"{len(photos)} photo{'s' if len(photos) != 1 else ''}")
         self._empty_note.setVisible(not photos)
-        cols = self.COLS
+        # --- IRIS photos-ui: CHANGE ---
+        # Responsive column count based on the current viewport width
+        # so the grid never clips on a narrow window and fills nicely on
+        # a wide one. Falls back to COLS if we can't measure yet.
+        try:
+            available = max(self.width() - 40, self.THUMB_WIDTH_INCL_GUTTER)
+            cols = max(self.MIN_COLS,
+                       available // self.THUMB_WIDTH_INCL_GUTTER)
+        except Exception:
+            cols = self.COLS
+        # --- IRIS photos-ui: END ---
         # Group by calendar date (newest date first; photos already newest-first).
         from datetime import datetime
         groups = []            # [(header, [Photo, ...]), ...]
@@ -8507,6 +8752,32 @@ class PhotosTab(QWidget):
             self._sections.addWidget(
                 self._build_date_section(header, plist, cols))
         self._sections.addStretch(1)
+
+    # --- IRIS photos-ui: ADD ---
+    def resizeEvent(self, event) -> None:
+        """Rebuild the grid when the tab is resized so the column count
+        stays responsive without waiting for the next refresh trigger."""
+        try:
+            super().resizeEvent(event)
+        except Exception:
+            pass
+        # Cheap heuristic: only refresh when the column budget actually
+        # changes so we don't rebuild on every 1-pixel drag.
+        if not hasattr(self, "_last_cols"):
+            self._last_cols = self.COLS
+        try:
+            available = max(self.width() - 40, self.THUMB_WIDTH_INCL_GUTTER)
+            new_cols = max(self.MIN_COLS,
+                            available // self.THUMB_WIDTH_INCL_GUTTER)
+        except Exception:
+            new_cols = self.COLS
+        if new_cols != self._last_cols:
+            self._last_cols = new_cols
+            try:
+                self.refresh()
+            except Exception:
+                pass
+    # --- IRIS photos-ui: END ---
     def _open_folder(self) -> None:
         if self._store is None:
             return

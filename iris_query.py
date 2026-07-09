@@ -33,6 +33,440 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
+# --- IRIS typo-tolerance: ADD ---
+# rapidfuzz is a fast (C++-backed) fuzzy string matcher used to make every
+# keyword check tolerant of common typos ('emial' == 'email', 'recroding'
+# == 'recording'). It's a soft dependency: if the wheel is missing on a
+# target machine, we fall back to plain substring/equality so nothing
+# breaks. SymSpellPy is loaded lazily behind a feature flag — see
+# _iris_spell_correct() below.
+try:
+    from rapidfuzz import fuzz as _rf_fuzz          # type: ignore
+    _HAS_RAPIDFUZZ = True
+except Exception:                                    # pragma: no cover
+    _rf_fuzz = None
+    _HAS_RAPIDFUZZ = False
+
+# --- IRIS typo-tolerance: ADD ---
+# contractions expands "can't" -> "cannot", "I'll" -> "I will", etc.,
+# BEFORE the slang subs and casual-opener stripper run. Cheap and safe.
+try:
+    import contractions as _contractions             # type: ignore
+    _iris_contractions = _contractions
+    _HAS_CONTRACTIONS = True
+except Exception:                                    # pragma: no cover
+    _contractions = None
+    _iris_contractions = None
+    _HAS_CONTRACTIONS = False
+
+# jellyfish gives Soundex / Metaphone / Levenshtein / Jaro-Winkler for
+# phonetic + character name matching. Used by _phonetic_match() below
+# so 'Ana', 'Anna', and 'Aana' all cluster to the same person even when
+# rapidfuzz's char-level ratio comes up short.
+try:
+    import jellyfish as _iris_jellyfish              # type: ignore
+    _HAS_JELLYFISH = True
+except Exception:                                    # pragma: no cover
+    _iris_jellyfish = None
+    _HAS_JELLYFISH = False
+
+# spaCy powers optional NER extraction (person names, dates) so we can
+# recover a sender name IRIS's regex heuristics miss. Loaded lazily —
+# import spacy is cheap but the model download (en_core_web_sm) may
+# take a few hundred MB and a couple hundred ms to load. Behind
+# IRIS_ENABLE_SPACY=1 env (default OFF for demo safety).
+_spacy_nlp = None
+_spacy_tried = False
+
+def _get_spacy():
+    """Lazy singleton for the en_core_web_sm pipeline. Returns None if
+    disabled, not installed, or the model isn't downloaded."""
+    global _spacy_nlp, _spacy_tried
+    if _spacy_tried:
+        return _spacy_nlp
+    _spacy_tried = True
+    if os.environ.get("IRIS_ENABLE_SPACY", "0") != "1":
+        return None
+    try:
+        import spacy                                # type: ignore
+        _spacy_nlp = spacy.load("en_core_web_sm",
+                                 disable=["tagger", "parser", "lemmatizer"])
+    except Exception as e:
+        print(f"[query] spaCy disabled: {e}")
+        _spacy_nlp = None
+    return _spacy_nlp
+
+
+def spacy_extract_entities(text: str) -> dict:
+    """Return {'PERSON': [...], 'DATE': [...], 'GPE': [...], 'ORG': [...]}.
+    Empty dict when spaCy is unavailable or disabled. Used by the GUI to
+    enrich the LLM router's decisions with structured entity hints."""
+    nlp = _get_spacy()
+    if nlp is None or not text:
+        return {}
+    try:
+        doc = nlp(text)
+    except Exception:
+        return {}
+    out: dict = {}
+    for ent in doc.ents:
+        out.setdefault(ent.label_, []).append(ent.text)
+    return out
+
+
+def phonetic_name_match(a: str, b: str, threshold: float = 0.88) -> bool:
+    """True iff two names sound alike (metaphone equal OR Jaro-Winkler
+    similarity >= threshold). Falls back to a simple lowercase equality
+    if jellyfish isn't installed."""
+    if not a or not b:
+        return False
+    an, bn = a.strip().lower(), b.strip().lower()
+    if an == bn:
+        return True
+    if not _HAS_JELLYFISH:
+        return False
+    try:
+        ma = _iris_jellyfish.metaphone(an)
+        mb = _iris_jellyfish.metaphone(bn)
+        if ma and mb and ma == mb:
+            return True
+        return _iris_jellyfish.jaro_winkler_similarity(an, bn) >= threshold
+    except Exception:
+        return False
+# --- IRIS typo-tolerance: END ---
+
+# `contractions` expands "can't"/"I'll"/"y'all"/"gonna"-style tokens before
+# any keyword logic runs. Soft dep: falls back to identity if missing.
+try:
+    import contractions as _contractions            # type: ignore
+    _HAS_CONTRACTIONS = True
+except Exception:                                    # pragma: no cover
+    _contractions = None
+    _HAS_CONTRACTIONS = False
+
+# spaCy provides real NER for person / date / ordinal extraction — used
+# as a fallback when the email-sender regex can't find a name. Loaded
+# lazily (~150 ms on first call). Soft dep: everything downstream still
+# works from regex-only extraction if spaCy or the en_core_web_sm model
+# isn't installed.
+_spacy_nlp = None
+_spacy_tried = False
+
+def _get_spacy():
+    """Lazy singleton for spaCy's small English pipeline."""
+    global _spacy_nlp, _spacy_tried
+    if _spacy_tried:
+        return _spacy_nlp
+    _spacy_tried = True
+    try:
+        import spacy                                # type: ignore
+        try:
+            _spacy_nlp = spacy.load("en_core_web_sm",
+                                      disable=["parser", "lemmatizer"])
+        except OSError:
+            print("[query] spaCy model 'en_core_web_sm' not found — "
+                  "run `python -m spacy download en_core_web_sm` to "
+                  "enable name/date NER. Falling back to regex only.")
+            _spacy_nlp = None
+    except Exception as e:
+        print(f"[query] spaCy unavailable ({e}); regex-only mode.")
+        _spacy_nlp = None
+    return _spacy_nlp
+
+
+def spacy_person_names(text: str) -> list:
+    """Return the list of PERSON entities spaCy finds in `text` — used
+    by _extract_email_sender as a fallback when the regex misses a
+    natural phrasing like 'the email prani sent me yesterday'."""
+    nlp = _get_spacy()
+    if nlp is None or not text:
+        return []
+    try:
+        doc = nlp(text)
+        return [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
+    except Exception:
+        return []
+
+
+# presidio-analyzer detects PII (credit cards, SSNs, phone numbers) so
+# email bodies can be redacted before they're posted into chat bubbles.
+# Loaded lazily behind IRIS_ENABLE_PII_REDACT=1 so it stays off by
+# default — it's ~300 ms per call and most demos don't need it.
+_pii_analyzer = None
+_pii_tried = False
+
+def _get_pii_analyzer():
+    global _pii_analyzer, _pii_tried
+    if _pii_tried:
+        return _pii_analyzer
+    _pii_tried = True
+    if os.environ.get("IRIS_ENABLE_PII_REDACT", "0") != "1":
+        return None
+    try:
+        from presidio_analyzer import AnalyzerEngine  # type: ignore
+        _pii_analyzer = AnalyzerEngine()
+    except Exception as e:
+        print(f"[query] presidio disabled ({e}).")
+        _pii_analyzer = None
+    return _pii_analyzer
+
+
+def redact_pii(text: str) -> str:
+    """Replace credit-card / SSN / phone-number spans with [REDACTED].
+    No-op unless IRIS_ENABLE_PII_REDACT=1 is set."""
+    engine = _get_pii_analyzer()
+    if engine is None or not text:
+        return text
+    try:
+        entities = ["CREDIT_CARD", "US_SSN", "PHONE_NUMBER",
+                     "US_BANK_NUMBER", "IBAN_CODE"]
+        results = engine.analyze(text=text, language="en",
+                                  entities=entities)
+        if not results:
+            return text
+        # Rebuild text with [REDACTED] where each entity is.
+        parts = []
+        cursor = 0
+        for r in sorted(results, key=lambda x: x.start):
+            if r.start < cursor:
+                continue                             # overlap
+            parts.append(text[cursor:r.start])
+            parts.append(f"[REDACTED {r.entity_type}]")
+            cursor = r.end
+        parts.append(text[cursor:])
+        return "".join(parts)
+    except Exception:
+        return text
+
+# SymSpell is disabled by default (env IRIS_ENABLE_SYMSPELL=1 to turn on).
+# The library ships with an English frequency dictionary; we augment its
+# vocabulary with the IRIS domain terms so it can't "correct" project
+# words into nonsense ('ollama' -> 'obama', 'chromadb' -> 'chromed').
+_IRIS_DOMAIN_TERMS = {
+    "iris", "ollama", "chromadb", "chroma", "deepgram", "gmail",
+    "esp32", "llava", "whisper", "arcface", "speechbrain", "pyqt",
+    "phoneme", "sidebar", "chat", "photos", "recording", "recordings",
+    "transcript", "transcripts", "handshake", "internship",
+}
+_symspell_singleton = None
+_symspell_tried = False
+
+def _get_symspell():
+    """Return a lazy singleton SymSpell instance, or None if disabled/failed.
+    Loaded once per process; augmented with IRIS domain terms so common
+    project words don't get 'corrected'."""
+    global _symspell_singleton, _symspell_tried
+    if _symspell_tried:
+        return _symspell_singleton
+    _symspell_tried = True
+    if os.environ.get("IRIS_ENABLE_SYMSPELL", "0") != "1":
+        return None
+    try:
+        from symspellpy import SymSpell, Verbosity   # type: ignore
+        import pkg_resources                          # type: ignore
+        sym = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
+        dict_path = pkg_resources.resource_filename(
+            "symspellpy", "frequency_dictionary_en_82_765.txt")
+        sym.load_dictionary(dict_path, term_index=0, count_index=1)
+        for term in _IRIS_DOMAIN_TERMS:
+            sym.create_dictionary_entry(term, 10_000_000)
+        _symspell_singleton = sym
+    except Exception as e:
+        print(f"[query] SymSpell disabled: {e}")
+        _symspell_singleton = None
+    return _symspell_singleton
+
+
+def _iris_spell_correct(text: str) -> str:
+    """Aggressive whole-sentence spell correction. Off by default (SymSpell
+    can miscorrect proper nouns). Turn on with IRIS_ENABLE_SYMSPELL=1."""
+    sym = _get_symspell()
+    if sym is None or not text:
+        return text
+    try:
+        suggestions = sym.lookup_compound(text, max_edit_distance=2)
+        if suggestions:
+            return suggestions[0].term
+    except Exception:
+        pass
+    return text
+
+
+def _fuzzy_in(needle: str, haystack, threshold: int = 85) -> bool:
+    """True iff `needle` (a full message) contains any of `haystack`'s
+    keywords, tolerating typos up to the given similarity threshold.
+    Falls back to literal substring check when rapidfuzz isn't installed.
+
+    Uses partial_ratio: matches 'gimme my emials please' against 'email'
+    at ~85% because the word aligns with only part of the sentence.
+
+    Short keywords (<=4 chars) are matched WHOLE-WORD only — otherwise
+    'day' matches 'today', 'time' matches 'timer', etc. That killed the
+    date-question classifier when I first wired this up.
+    """
+    if not needle:
+        return False
+    low = needle.lower()
+    if _HAS_RAPIDFUZZ:
+        toks = re.findall(r"[a-z']+", low)
+        for w in haystack:
+            wl = w.lower()
+            # For short keywords, require exact word membership only.
+            if len(wl) <= 4:
+                if wl in toks:
+                    return True
+                continue
+            # Longer keywords: literal substring short-circuit is safe.
+            if wl in low:
+                return True
+            for tok in toks:
+                if abs(len(tok) - len(wl)) > 2:
+                    continue
+                if _rf_fuzz.ratio(tok, wl) >= threshold:
+                    return True
+        return False
+    # Fallback: plain substring match (older machines without rapidfuzz).
+    toks = re.findall(r"[a-z']+", low)
+    for w in haystack:
+        wl = w.lower()
+        if len(wl) <= 4:
+            if wl in toks:
+                return True
+        elif wl in low:
+            return True
+    return False
+
+
+def _fuzzy_any_phrase(needle: str, phrases, threshold: int = 85) -> bool:
+    """Fuzzy version of the classic `_has_any(low, phrases)` used across
+    the classifier — accepts an iterable of MULTI-WORD phrases and
+    checks whether the input contains anything close to any of them.
+    Uses partial_ratio so 'yo hey iris pls check my mail' matches
+    'check my email' comfortably."""
+    if not needle:
+        return False
+    low = needle.lower()
+    for phrase in phrases:
+        pl = phrase.lower()
+        if pl in low:
+            return True
+        if not _HAS_RAPIDFUZZ:
+            continue
+        # partial_ratio scores by best alignment of the shorter string
+        # against the longer — good for multi-word phrases inside
+        # rambling sentences.
+        if _rf_fuzz.partial_ratio(pl, low) >= threshold:
+            return True
+    return False
+
+
+# Casual-openings + slang normalizer. Applied at the top of every
+# classifier so 'yo hey iris wut is da date today lol' becomes 'what
+# is the date today' before any keyword logic touches it. The rules
+# stay tight on purpose — nothing here should turn a legitimate query
+# into a wrong one.
+_CASUAL_OPENER_RE = re.compile(
+    r"^\s*(?:"
+    r"yo+|hey+|hi+|hello+|hola|sup|aight|alright|ok(?:ay)?|"
+    r"iris|hey\s+iris|hi\s+iris|yo\s+iris|iris,?\s+|"
+    r"listen|so|um+|uh+|well|please|plz|pls|hmm+"
+    r")\b[\s,!.]*",
+    re.I,
+)
+_CASUAL_TRAILER_RE = re.compile(
+    r"[\s,!.]*\b(?:"
+    r"lol|lmao|rofl|lmk|thx|thanks|thankyou|ty|please|plz|pls|k|kk|"
+    r"asap|now|rn"
+    r")\b[\s,!.]*$",
+    re.I,
+)
+_SLANG_SUBS = [
+    (re.compile(r"\bu\b", re.I), "you"),
+    (re.compile(r"\bur\b", re.I), "your"),
+    (re.compile(r"\byr\b", re.I), "your"),
+    (re.compile(r"\br\b", re.I), "are"),
+    (re.compile(r"\bda\b", re.I), "the"),
+    (re.compile(r"\bdat\b", re.I), "that"),
+    (re.compile(r"\bwut\b", re.I), "what"),
+    (re.compile(r"\bwat\b", re.I), "what"),
+    (re.compile(r"\bwhut\b", re.I), "what"),
+    (re.compile(r"\brn\b", re.I), "right now"),
+    (re.compile(r"\bgimme\b", re.I), "give me"),
+    (re.compile(r"\bgonna\b", re.I), "going to"),
+    (re.compile(r"\bwanna\b", re.I), "want to"),
+    (re.compile(r"\bkinda\b", re.I), "kind of"),
+    (re.compile(r"\bsorta\b", re.I), "sort of"),
+    (re.compile(r"\btmr\b", re.I), "tomorrow"),
+    (re.compile(r"\btmrw\b", re.I), "tomorrow"),
+    (re.compile(r"\btmw\b", re.I), "tomorrow"),
+    (re.compile(r"\btmrrow\b", re.I), "tomorrow"),
+    (re.compile(r"\btommorrow\b", re.I), "tomorrow"),
+    (re.compile(r"\btommorow\b", re.I), "tomorrow"),
+    (re.compile(r"\btodya\b", re.I), "today"),
+    (re.compile(r"\btoday's\b", re.I), "todays"),
+    (re.compile(r"\bcurent\b", re.I), "current"),
+    (re.compile(r"\bcurr\b", re.I), "current"),
+    (re.compile(r"\bemial\b", re.I), "email"),
+    (re.compile(r"\bemials\b", re.I), "emails"),
+    (re.compile(r"\bchek\b", re.I), "check"),
+    (re.compile(r"\bchekc\b", re.I), "check"),
+    (re.compile(r"\bcehck\b", re.I), "check"),
+    (re.compile(r"\btak\b", re.I), "take"),
+    (re.compile(r"\btke\b", re.I), "take"),
+    (re.compile(r"\bteh\b", re.I), "the"),
+    (re.compile(r"\breed\b", re.I), "read"),
+    (re.compile(r"\bmesage\b", re.I), "message"),
+    (re.compile(r"\brecroding\b", re.I), "recording"),
+    (re.compile(r"\brecroding[s]?\b", re.I), "recordings"),
+    (re.compile(r"\bpicutre\b", re.I), "picture"),
+    (re.compile(r"\bpick(ture)?\b", re.I), "picture"),
+    (re.compile(r"\bpho+to+\b", re.I), "photo"),
+    (re.compile(r"\bimg\b", re.I), "image"),
+    (re.compile(r"\bpic\b", re.I), "photo"),
+    (re.compile(r"\bpics\b", re.I), "photos"),
+]
+_EMOJI_STRIP_RE = re.compile(
+    r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF]+"
+)
+
+
+def normalize_casual(text: str) -> str:
+    """Repeatedly strip casual openers/trailers, expand common slang and
+    fix a handful of extremely common typos, then hand back the cleaned
+    string. Every classifier runs its input through this first so
+    downstream logic never has to worry about 'yo hey iris' / 'lol thx'
+    style clutter."""
+    if not text:
+        return ""
+    s = _EMOJI_STRIP_RE.sub(" ", text)
+    # --- IRIS contractions: ADD ---
+    # Expand "can't"/"I'll"/"y'all"/"gonna" before opener/slang passes.
+    # This unifies 40+ common contractions into their full forms so the
+    # regex-based slang subs (below) don't have to memorize each variant.
+    if _HAS_CONTRACTIONS:
+        try:
+            s = _contractions.fix(s)
+        except Exception:
+            pass
+    # --- IRIS contractions: END ---
+    # Peel casual openers repeatedly — 'yo hey iris hi' -> ''
+    for _ in range(5):
+        stripped = _CASUAL_OPENER_RE.sub("", s)
+        if stripped == s:
+            break
+        s = stripped
+    # Peel casual trailers repeatedly — '... plz lol thx' -> '...'
+    for _ in range(5):
+        stripped = _CASUAL_TRAILER_RE.sub("", s)
+        if stripped == s:
+            break
+        s = stripped
+    for pat, repl in _SLANG_SUBS:
+        s = pat.sub(repl, s)
+    s = re.sub(r"\s+", " ", s).strip(" ,.!?")
+    return s
+# --- IRIS typo-tolerance: END ---
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Result types
@@ -608,12 +1042,19 @@ def lookup_offset(rec, seconds: float) -> Optional[dict]:
 # "take a screenshot". Completely separate domain from recordings, so this is
 # checked first in classify() and short-circuits everything else below.
 # ─────────────────────────────────────────────────────────────────────────────
+# --- IRIS typo-tolerance: CHANGE ---
+# Broader: 'selfie' alone triggers a photo take, and 'take/snap/grab' is
+# joined by 'get/gimme' since those show up in casual phrasings.
 _PHOTO_PATTERN = re.compile(
-    r"\b(?:take|snap|grab|capture)\s+(?:a\s+|my\s+|the\s+)?"
-    r"(?:photo|picture|pic|snap(?:shot)?|screenshot)\b"
-    r"|\bcapture\s+(?:the\s+|a\s+|my\s+)?screen\b",
+    r"\b(?:take|snap|grab|capture|get|gimme|give me)\s+(?:a\s+|my\s+|the\s+|"
+    r"one\s+|some\s+)?(?:photo|picture|pic|selfie|snap(?:shot)?|screenshot)"
+    r"\b"
+    r"|\bcapture\s+(?:the\s+|a\s+|my\s+)?screen\b"
+    r"|\bselfie\s+(?:time|now|please|plz)?\b"
+    r"|\btake\s+(?:one|another)\s+(?:for|of)\s+me\b",
     re.IGNORECASE,
 )
+# --- IRIS typo-tolerance: END ---
 
 
 def is_photo_trigger(text: str) -> bool:
@@ -664,8 +1105,14 @@ def is_photo_query(text: str) -> bool:
         return True
     if any(c in low for c in _PHOTO_LATEST_CUES):
         return True
-    if re.search(r"\bphotos?\b.{0,15}\b(from|on|at|taken)\b", low):
+    # --- IRIS typo-tolerance: CHANGE ---
+    # Also match 'pictures from yesterday', 'pics on Tuesday', not just
+    # 'photos ...' — the previous regex only checked 'photos?'.
+    if re.search(r"\b(?:photos?|pictures?|pics?|screenshots?|snaps?)"
+                 r"\b.{0,15}\b(from|on|at|taken|yesterday|today|"
+                 r"tomorrow)\b", low):
         return True
+    # --- IRIS typo-tolerance: END ---
     return False
 
 
@@ -700,7 +1147,13 @@ def classify(text: str, recordings, today: Optional[datetime] = None,
     set (each item exposes .name/.mtime/.duration_sec/.transcript/.summary)."""
     today = today or datetime.now()
     raw = text or ""
-    corrected = correct_text(raw)
+    # --- IRIS typo-tolerance: CHANGE ---
+    # Pipe every message through the casual normalizer BEFORE the
+    # per-token typo repair. That way 'yo iris wut recroding do i have'
+    # becomes 'what recording do i have' by the time keyword logic runs.
+    normed = normalize_casual(raw)
+    corrected = correct_text(normed) if normed else correct_text(raw)
+    # --- IRIS typo-tolerance: END ---
     low = corrected.lower().strip()
     intent = Intent(corrected_text=corrected)
 
@@ -802,13 +1255,26 @@ def classify(text: str, recordings, today: Optional[datetime] = None,
     if d is None and rel is not None:
         d = rel
     if d is not None:
-        intent.kind = "date"
-        intent.dates = [d]
-        tm = parse_time(_strip_dates(low))
-        if tm is not None:
-            intent.time = tm
-        intent.summarize_all = plural or _has_any(low, _ALL_CUES)
-        return intent
+        # --- IRIS typo-tolerance: CHANGE ---
+        # Guard: date lookup ONLY fires when the sentence also mentions
+        # a recording noun or an action verb that implies a recording
+        # lookup ('give me / play / summarize the audio from today'). A
+        # bare 'today was rough' or "i'll email him tomorrow" is just
+        # chat; the classifier should not route it here.
+        if not (_has_any(low, _RECORDING_NOUNS)
+                or _has_any(low, _ACTION_CUES)
+                or has_active):
+            # fall through to name-match / final 'none' branches
+            pass
+        else:
+            intent.kind = "date"
+            intent.dates = [d]
+            tm = parse_time(_strip_dates(low))
+            if tm is not None:
+                intent.time = tm
+            intent.summarize_all = plural or _has_any(low, _ALL_CUES)
+            return intent
+        # --- IRIS typo-tolerance: END ---
 
     # 8) Month ("recordings in june", "june recordings").
     mo = _parse_month(low)
@@ -1072,7 +1538,10 @@ def classify_memory(text: str,
     and finally to raw Llama chat."""
     today = today or datetime.now()
     raw = text or ""
-    corrected = correct_text(raw)
+    # --- IRIS typo-tolerance: CHANGE ---
+    normed = normalize_casual(raw)
+    corrected = correct_text(normed) if normed else correct_text(raw)
+    # --- IRIS typo-tolerance: END ---
     low = corrected.lower().strip()
     intent = MemoryIntent(corrected_text=corrected)
     if not low:
@@ -1173,6 +1642,10 @@ _ACTION_AUDIO_CUES = (
     "start listening to me", "start the audio",
     "record a conversation", "record this conversation",
     "start the recording",
+    # --- IRIS typo-tolerance: ADD ---
+    "record something", "record this", "record now",
+    "capture audio", "capture this conversation",
+    # --- IRIS typo-tolerance: END ---
 )
 
 # Phrases that trigger launching email. Kept narrow on purpose — "email"
@@ -1194,7 +1667,10 @@ def classify_action(text: str) -> ActionIntent:
     action_start_video, not on action_start_audio (which would match
     'start recording' as a substring of 'start recording video').
     """
-    corrected = correct_text(text or "")
+    # --- IRIS typo-tolerance: CHANGE ---
+    normed = normalize_casual(text or "")
+    corrected = correct_text(normed) if normed else correct_text(text or "")
+    # --- IRIS typo-tolerance: END ---
     low = corrected.lower().strip()
     intent = ActionIntent(corrected_text=corrected)
     if not low:
@@ -1294,7 +1770,8 @@ _EMAIL_ORDINAL_WORDS = {
 # Words that anchor topic extraction to actually being about email — without
 # this, generic cues like bare "about " would false-positive on ordinary
 # conversation ("I was thinking about lunch").
-_EMAIL_CONTEXT_WORDS = ("email", "emails", "inbox", "gmail")
+_EMAIL_CONTEXT_WORDS = ("email", "emails", "inbox", "gmail", "mail",
+                        "mails", "mailbox")
 
 
 def _extract_email_topic(text: str) -> str:
@@ -1369,8 +1846,7 @@ _EMAIL_WHATS_IN_RE = re.compile(r"\bwhat'?s in\b|\bwhat is in\b")
 
 def _has_email_command_pattern(low: str) -> bool:
     words = re.findall(r"[a-z']+", low)
-    noun_idxs = [i for i, w in enumerate(words)
-                 if w in ("email", "emails", "inbox", "gmail")]
+    noun_idxs = [i for i, w in enumerate(words) if w in _EMAIL_CONTEXT_WORDS]
     verb_idxs = [i for i, w in enumerate(words) if w in _EMAIL_VERB_WORDS]
     return any(abs(ni - vi) <= 4 for ni in noun_idxs for vi in verb_idxs)
 
@@ -1442,6 +1918,16 @@ def _extract_email_sender(text: str) -> str:
         # or too-long capture is discarded.
         if 1 <= len(tail) <= 60 and tail.lower() not in _EMAIL_CONTEXT_WORDS:
             return tail
+    # --- IRIS spacy-ner: ADD ---
+    # Regex missed everything — try spaCy NER as a last resort. Catches
+    # phrasings like "the email prani sent me yesterday" where "from/by/
+    # sent by" doesn't precede the name and the regex has nothing to
+    # anchor on. Only fires if the sentence already contains an email
+    # noun, same as the regex.
+    persons = spacy_person_names(text)
+    if persons:
+        return persons[0]
+    # --- IRIS spacy-ner: END ---
     return ""
 
 
@@ -1491,16 +1977,60 @@ _DATE_QUESTION_EXTRA = (
 )
 
 
+_DATE_KEYWORDS = ("date", "day", "time", "month", "year", "weekday")
+_DATE_ANCHOR_WORDS = ("today", "now", "right now", "currently", "current",
+                      "todays", "today's", "current date", "current time",
+                      "this moment", "this second", "at the moment")
+_DATE_QUESTION_STARTERS = ("what", "whats", "what's", "which", "tell me",
+                            "give me", "do you know", "any idea")
+_RECORDING_HARDBLOCK = (
+    "recording", "recordings", "audio", "clip", "clips", "file", "files",
+    "conversation", "conversations", "voice memo", "transcript", "call",
+    "recorded",
+)
+
+
 def is_date_question(text: str) -> bool:
     """True for questions asking IRIS what the date/time is right now.
-    Kept narrow: has to look like a bare date/time question, not a
-    sentence that happens to contain 'today'."""
-    low = (text or "").lower().strip().rstrip("?!. ")
+
+    Two-stage detector:
+      1) exact-form regex + short-phrase whitelist (kept from earlier).
+      2) fuzzy keyword scan — a date keyword ('day/time/date/…') plus a
+         'now'-anchor ('today/rn/currently'), and NO recording noun in
+         the sentence (so 'the recording from today' still routes to
+         the recording lookup).
+
+    The normalizer runs first so 'yo wut day is it rn' becomes
+    'what day is it right now' before we look at any of this.
+    """
+    if not text:
+        return False
+    corrected = correct_text(normalize_casual(text))
+    low = corrected.lower().strip().rstrip("?!. ")
     if not low:
         return False
-    if _DATE_QUESTION_RE.match(text.strip()):
+    if _DATE_QUESTION_RE.match(corrected.strip()):
         return True
-    return low in _DATE_QUESTION_EXTRA
+    if low in _DATE_QUESTION_EXTRA:
+        return True
+    # Stage 2 — fuzzy keyword scan. Any recording noun in the sentence
+    # HARD-blocks routing here, because those are always recording
+    # lookups ('the audio from today', 'give me the recording from now').
+    if _fuzzy_in(low, _RECORDING_HARDBLOCK, threshold=90):
+        return False
+    if _fuzzy_in(low, ("photo", "photos", "picture", "pictures", "pic",
+                       "pics", "screenshot", "screenshots"), threshold=90):
+        return False
+    if _fuzzy_in(low, ("email", "emails", "inbox", "gmail"), threshold=90):
+        return False
+    has_kw = _fuzzy_in(low, _DATE_KEYWORDS, threshold=88)
+    has_anchor = _fuzzy_in(low, _DATE_ANCHOR_WORDS, threshold=88)
+    has_starter = any(low.startswith(s) for s in _DATE_QUESTION_STARTERS) \
+        or _fuzzy_in(low, _DATE_QUESTION_STARTERS, threshold=90)
+    # Require at least a date keyword AND a starter (or an explicit
+    # now-anchor) — that keeps 'today was rough' from firing while
+    # catching 'iris what day is it', 'give me the current time', etc.
+    return has_kw and (has_starter or has_anchor)
 # --- IRIS email-sender: END ---
 
 
@@ -1510,7 +2040,10 @@ def classify_email(text: str) -> EmailIntent:
     phrasing ('email about X') -- the topic extractor is anchored to an
     email-context word so it won't false-positive on ordinary chat like
     'thinking about lunch'."""
-    corrected = correct_text(text or "")
+    # --- IRIS typo-tolerance: CHANGE ---
+    normed = normalize_casual(text or "")
+    corrected = correct_text(normed) if normed else correct_text(text or "")
+    # --- IRIS typo-tolerance: END ---
     low = corrected.lower().strip()
     intent = EmailIntent(corrected_text=corrected)
     if not low:
