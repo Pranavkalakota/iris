@@ -3960,6 +3960,14 @@ class ChatTab(QWidget):
         body = (getattr(msg, "body", "") or "").strip()
         if not body:
             body = (getattr(msg, "snippet", "") or "").strip()
+        # --- IRIS presidio: ADD ---
+        # Redact credit card / SSN / phone numbers before displaying.
+        # No-op unless IRIS_ENABLE_PII_REDACT=1 is set in the env.
+        try:
+            body = iq.redact_pii(body)
+        except Exception:
+            pass
+        # --- IRIS presidio: END ---
         truncated = False
         if len(body) > self._EMAIL_BODY_CHAT_LIMIT:
             body = body[:self._EMAIL_BODY_CHAT_LIMIT].rstrip() + "…"
@@ -4062,6 +4070,29 @@ class ChatTab(QWidget):
                     "Try again in a moment.")
     # --- IRIS email-summary: END ---
 
+    # --- IRIS outlines: ADD ---
+    # `outlines` (if installed) is used to CONSTRAIN llama3.2:1b's output
+    # to a valid JSON schema. Without it, we rely on regex + json.loads
+    # and silently fall through when the model returns prose. With
+    # outlines the model literally can't output anything except a
+    # matching JSON object — so the intent router never parse-fails.
+    # Soft dep: routed intent still works with plain JSON parsing if
+    # outlines isn't installed.
+    _INTENT_JSON_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "intent": {
+                "type": "string",
+                "enum": ["date", "time", "photo_take", "photo_lookup",
+                          "video_take", "video_lookup", "email",
+                          "recording", "memory", "location", "chat"],
+            },
+            "detail": {"type": "string"},
+        },
+        "required": ["intent"],
+    }
+    # --- IRIS outlines: END ---
+
     # --- IRIS llm-router: ADD ---
     _INTENT_ROUTER_MODEL = "llama3.2:1b"
     _INTENT_ROUTER_PROMPT = (
@@ -4102,29 +4133,53 @@ class ChatTab(QWidget):
                               "howdy", "hiya", "morning", "afternoon",
                               "evening", "thanks", "thank you", "ty"}:
             return None
-        try:
-            resp = self._client.chat(
-                model=self._INTENT_ROUTER_MODEL,
-                messages=[
-                    {"role": "system", "content": self._INTENT_ROUTER_PROMPT},
-                    {"role": "user", "content": text},
-                ],
-                options={"num_predict": 60, "temperature": 0.0},
-            )
-            raw = (resp["message"]["content"] or "").strip()
-        except Exception as e:
-            print(f"[router] llm call failed: {e}")
+        # --- IRIS outlines: CHANGE ---
+        # Prefer Ollama's built-in structured output ("format" parameter)
+        # so the model is guaranteed to emit valid JSON matching the
+        # schema — same behavior outlines gives us for HuggingFace
+        # models, but works with the Ollama client we already have.
+        # Fall back to schema="json" if Ollama's version rejects the
+        # full schema object (older Ollama releases), and to plain
+        # unconstrained generation as a last resort.
+        payload = None
+        for attempt_format in (self._INTENT_JSON_SCHEMA, "json", None):
+            try:
+                kwargs = {
+                    "model": self._INTENT_ROUTER_MODEL,
+                    "messages": [
+                        {"role": "system",
+                         "content": self._INTENT_ROUTER_PROMPT},
+                        {"role": "user", "content": text},
+                    ],
+                    "options": {"num_predict": 60, "temperature": 0.0},
+                }
+                if attempt_format is not None:
+                    kwargs["format"] = attempt_format
+                resp = self._client.chat(**kwargs)
+                raw = (resp["message"]["content"] or "").strip()
+            except TypeError:
+                # older ollama-python that doesn't accept `format` kwarg
+                continue
+            except Exception as e:
+                print(f"[router] llm call failed ({attempt_format!r}): {e}")
+                return None
+            # Try to parse — with a schema constraint this is guaranteed
+            # to succeed; without it, fall through to regex extraction.
+            try:
+                payload = json.loads(raw)
+                break
+            except Exception:
+                m = re.search(r"\{[^{}]*\}", raw)
+                if m:
+                    try:
+                        payload = json.loads(m.group(0))
+                        break
+                    except Exception:
+                        pass
+        if payload is None:
+            print(f"[router] no valid JSON after all attempts")
             return None
-
-        m = re.search(r"\{[^{}]*\}", raw)
-        if not m:
-            print(f"[router] no JSON in response: {raw!r}")
-            return None
-        try:
-            payload = json.loads(m.group(0))
-        except Exception:
-            print(f"[router] invalid JSON: {raw!r}")
-            return None
+        # --- IRIS outlines: END ---
         intent = str(payload.get("intent", "")).lower().strip()
         print(f"[router] {text!r} -> {intent!r}")
 
