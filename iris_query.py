@@ -1263,6 +1263,14 @@ class EmailIntent:
     corrected_text: str = ""
     topic: str = ""
     ordinal_index: int = -1
+    # --- IRIS email-sender: ADD ---
+    # A "from X" / "by X" / "sent by X" query. When set alongside topic,
+    # they are combined into Gmail's `from:X topic` search. When set with
+    # topic empty, the search is a bare `from:X`. Kept as a plain string
+    # so the GUI can hand it straight to Gmail's from: operator, which
+    # already substring-matches both display name and address.
+    sender: str = ""
+    # --- IRIS email-sender: END ---
 
 
 _EMAIL_READ_CUES = (
@@ -1341,7 +1349,21 @@ def _extract_email_topic(text: str) -> str:
 # THE SECOND email" doesn't contain the literal substring "read email".
 # Same class of bug as classify_action's mid-phrase problem; fixed the
 # same way, with a word-distance check instead of a growing phrase list.
-_EMAIL_VERB_WORDS = ("read", "check", "pull", "look")
+# --- IRIS email-verbs: CHANGE ---
+# Widened past the original ("read", "check", "pull", "look") because
+# real users ask with a much larger set of verbs and every miss here
+# dropped the message all the way through to plain chat: "give me the
+# latest email", "find me emails from prani", "get my inbox", "show me
+# any email about deepgram" all failed classify_email and had to be
+# rescued (or, more often, weren't). New additions: give/find/get/
+# fetch/show/search. Each still needs to sit within 4 words of an
+# email/inbox/gmail noun via _has_email_command_pattern, so ordinary
+# conversation like "give me an update" isn't dragged into email mode.
+_EMAIL_VERB_WORDS = (
+    "read", "check", "pull", "look",
+    "give", "find", "get", "fetch", "show", "search",
+)
+# --- IRIS email-verbs: END ---
 _EMAIL_WHATS_IN_RE = re.compile(r"\bwhat'?s in\b|\bwhat is in\b")
 
 
@@ -1363,6 +1385,125 @@ def _has_email_read_cue(low: str) -> bool:
     return _has_email_command_pattern(low)
 
 
+# --- IRIS email-sender: ADD ---
+# Sender extraction — "email from prani", "emails by prani k", "the
+# email sent by John", "email from prani@example.com". Requires an
+# email context word (email/inbox/gmail) to be present so ordinary
+# chat "from" phrases ("a message from Bob") don't false-positive.
+# The captured name is stripped of trailing filler ("in it", "please",
+# "listed out", punctuation) the same way _extract_email_topic does.
+_EMAIL_SENDER_CUES = (
+    r"\bsent\s+by\s+",
+    r"\bemails?\s+from\s+",
+    r"\bemails?\s+by\s+",
+    r"\bfrom\s+the\s+sender\s+",
+    r"\bfrom\s+sender\s+",
+    r"\bfrom\s+",   # last: broadest, only fires if none above matched
+    r"\bby\s+",     # last: broadest, only fires if none above matched
+)
+
+_SENDER_TRAILING_FILLER_RE = re.compile(
+    r"\s+(in it|in the email|in my (?:inbox|email)|"
+    r"listed out|listed|out loud|out|shown|displayed|"
+    r"please|for me|right now|now|thanks|thank you)\s*$",
+    re.I,
+)
+
+
+def _extract_email_sender(text: str) -> str:
+    """Return the sender name/address the user is asking about, or "".
+    Anchored to an email-context word so 'a text from bob' doesn't fire.
+    """
+    low = text.lower()
+    if not any(w in low for w in _EMAIL_CONTEXT_WORDS):
+        return ""
+    for pat in _EMAIL_SENDER_CUES:
+        m = re.search(pat, low)
+        if not m:
+            continue
+        tail = text[m.end():].strip(" ?.!\"'")
+        tail = re.sub(r"^(the|a|an|that|some|my|user|person)\s+", "",
+                       tail, flags=re.I)
+        # cut at the next clause boundary so "from prani in my inbox"
+        # yields "prani", not "prani in my inbox".
+        tail = re.split(
+            r"\s+(?:in|about|regarding|containing|mentioning|with|"
+            r"that|which|where|when|and)\s+",
+            tail, maxsplit=1, flags=re.I,
+        )[0]
+        while True:
+            new_tail = _SENDER_TRAILING_FILLER_RE.sub("", tail)
+            if new_tail == tail:
+                break
+            tail = new_tail
+        tail = tail.strip(" ?.!\"'")
+        # Guard against catching a topic word like "email from work" ->
+        # "work" would be a plausible sender name; keep it. But an empty
+        # or too-long capture is discarded.
+        if 1 <= len(tail) <= 60 and tail.lower() not in _EMAIL_CONTEXT_WORDS:
+            return tail
+    return ""
+
+
+# Date/time question detector — routes bare "what day is it today" style
+# queries away from the recording classifier (which happily interprets
+# any "today"/"tomorrow" as a date lookup and prints "I don't see a
+# recording on ..."). Restricted to questions ABOUT the date/time, not
+# statements that merely contain a date word.
+_DATE_QUESTION_RE = re.compile(
+    r"^\s*(?:hey\s+iris[,\s]+|iris[,\s]+)?"
+    r"(?:can you |could you |please )?"
+    r"(?:tell me |remind me )?"
+    r"(?:what(?:'s| is| s)?|whats)"
+    r"\s+(?:the\s+)?"
+    r"(?:current\s+)?"
+    r"(?:date|day|time|month|year)"
+    r"(?:\s+is\s+it)?"
+    r"(?:\s+(?:today|right now|now|currently))?"
+    r"\s*\??\s*$",
+    re.I,
+)
+
+_DATE_QUESTION_EXTRA = (
+    "what day is it",
+    "what day is today",
+    "what is today's date",
+    "whats today's date",
+    "what's today's date",
+    "what is the date today",
+    "whats the date today",
+    "what's the date today",
+    "what's the current date",
+    "whats the current date",
+    "what is the current date",
+    "current date",
+    "todays date",
+    "today's date",
+    "what time is it",
+    "what's the time",
+    "whats the time",
+    "what is the time",
+    "current time",
+    "what day of the week is it",
+    "what day of the week",
+    "what month is it",
+    "what year is it",
+)
+
+
+def is_date_question(text: str) -> bool:
+    """True for questions asking IRIS what the date/time is right now.
+    Kept narrow: has to look like a bare date/time question, not a
+    sentence that happens to contain 'today'."""
+    low = (text or "").lower().strip().rstrip("?!. ")
+    if not low:
+        return False
+    if _DATE_QUESTION_RE.match(text.strip()):
+        return True
+    return low in _DATE_QUESTION_EXTRA
+# --- IRIS email-sender: END ---
+
+
 def classify_email(text: str) -> EmailIntent:
     """Decide whether the message wants an email's content read out in
     chat. Fires on either an explicit read/check cue OR clear topic
@@ -1376,9 +1517,24 @@ def classify_email(text: str) -> EmailIntent:
         return intent
 
     topic = _extract_email_topic(corrected)
+    # --- IRIS email-sender: ADD ---
+    sender = _extract_email_sender(corrected)
+    # --- IRIS email-sender: END ---
     has_cue = _has_email_read_cue(low)
-    if not (topic or has_cue):
+    if not (topic or sender or has_cue):
         return intent
+
+    # --- IRIS email-sender: ADD ---
+    # Sender search fires as email_topic so the existing multi-hit
+    # pick-list flow keeps working. The GUI checks intent.sender first
+    # and hands `from:<sender>` (optionally with the topic appended) to
+    # Gmail's own search.
+    if sender:
+        intent.kind = "email_topic"
+        intent.topic = topic  # may be "" — that's fine, sender-only
+        intent.sender = sender
+        return intent
+    # --- IRIS email-sender: END ---
 
     if topic:
         intent.kind = "email_topic"

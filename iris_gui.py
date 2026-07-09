@@ -2027,6 +2027,31 @@ class ChatTab(QWidget):
         if iq is None:
             self._start_bg(lambda: self._ask_ollama(text))
             return
+        # --- IRIS date-question: ADD ---
+        # Bare "what day is it today", "what's the date", "current time"
+        # style queries used to hijack the recording classifier because
+        # parse_relative_day matches "today" -> Date -> _do_date runs and
+        # says "I don't see a recording on <today>". Answer them from
+        # datetime.now() before anything else touches the message.
+        try:
+            if iq.is_date_question(text):
+                self._answer_date_question(text)
+                return
+        except AttributeError:
+            pass  # older iris_query.py without the helper — fall through
+        # --- IRIS date-question: END ---
+        # --- IRIS email-summary: ADD ---
+        # Follow-up summary/transcript request on the currently-active
+        # email ("summarize this", "give me the tldr", "transcript
+        # please"). Requires _active_email to be set — no email loaded
+        # means the phrase is about something else and should fall
+        # through to the normal classifier below.
+        if self._active_email is not None \
+                and self._is_email_summary_followup(low):
+            mode = "transcript" if self._is_email_transcript(low) else "summary"
+            self._start_bg(lambda: self._summarize_active_email(mode))
+            return
+        # --- IRIS email-summary: END ---
         # UI-action intents (start camera / start audio recording) take
         # priority over both memory and recording classifiers — they're
         # asking IRIS to *do* something, not answer a question.
@@ -2104,6 +2129,22 @@ class ChatTab(QWidget):
                                         mode=intent.capture_mode)
             return
         if k == "photo_query":
+            # --- IRIS photo-followup: ADD ---
+            # is_photo_query() fires for any message that contains a
+            # photo noun + a generic verb like "what's" / "show". That's
+            # too eager for follow-up chips ("what's in my photos?",
+            # "photos?" tapped on the suggestion strip) — they end up
+            # listing every photo instead of being a normal question.
+            # Only trust the dispatch when the message has an explicit
+            # list/latest/date cue that only makes sense as a photo
+            # lookup; otherwise treat it as chat and let Ollama answer.
+            if not self._is_confident_photo_query(text):
+                if self._active is not None or self._active_photo is not None:
+                    self._start_bg(lambda: self._answer_followup(text))
+                    return
+                self._start_bg(lambda: self._ask_ollama(text))
+                return
+            # --- IRIS photo-followup: END ---
             self._do_photo_query(intent)
             return
         if k == "list":
@@ -3603,35 +3644,83 @@ class ChatTab(QWidget):
         return clips[0]
 
     _EMAIL_TOPIC_MODEL = "llama3.2:1b"
+    # --- IRIS email-llm-first: CHANGE ---
+    # The old prompt only extracted a topic string. Now we ask the
+    # model for a small structured JSON blob so it can also say the
+    # message is a sender query ("from prani") or plain "check email"
+    # with no filter at all. Same one-shot call, but the answer covers
+    # every case the classifier used to miss.
     _EMAIL_TOPIC_PROMPT = (
-        "You extract a search topic from a chat message asking to check "
-        "email. Reply with EXACTLY the topic keyword or short phrase the "
-        "user wants to search for in their email, and nothing else -- no "
-        "quotes, no punctuation, no explanation.\n"
-        "If the message is a bare request to check/read email with no "
-        "specific topic at all (e.g. 'check my email', 'what's in my "
-        "inbox'), reply with exactly: NONE"
+        "You are an email-search intent extractor. Given a short chat "
+        "message that is already known to be about the user's email, "
+        "reply with ONE JSON object and nothing else:\n"
+        "{\"kind\": \"topic\"|\"sender\"|\"both\"|\"latest\"|\"none\", "
+        "\"topic\": \"<keyword or empty>\", "
+        "\"sender\": \"<name or empty>\"}\n"
+        "Rules:\n"
+        "- \"topic\" = 1-4 keyword string the user is searching for "
+        "(e.g. 'deepgram', 'internship', 'handshake'). Never a full "
+        "sentence. Never the word 'email' itself.\n"
+        "- \"sender\" = the name of a person, company, or an email "
+        "address the user wants email FROM.\n"
+        "- \"kind\" = 'topic' if only a topic is present, 'sender' if "
+        "only a sender is present, 'both' if both are present, "
+        "'latest' if the user just wants their newest email, 'none' "
+        "if this message doesn't actually ask about email at all.\n"
+        "- Output NOTHING except the JSON. No markdown, no comments."
     )
+
+    _EMAIL_INTENT_TRIGGER_WORDS = (
+        "email", "emails", "inbox", "gmail", "mailbox", "mail",
+    )
+
+    def _looks_like_email_context(self, text: str) -> bool:
+        """Cheap gate on whether we should burn an LLM call — the
+        message has to at least mention an email noun. Prevents random
+        chat from being handed to the intent extractor."""
+        low = (text or "").lower()
+        return any(w in low for w in self._EMAIL_INTENT_TRIGGER_WORDS)
+
     def _classify_email_intent(self, text: str):
-        """iq.classify_email() handles the fast, hardcoded topic-cue path
-        ('email about X', 'containing X', 'where it says X', ...). When
-        that comes back as 'email_latest' -- no topic and no ordinal
-        matched -- a longer sentence might still be naming a topic in
-        phrasing nobody hardcoded a cue for. Rather than growing the cue
-        list forever, hand those to a cheap llama3.2:1b extraction call
-        instead. The model's answer is validated before being trusted --
-        small models often ignore 'reply with exactly X', so anything
-        that doesn't look like a clean short topic is discarded and the
-        intent is left as email_latest rather than searching Gmail for
-        something half-invented."""
+        """Two-stage email-intent classifier.
+
+        Stage 1: the fast cue-based iq.classify_email() (topic-in-it,
+        'read the email with X', 'from Y', ordinals, etc.). If it lands
+        cleanly on a non-latest kind, use it — nothing beats it for
+        short common phrasings.
+
+        Stage 2: LLM extraction. Any of these hand off to llama3.2:1b
+        with a JSON prompt:
+          - fast path returned 'none' but the message DOES mention
+            email/inbox/gmail (this covers 'give me the latest email
+            by prani k' and 'find me emails from prani k', which the
+            old verb list missed);
+          - fast path returned 'email_latest' AND the message isn't a
+            bare check-email cue (longer phrasing might name a topic
+            or sender the cue list doesn't recognize).
+
+        The model's JSON reply is validated before use — bad output is
+        discarded and the fast-path intent is returned unchanged rather
+        than searching Gmail for something half-invented."""
         try:
             intent = iq.classify_email(text)
         except Exception:
-            return None
-        if intent is None or intent.kind != "email_latest":
+            intent = None
+
+        needs_llm = False
+        if intent is None or intent.kind == "none":
+            if self._looks_like_email_context(text):
+                needs_llm = True
+                if intent is None:
+                    # rebuild a scratch EmailIntent so we have something
+                    # to fill in later.
+                    intent = iq.EmailIntent(corrected_text=text)
+        elif intent.kind == "email_latest" and not iq.is_bare_email_check(text):
+            needs_llm = True
+
+        if not needs_llm or self._client is None:
             return intent
-        if self._client is None or iq.is_bare_email_check(text):
-            return intent
+
         try:
             resp = self._client.chat(
                 model=self._EMAIL_TOPIC_MODEL,
@@ -3639,51 +3728,108 @@ class ChatTab(QWidget):
                     {"role": "system", "content": self._EMAIL_TOPIC_PROMPT},
                     {"role": "user", "content": text},
                 ],
-                options={"num_predict": 20},
+                options={"num_predict": 80},
             )
-            answer = resp["message"]["content"].strip().strip(' "\'.')
-            answer = re.sub(r'^(topic:|the topic is|search for)\s*', '',
-                             answer, flags=re.I).strip(' "\'.')
-            valid = (
-                answer
-                and answer.upper() != "NONE"
-                and len(answer.split()) <= 6
-                and answer.lower() != text.lower().strip()
-            )
-            print(f"[email] topic fallback: {text!r} -> {answer!r} "
-                  f"({'used' if valid else 'discarded'})")
-            if valid:
+            raw = (resp["message"]["content"] or "").strip()
+            # llama3.2:1b sometimes wraps the JSON in ```json ...``` or
+            # leading prose. Pull out the first {...} block.
+            m = re.search(r"\{[^{}]*\}", raw)
+            payload = None
+            if m:
+                try:
+                    payload = json.loads(m.group(0))
+                except Exception:
+                    payload = None
+            kind = str((payload or {}).get("kind", "")).lower().strip()
+            topic = str((payload or {}).get("topic", "")).strip(' "\'.')
+            sender = str((payload or {}).get("sender", "")).strip(' "\'.')
+
+            def _clean(field: str) -> str:
+                field = re.sub(r"^(topic:|sender:|the topic is|"
+                               r"the sender is|search for)\s*", "",
+                               field, flags=re.I).strip(' "\'.')
+                # reject the whole message echoed back, the word "email"
+                # by itself, or absurdly long captures
+                if not field or len(field) > 60:
+                    return ""
+                if field.lower() == text.lower().strip():
+                    return ""
+                if field.lower() in self._EMAIL_INTENT_TRIGGER_WORDS:
+                    return ""
+                if field.upper() == "NONE":
+                    return ""
+                return field
+
+            topic = _clean(topic)
+            sender = _clean(sender)
+
+            print(f"[email] llm intent: {text!r} -> "
+                  f"kind={kind!r} topic={topic!r} sender={sender!r}")
+
+            if kind == "topic" and topic:
                 intent.kind = "email_topic"
-                intent.topic = answer
+                intent.topic = topic
+                intent.sender = ""
+            elif kind == "sender" and sender:
+                intent.kind = "email_topic"
+                intent.topic = ""
+                intent.sender = sender
+            elif kind == "both" and (topic or sender):
+                intent.kind = "email_topic"
+                intent.topic = topic
+                intent.sender = sender
+            elif kind == "latest":
+                intent.kind = "email_latest"
+            # kind == 'none' or empty -> leave intent untouched (already
+            # points at whatever the fast path decided)
         except Exception as e:
-            print(f"[email] topic fallback failed: {e}")
+            print(f"[email] llm intent failed: {e}")
         return intent
+    # --- IRIS email-llm-first: END ---
     def _answer_email_question(self, intent) -> str:
-        """Resolve an EmailIntent (topic search / ordinal / latest)
-        against Gmail and format the full message for the chat bubble.
-        Read/unread status is never a filter here — "check email" means
-        the newest mail, full stop, and a topic search matches read and
-        unread mail alike."""
+        """Resolve an EmailIntent (topic search / sender search / ordinal
+        / latest) against Gmail and format the full message for the chat
+        bubble. Read/unread status is never a filter here — "check
+        email" means the newest mail, full stop, and a topic search
+        matches read and unread mail alike."""
         if self._email is None:
             return "Email isn't set up yet — credentials.json is missing."
         kind = getattr(intent, "kind", "none")
+        # --- IRIS email-sender: ADD ---
+        sender = (getattr(intent, "sender", "") or "").strip()
+        # --- IRIS email-sender: END ---
         msg = None
         try:
             if kind == "email_topic":
-                results = self._email.search(intent.topic, limit=5)
+                # --- IRIS email-sender: CHANGE ---
+                # Build Gmail's query — from:<sender> if we have
+                # one, then the topic keywords after it. Bare topic
+                # still works exactly like before.
+                topic = (intent.topic or "").strip()
+                if sender:
+                    query = f'from:{sender}' + (f' {topic}' if topic else "")
+                    label = (f'from "{sender}"'
+                             if not topic
+                             else f'from "{sender}" about "{topic}"')
+                else:
+                    query = topic
+                    label = f'about "{topic}"'
+                results = self._email.search(query, limit=10)
                 self._last_email_list = results
-                self._last_email_topic = intent.topic
+                self._last_email_topic = query
                 if len(results) > 1:
                     self._email_pending_pick = results
-                    lines = [f'Found {len(results)} emails about '
-                             f'"{intent.topic}":']
+                    lines = [f'Found {len(results)} emails {label}:']
                     for i, m in enumerate(results, 1):
                         lines.append(f"{i}. {m.subject or '(no subject)'} "
-                                     f"\u2014 {m.sender}")
+                                     f"— {m.sender}")
                     lines.append("Which one? Just say the number.")
                     return "\n".join(lines)
                 self._email_pending_pick = None
                 msg = results[0] if results else None
+                if msg is None:
+                    return f"I couldn't find any email {label}."
+                # --- IRIS email-sender: END ---
             elif kind == "email_ordinal":
                 idx = intent.ordinal_index
                 if self._last_email_list and idx < len(self._last_email_list):
@@ -3705,12 +3851,199 @@ class ChatTab(QWidget):
             return f"I couldn't reach Gmail — {e}"
 
         if msg is None:
-            if kind == "email_topic":
-                return f'I couldn\'t find any email about "{intent.topic}".'
             return "There's no email in your inbox."
 
         self._active_email = msg
         return self._format_email_message(msg)
+
+    # --- IRIS email-format: ADD ---
+    # This method was referenced from two call sites (email pick-list
+    # reply and _answer_email_question) but never defined — every
+    # email lookup that got past the classifier crashed with:
+    #   'ChatTab' object has no attribute '_format_email_message'
+    # Formats sender / subject / when / body (truncated for chat) with
+    # a hint pointing at the summary follow-up flow.
+    _EMAIL_BODY_CHAT_LIMIT = 1500
+
+    def _format_email_message(self, msg) -> str:
+        if msg is None:
+            return "I couldn't find that email."
+        sender = getattr(msg, "sender", "") or "(unknown sender)"
+        subject = getattr(msg, "subject", "") or "(no subject)"
+        try:
+            when = msg.when()
+        except Exception:
+            when = getattr(msg, "date", "") or ""
+        body = (getattr(msg, "body", "") or "").strip()
+        if not body:
+            body = (getattr(msg, "snippet", "") or "").strip()
+        truncated = False
+        if len(body) > self._EMAIL_BODY_CHAT_LIMIT:
+            body = body[:self._EMAIL_BODY_CHAT_LIMIT].rstrip() + "…"
+            truncated = True
+        lines = [
+            f"From: {sender}",
+            f"Subject: {subject}",
+            f"When: {when}",
+            "",
+            body if body else "(no readable body content)",
+        ]
+        if truncated:
+            lines.append("")
+            lines.append("Say “summarize this” for a shorter "
+                         "recap, or “transcript” for the full "
+                         "body verbatim.")
+        elif body:
+            lines.append("")
+            lines.append("Say “summarize this” for a short "
+                         "recap.")
+        return "\n".join(lines)
+    # --- IRIS email-format: END ---
+
+    # --- IRIS email-summary: ADD ---
+    _EMAIL_SUMMARY_MODEL = "llama3.2:3b"
+    _EMAIL_SUMMARY_PROMPT = (
+        "You summarize a single email in 3-5 sentences. Cover: who sent "
+        "it, what they're asking or telling the recipient, any dates or "
+        "action items, and any deadline. No preamble ('Here is the "
+        "summary...'), no bullet points unless truly needed — "
+        "just the summary itself."
+    )
+    _EMAIL_SUMMARY_CUES = (
+        "summarize", "summarise", "summary", "tldr", "tl;dr",
+        "shorten", "condense", "recap", "brief", "give me the gist",
+        "what does it say", "what's it about", "whats it about",
+        "what does this email say", "what does this say",
+    )
+    _EMAIL_TRANSCRIPT_CUES = (
+        "transcript", "full text", "verbatim", "entire email",
+        "whole email", "the full email", "read it all", "read the whole",
+        "give me the transcript",
+    )
+
+    def _is_email_summary_followup(self, low: str) -> bool:
+        low = (low or "").strip()
+        if not low:
+            return False
+        if any(cue in low for cue in self._EMAIL_TRANSCRIPT_CUES):
+            return True
+        return any(cue in low for cue in self._EMAIL_SUMMARY_CUES)
+
+    def _is_email_transcript(self, low: str) -> bool:
+        low = (low or "").strip()
+        return any(cue in low for cue in self._EMAIL_TRANSCRIPT_CUES)
+
+    def _summarize_active_email(self, mode: str = "summary") -> str:
+        """Post either a Llama-generated summary of self._active_email
+        or its full body verbatim (transcript). Mode is chosen upstream
+        by _is_email_transcript so the caller can display a matching
+        label."""
+        msg = self._active_email
+        if msg is None:
+            return "I don't have an active email to summarize yet."
+        subject = getattr(msg, "subject", "") or "(no subject)"
+        sender = getattr(msg, "sender", "") or "(unknown sender)"
+        body = (getattr(msg, "body", "") or "").strip()
+        if not body:
+            body = (getattr(msg, "snippet", "") or "").strip()
+        if not body:
+            return ("That email doesn't have any readable text body to "
+                    "summarize.")
+        if mode == "transcript":
+            return (f'Full transcript of "{subject}" from {sender}:\n\n'
+                    f"{body}")
+        if self._client is None:
+            snippet = re.split(r"(?<=[.!?])\s+", body)[:3]
+            return ("Summary (no LLM available):\n"
+                    + " ".join(snippet).strip())
+        try:
+            snippet = body[:6000]
+            resp = self._client.chat(
+                model=self._EMAIL_SUMMARY_MODEL,
+                messages=[
+                    {"role": "system",
+                     "content": self._EMAIL_SUMMARY_PROMPT},
+                    {"role": "user",
+                     "content": (f"From: {sender}\nSubject: {subject}\n\n"
+                                 f"{snippet}")},
+                ],
+                options={"num_predict": 260},
+            )
+            summary = (resp["message"]["content"] or "").strip()
+            if not summary:
+                return "The model didn't return a summary. Try again."
+            return f'Summary of "{subject}":\n\n{summary}'
+        except Exception as e:
+            print(f"[email] summary failed: {e}")
+            return (f"I couldn't summarize that email — {e}. "
+                    "Try again in a moment.")
+    # --- IRIS email-summary: END ---
+
+    # --- IRIS date-question: ADD ---
+    def _answer_date_question(self, text: str) -> None:
+        """Reply with the actual date + time. Called before the recording
+        classifier so 'what day is it today' can't be misread as a
+        date-based recording lookup."""
+        now = datetime.now()
+        low = (text or "").lower()
+        want_time = ("time" in low)
+        want_day = ("day" in low or "weekday" in low
+                    or "day of the week" in low)
+        want_month = ("month" in low)
+        want_year = ("year" in low)
+        day_no_zero = "%#d" if os.name == "nt" else "%-d"
+        if want_time and not (want_day or want_month or want_year):
+            fmt = f"It's %I:%M %p on %A, %B {day_no_zero}, %Y."
+        elif want_month and not (want_day or want_year or want_time):
+            fmt = "It's %B %Y."
+        elif want_year and not (want_day or want_month or want_time):
+            fmt = "It's %Y."
+        elif want_day and not want_time:
+            fmt = f"Today is %A, %B {day_no_zero}, %Y."
+        else:
+            fmt = f"Today is %A, %B {day_no_zero}, %Y — %I:%M %p."
+        try:
+            reply = now.strftime(fmt)
+        except ValueError:
+            reply = now.strftime(
+                fmt.replace("%-d", "%d").replace("%#d", "%d"))
+        self._append_iris(reply)
+        self.history.append({"role": "assistant", "content": reply})
+    # --- IRIS date-question: END ---
+
+    # --- IRIS photo-followup: ADD ---
+    _PHOTO_CONFIDENT_CUES = (
+        "show me", "list", "pull up", "open the photo", "open my photo",
+        "display", "gallery",
+        "latest photo", "last photo", "newest photo", "most recent photo",
+        "latest picture", "last picture", "newest picture",
+        "latest pic", "last pic",
+        "photos from", "photos on", "photos at", "photos taken",
+        "pictures from", "pictures on", "pictures at",
+        "the photo from", "the picture from",
+        "picture taken", "photo taken",
+    )
+
+    def _is_confident_photo_query(self, text: str) -> bool:
+        """Guard against is_photo_query() firing on generic follow-up
+        chips just because the message has 'photos' + 'what's'. We only
+        trust the dispatch when the phrasing actually looks like a
+        lookup ('show me my latest photo', 'photos from yesterday'),
+        not on bare '<verb> ... photos' constructions.
+        """
+        low = (text or "").lower()
+        if any(cue in low for cue in self._PHOTO_CONFIDENT_CUES):
+            return True
+        if re.search(r"\b(?:photo|photos|picture|pictures|pic|pics|"
+                     r"screenshot|screenshots)\b.{0,30}\b(?:from|on|at|"
+                     r"taken|yesterday|today|tomorrow)\b", low):
+            return True
+        if re.search(r"\b(?:yesterday|today|tomorrow)\b.{0,30}\b(?:photo|"
+                     r"photos|picture|pictures|pic|pics|screenshot|"
+                     r"screenshots)\b", low):
+            return True
+        return False
+    # --- IRIS photo-followup: END ---
 
     # ── current-location Q&A (M6 §6.5) ──────────────────────────────────
     def _is_location_question(self, low: str) -> bool:
