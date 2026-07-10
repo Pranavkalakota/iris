@@ -510,8 +510,9 @@ GLASS_BORDER_SOFT = "rgba(100,180,255,0.16)"
 BUBBLE_BORDER  = "rgba(120,190,255,0.30)"
 WINDOW_RADIUS  = 26
 WINDOW_OUTLINE = QColor(100, 180, 255, 90)
-FONT_MONO = "Cascadia Code"
+FONT_MONO = "Consolas"
 FONT_SANS = "Segoe UI"
+FONT_SERIF = "Georgia"
 # ── Liquid-glass ambient blobs — soft colour pools painted behind every glass
 #    panel so there is actually something for the "glass" to sit on top of.
 #    Without these the glass has nothing to catch light against and just
@@ -1838,7 +1839,7 @@ class ChatTab(QWidget):
         title = QLabel("new session")
         title.setStyleSheet(
             f"color:{TEXT_PRIMARY}; background:transparent;"
-            f"font-family:'{FONT_SANS}'; font-size:16px; font-weight:700;")
+            f"font-family:'{FONT_SERIF}'; font-size:18px; font-weight:400;")
         header.addWidget(title)
         header.addStretch(1)
         rec_pill = Pill(pane, "\u25CF  ready", REC_FG)
@@ -9690,14 +9691,16 @@ class TabBar(QWidget):
     changed = pyqtSignal(int)
     def __init__(self, parent, labels: list[str]):
         super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._buttons: list[QPushButton] = []
         self._labels = list(labels)
+        _add_glass_shadow(self, blur=24, dy=6, alpha=90)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 14, 0, 6)
-        lay.setSpacing(6)
+        lay.setContentsMargins(20, 10, 20, 8)
+        lay.setSpacing(4)
         lay.addStretch(1)
         for i, name in enumerate(labels):
-            b = QPushButton(name)
+            b = QPushButton(name.upper())
             b.setCheckable(True)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda _=False, idx=i: self._select(idx))
@@ -9705,6 +9708,16 @@ class TabBar(QWidget):
             lay.addWidget(b)
         lay.addStretch(1)
         self._select(0)
+
+    def paintEvent(self, _evt) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
+        _paint_glass_surface(p, rect, 20, _parse_rgba(GLASS_FILL_TOP),
+                              _parse_rgba(GLASS_FILL_MID),
+                              _parse_rgba(GLASS_FILL_BOT),
+                              _parse_rgba(GLASS_BORDER))
+
     def _select(self, idx: int) -> None:
         for i, b in enumerate(self._buttons):
             on = (i == idx)
@@ -9712,21 +9725,22 @@ class TabBar(QWidget):
             if on:
                 b.setStyleSheet(
                     "QPushButton {"
-                    f"color:{ACCENT};"
-                    f"background: rgba({_rgb(ACCENT)},0.14);"
-                    f"border: 1px solid rgba({_rgb(ACCENT)},0.30);"
-                    "border-radius: 13px; padding: 6px 18px;"
-                    f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:13px;"
+                    f"color:{TEXT_PRIMARY}; background: transparent;"
+                    f"border: none; border-bottom: 2px solid {ACCENT};"
+                    "border-radius: 0; padding: 8px 16px 6px;"
+                    f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
+                    "font-size:11px; font-weight:600; letter-spacing:1px;"
                     "}")
             else:
                 b.setStyleSheet(
                     "QPushButton {"
-                    f"color:{TEXT_MUTED};"
-                    "background: transparent; border: 1px solid transparent;"
-                    "border-radius: 13px; padding: 6px 18px;"
-                    f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:13px;"
+                    f"color:{TEXT_DIM}; background: transparent;"
+                    "border: none; border-bottom: 2px solid transparent;"
+                    "border-radius: 0; padding: 8px 16px 6px;"
+                    f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
+                    "font-size:11px; font-weight:600; letter-spacing:1px;"
                     "}"
-                    "QPushButton:hover { background: rgba(255,255,255,0.06); }")
+                    f"QPushButton:hover {{ color:{TEXT_MUTED}; }}")
         self.changed.emit(idx)
 
     def select_name(self, name: str) -> None:
@@ -9753,7 +9767,12 @@ class TitleBar(QWidget):
         lay.addWidget(self._dot("#febc2e", self._minimise)) # yellow
         lay.addWidget(self._dot("#28c840", self._maximise)) # green
         lay.addStretch(1)
-        self.session = QLabel("iris \u00b7 session 00:00:00")
+        wordmark = QLabel("iris")
+        wordmark.setStyleSheet(
+            f"color:{TEXT_PRIMARY}; background:transparent; border:none;"
+            f"font-family:'{FONT_SERIF}'; font-size:15px; font-style:italic;")
+        lay.addWidget(wordmark)
+        self.session = QLabel("\u00b7 session 00:00:00")
         self.session.setStyleSheet(
             f"color:{TEXT_DIM}; background:transparent; border:none;"
             f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:12px;")
@@ -9776,7 +9795,7 @@ class TitleBar(QWidget):
         self._secs += 1
         h, rem = divmod(self._secs, 3600)
         m, s = divmod(rem, 60)
-        self.session.setText(f"iris \u00b7 session {h:02d}:{m:02d}:{s:02d}")
+        self.session.setText(f"\u00b7 session {h:02d}:{m:02d}:{s:02d}")
     def _close(self):     self.window().close()
     def _minimise(self):  self.window().showMinimized()
     def _maximise(self):
@@ -10065,11 +10084,16 @@ class IrisApp(QWidget):
         super().closeEvent(evt)
 def main() -> int:
     app = QApplication(sys.argv)
-    # Prefer Cascadia Code; fall back to a mono the OS has.
+    # Professional type pass (Option D): Consolas for data/mono, Segoe UI
+    # for body, a real installed serif for section headings/wordmark.
     families = set(QFontDatabase.families())
-    mono = ("Cascadia Code" if "Cascadia Code" in families else
-            "Consolas" if "Consolas" in families else "Monospace")
+    mono = ("Consolas" if "Consolas" in families else
+            "Cascadia Code" if "Cascadia Code" in families else "Monospace")
     globals()["FONT_MONO"] = mono
+    serif = next((f for f in ("Georgia", "Cambria", "Constantia",
+                               "Times New Roman") if f in families),
+                 "Serif")
+    globals()["FONT_SERIF"] = serif
     app.setFont(QFont(FONT_SANS if FONT_SANS in families else "Sans", 10))
     controller = None
     if Controller is not None:
