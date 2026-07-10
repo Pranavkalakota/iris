@@ -9687,6 +9687,37 @@ class AboutSystemTab(QWidget):
 # ─────────────────────────────────────────────────────────────────────────────
 # Top tab bar — glass segmented buttons (chat / audio / location / people / stream)
 # ─────────────────────────────────────────────────────────────────────────────
+class _TabButton(QPushButton):
+    """A single nav tab that paints its own soft glass blob on hover — no
+    shared bar shape behind the whole row. The blob only shows up under
+    whichever tab the cursor is actually on."""
+    def __init__(self, text: str, parent=None):
+        super().__init__(text, parent)
+        self._hovering = False
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
+    def enterEvent(self, event) -> None:
+        self._hovering = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self._hovering = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, event) -> None:
+        if self._hovering:
+            p = QPainter(self)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            rect = QRectF(self.rect()).adjusted(1.0, 1.0, -1.0, -1.0)
+            _paint_glass_surface(
+                p, rect, rect.height() / 2,
+                QColor(255, 255, 255, 24), QColor(255, 255, 255, 12),
+                QColor(255, 255, 255, 5), QColor(255, 255, 255, 55),
+                glint_boost=1.3)
+            p.end()
+        super().paintEvent(event)
 class TabBar(QWidget):
     changed = pyqtSignal(int)
     def __init__(self, parent, labels: list[str]):
@@ -9694,13 +9725,12 @@ class TabBar(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._buttons: list[QPushButton] = []
         self._labels = list(labels)
-        _add_glass_shadow(self, blur=24, dy=6, alpha=90)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(20, 10, 20, 8)
-        lay.setSpacing(4)
+        lay.setContentsMargins(0, 14, 0, 8)
+        lay.setSpacing(2)
         lay.addStretch(1)
         for i, name in enumerate(labels):
-            b = QPushButton(name.upper())
+            b = _TabButton(name.upper(), self)
             b.setCheckable(True)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda _=False, idx=i: self._select(idx))
@@ -9708,15 +9738,6 @@ class TabBar(QWidget):
             lay.addWidget(b)
         lay.addStretch(1)
         self._select(0)
-
-    def paintEvent(self, _evt) -> None:
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
-        _paint_glass_surface(p, rect, 20, _parse_rgba(GLASS_FILL_TOP),
-                              _parse_rgba(GLASS_FILL_MID),
-                              _parse_rgba(GLASS_FILL_BOT),
-                              _parse_rgba(GLASS_BORDER))
 
     def _select(self, idx: int) -> None:
         for i, b in enumerate(self._buttons):
