@@ -1,0 +1,549 @@
+From 4921a9a47c822acb656131fae9a3f7317e27b1f6 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Fri, 10 Jul 2026 00:27:22 +0000
+Subject: [PATCH] Option D typography (serif headings + iris wordmark, Segoe UI
+ body, Consolas mono) + underline-style formal tab bar; remove stray patch
+ files
+
+---
+ glass-chips-and-sheen.patch | 187 ----------------------------------
+ iris_gui.py                 |  64 ++++++++----
+ liquid-glass-gloss.patch    | 195 ------------------------------------
+ 3 files changed, 44 insertions(+), 402 deletions(-)
+ delete mode 100644 glass-chips-and-sheen.patch
+ delete mode 100644 liquid-glass-gloss.patch
+
+diff --git a/glass-chips-and-sheen.patch b/glass-chips-and-sheen.patch
+deleted file mode 100644
+index e29227d..0000000
+--- a/glass-chips-and-sheen.patch
++++ /dev/null
+@@ -1,187 +0,0 @@
+-From 58fb39d2615514ea3f70a7090cec235107edeb2a Mon Sep 17 00:00:00 2001
+-From: Claude <claude@anthropic.com>
+-Date: Thu, 9 Jul 2026 23:29:49 +0000
+-Subject: [PATCH] Add top-sheen band for wide/short glass shapes; give
+- SuggestionChip the same glossy paint as GlassFrame
+-
+----
+- iris_gui.py | 139 ++++++++++++++++++++++++++++++++--------------------
+- 1 file changed, 87 insertions(+), 52 deletions(-)
+-
+-diff --git a/iris_gui.py b/iris_gui.py
+-index dcd77b0..bc04e23 100644
+---- a/iris_gui.py
+-+++ b/iris_gui.py
+-@@ -945,15 +945,64 @@ def _photos_dir() -> str:
+- # ─────────────────────────────────────────────────────────────────────────────
+- # Glass widget primitives
+- # ─────────────────────────────────────────────────────────────────────────────
+-+def _paint_glass_surface(p: QPainter, rect: QRectF, radius: float,
+-+                          top: QColor, mid: QColor, bot: QColor,
+-+                          border: QColor, glint_boost: float = 1.0) -> None:
+-+    """Shared liquid-glass painter used by GlassFrame and SuggestionChip.
+-+    Four layers: base fade, a horizontal top-sheen band (this is what makes
+-+    wide/short shapes like the input bar or a pill button read as glossy —
+-+    a corner blob alone all but disappears on those proportions), a corner
+-+    specular glint, and a two-tone bevel border."""
+-+    if rect.width() <= 0 or rect.height() <= 0:
+-+        return
+-+    path = QPainterPath()
+-+    path.addRoundedRect(rect, radius, radius)
+-+    p.setClipPath(path)
+-+    # 1) base fill — vertical top/mid/bot fade.
+-+    base = QLinearGradient(0, 0, 0, rect.height())
+-+    base.setColorAt(0.0, top)
+-+    base.setColorAt(0.07, top)
+-+    base.setColorAt(0.5, mid)
+-+    base.setColorAt(1.0, bot)
+-+    p.fillPath(path, QBrush(base))
+-+    # 2) top-sheen band — a bright horizontal wash across the upper portion,
+-+    #    strongest at the very top. Scales with shape height so it stays
+-+    #    proportional whether it's a tall panel or a thin input bar.
+-+    sheen_h = min(rect.height() * 0.55, 40)
+-+    sheen = QLinearGradient(0, rect.top(), 0, rect.top() + sheen_h)
+-+    sheen.setColorAt(0.0, QColor(255, 255, 255, int(46 * glint_boost)))
+-+    sheen.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+    p.fillPath(path, QBrush(sheen))
+-+    # 3) specular glint — soft bright blob near the top-left.
+-+    glint = QRadialGradient(rect.width() * 0.22, rect.height() * -0.05,
+-+                             max(rect.width(), rect.height()) * 0.85)
+-+    glint.setColorAt(0.0, QColor(255, 255, 255, int(60 * glint_boost)))
+-+    glint.setColorAt(0.45, QColor(255, 255, 255, int(16 * glint_boost)))
+-+    glint.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+    p.fillPath(path, QBrush(glint))
+-+    p.setClipping(False)
+-+    # 4) thin rim highlight along the top edge.
+-+    rim = QLinearGradient(rect.left() + rect.width() * 0.1, 0,
+-+                           rect.right() - rect.width() * 0.1, 0)
+-+    rim.setColorAt(0.0, QColor(255, 255, 255, 0))
+-+    rim.setColorAt(0.5, QColor(255, 255, 255, int(140 * glint_boost)))
+-+    rim.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+    p.setPen(QPen(QBrush(rim), 1.1))
+-+    p.drawLine(QPoint(int(rect.left() + rect.width() * 0.08), int(rect.top()) + 1),
+-+               QPoint(int(rect.right() - rect.width() * 0.08), int(rect.top()) + 1))
+-+    # 5) two-tone bevel border — bright top/left, dim bottom/right.
+-+    bevel = QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
+-+    bright = QColor(border).lighter(150)
+-+    bright.setAlpha(min(255, border.alpha() + 90))
+-+    dim = QColor(border).darker(160)
+-+    dim.setAlpha(max(20, border.alpha() - 60))
+-+    bevel.setColorAt(0.0, bright)
+-+    bevel.setColorAt(1.0, dim)
+-+    p.setPen(QPen(QBrush(bevel), 1.1))
+-+    p.drawPath(path)
+- class GlassFrame(QFrame):
+-     """A rounded glass panel that paints its own gloss instead of relying on
+--    a flat QSS gradient. Three things make this read as *glass* rather than
+--    a tinted box:
+--      1. A specular glint — a soft bright blob near the top-left, like a
+--         light source catching curved glass.
+--      2. A thin rim highlight along the top edge.
+--      3. A two-tone bevel border — bright top/left, dim bottom/right — so
+--         the edge itself looks like it's catching and losing light.
+-+    a flat QSS gradient — see _paint_glass_surface for the layer breakdown.
+-     Constructor signature is unchanged from the old QSS version, so every
+-     existing subclass (Avatar, SnapshotCard, PhotoThumb, chat bubbles, etc.)
+-     picks this up automatically with no call-site changes."""
+-@@ -976,45 +1025,8 @@ class GlassFrame(QFrame):
+-         p = QPainter(self)
+-         p.setRenderHint(QPainter.RenderHint.Antialiasing)
+-         rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
+--        if rect.width() <= 0 or rect.height() <= 0:
+--            return
+--        path = QPainterPath()
+--        path.addRoundedRect(rect, self._radius, self._radius)
+--        p.setClipPath(path)
+--        # 1) base fill — same vertical top/mid/bot fade as the old QSS.
+--        base = QLinearGradient(0, 0, 0, rect.height())
+--        base.setColorAt(0.0, self._top)
+--        base.setColorAt(0.07, self._top)
+--        base.setColorAt(0.5, self._mid)
+--        base.setColorAt(1.0, self._bot)
+--        p.fillPath(path, QBrush(base))
+--        # 2) specular glint.
+--        glint = QRadialGradient(rect.width() * 0.22, rect.height() * -0.05,
+--                                 max(rect.width(), rect.height()) * 0.85)
+--        glint.setColorAt(0.0, QColor(255, 255, 255, 60))
+--        glint.setColorAt(0.45, QColor(255, 255, 255, 16))
+--        glint.setColorAt(1.0, QColor(255, 255, 255, 0))
+--        p.fillPath(path, QBrush(glint))
+--        p.setClipping(False)
+--        # 3) thin rim highlight along the top edge.
+--        rim = QLinearGradient(rect.left() + rect.width() * 0.1, 0,
+--                               rect.right() - rect.width() * 0.1, 0)
+--        rim.setColorAt(0.0, QColor(255, 255, 255, 0))
+--        rim.setColorAt(0.5, QColor(255, 255, 255, 120))
+--        rim.setColorAt(1.0, QColor(255, 255, 255, 0))
+--        p.setPen(QPen(QBrush(rim), 1.1))
+--        p.drawLine(QPoint(int(rect.left() + rect.width() * 0.08), int(rect.top()) + 1),
+--                   QPoint(int(rect.right() - rect.width() * 0.08), int(rect.top()) + 1))
+--        # 4) two-tone bevel border.
+--        bevel = QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
+--        bright = QColor(self._border).lighter(150)
+--        bright.setAlpha(min(255, self._border.alpha() + 90))
+--        dim = QColor(self._border).darker(160)
+--        dim.setAlpha(max(20, self._border.alpha() - 60))
+--        bevel.setColorAt(0.0, bright)
+--        bevel.setColorAt(1.0, dim)
+--        p.setPen(QPen(QBrush(bevel), 1.1))
+--        p.drawPath(path)
+-+        _paint_glass_surface(p, rect, self._radius, self._top, self._mid,
+-+                              self._bot, self._border)
+- class Avatar(GlassFrame):
+-     def __init__(self, parent, initials: str, fg: str, tint: str):
+-         super().__init__(parent, radius=9,
+-@@ -1164,20 +1176,43 @@ class SuggestionChip(QPushButton):
+-     def __init__(self, parent, text: str, on_click):
+-         super().__init__(text, parent)
+-         self.setCursor(Qt.CursorShape.PointingHandCursor)
+-+        self._hovering = False
+-         self.setStyleSheet(
+-             "QPushButton {"
+--            f"color:{TEXT_PRIMARY};"
+--            "background: rgba(255,255,255,0.10);"
+--            "border: 1px solid rgba(255,255,255,0.22);"
+--            "border-radius: 16px; padding: 7px 16px;"
+-+            f"color:{TEXT_PRIMARY}; background: transparent; border: none;"
+-+            "padding: 7px 16px;"
+-             f"font-family:'{FONT_SANS}'; font-size:11px;"
+-             "}"
+--            "QPushButton:hover { background: rgba(255,255,255,0.18);"
+--            " border: 1px solid rgba(255,255,255,0.38); }"
+-         )
+-         self.clicked.connect(lambda: on_click(text))
+-         _add_glass_shadow(self, blur=14, dy=3, alpha=110)
+-+
+-+    def enterEvent(self, event) -> None:
+-+        self._hovering = True
+-+        self.update()
+-+        super().enterEvent(event)
+-+
+-+    def leaveEvent(self, event) -> None:
+-+        self._hovering = False
+-+        self.update()
+-+        super().leaveEvent(event)
+-+
+-+    def paintEvent(self, event) -> None:
+-+        p = QPainter(self)
+-+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+-+        rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
+-+        boost = 1.7 if self._hovering else 1.0
+-+        base_a = 26 if self._hovering else 15
+-+        border_a = 60 if self._hovering else 40
+-+        _paint_glass_surface(
+-+            p, rect, 16,
+-+            QColor(255, 255, 255, base_a), QColor(255, 255, 255, base_a - 5),
+-+            QColor(255, 255, 255, max(6, base_a - 10)),
+-+            QColor(255, 255, 255, border_a), glint_boost=boost)
+-+        p.end()
+-+        super().paintEvent(event)
+- def _rgb(hex_color: str) -> str:
+-+
+-     h = hex_color.lstrip("#")
+-     return f"{int(h[0:2],16)},{int(h[2:4],16)},{int(h[4:6],16)}"
+- class BubbleLabel(QLabel):
+--- 
+-2.43.0
+-
+diff --git a/iris_gui.py b/iris_gui.py
+index 8ec66f0..4bc4c1e 100644
+--- a/iris_gui.py
++++ b/iris_gui.py
+@@ -510,8 +510,9 @@ GLASS_BORDER_SOFT = "rgba(100,180,255,0.16)"
+ BUBBLE_BORDER  = "rgba(120,190,255,0.30)"
+ WINDOW_RADIUS  = 26
+ WINDOW_OUTLINE = QColor(100, 180, 255, 90)
+-FONT_MONO = "Cascadia Code"
++FONT_MONO = "Consolas"
+ FONT_SANS = "Segoe UI"
++FONT_SERIF = "Georgia"
+ # ── Liquid-glass ambient blobs — soft colour pools painted behind every glass
+ #    panel so there is actually something for the "glass" to sit on top of.
+ #    Without these the glass has nothing to catch light against and just
+@@ -1838,7 +1839,7 @@ class ChatTab(QWidget):
+         title = QLabel("new session")
+         title.setStyleSheet(
+             f"color:{TEXT_PRIMARY}; background:transparent;"
+-            f"font-family:'{FONT_SANS}'; font-size:16px; font-weight:700;")
++            f"font-family:'{FONT_SERIF}'; font-size:18px; font-weight:400;")
+         header.addWidget(title)
+         header.addStretch(1)
+         rec_pill = Pill(pane, "\u25CF  ready", REC_FG)
+@@ -9690,14 +9691,16 @@ class TabBar(QWidget):
+     changed = pyqtSignal(int)
+     def __init__(self, parent, labels: list[str]):
+         super().__init__(parent)
++        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+         self._buttons: list[QPushButton] = []
+         self._labels = list(labels)
++        _add_glass_shadow(self, blur=24, dy=6, alpha=90)
+         lay = QHBoxLayout(self)
+-        lay.setContentsMargins(0, 14, 0, 6)
+-        lay.setSpacing(6)
++        lay.setContentsMargins(20, 10, 20, 8)
++        lay.setSpacing(4)
+         lay.addStretch(1)
+         for i, name in enumerate(labels):
+-            b = QPushButton(name)
++            b = QPushButton(name.upper())
+             b.setCheckable(True)
+             b.setCursor(Qt.CursorShape.PointingHandCursor)
+             b.clicked.connect(lambda _=False, idx=i: self._select(idx))
+@@ -9705,6 +9708,16 @@ class TabBar(QWidget):
+             lay.addWidget(b)
+         lay.addStretch(1)
+         self._select(0)
++
++    def paintEvent(self, _evt) -> None:
++        p = QPainter(self)
++        p.setRenderHint(QPainter.RenderHint.Antialiasing)
++        rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
++        _paint_glass_surface(p, rect, 20, _parse_rgba(GLASS_FILL_TOP),
++                              _parse_rgba(GLASS_FILL_MID),
++                              _parse_rgba(GLASS_FILL_BOT),
++                              _parse_rgba(GLASS_BORDER))
++
+     def _select(self, idx: int) -> None:
+         for i, b in enumerate(self._buttons):
+             on = (i == idx)
+@@ -9712,21 +9725,22 @@ class TabBar(QWidget):
+             if on:
+                 b.setStyleSheet(
+                     "QPushButton {"
+-                    f"color:{ACCENT};"
+-                    f"background: rgba({_rgb(ACCENT)},0.14);"
+-                    f"border: 1px solid rgba({_rgb(ACCENT)},0.30);"
+-                    "border-radius: 13px; padding: 6px 18px;"
+-                    f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:13px;"
++                    f"color:{TEXT_PRIMARY}; background: transparent;"
++                    f"border: none; border-bottom: 2px solid {ACCENT};"
++                    "border-radius: 0; padding: 8px 16px 6px;"
++                    f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
++                    "font-size:11px; font-weight:600; letter-spacing:1px;"
+                     "}")
+             else:
+                 b.setStyleSheet(
+                     "QPushButton {"
+-                    f"color:{TEXT_MUTED};"
+-                    "background: transparent; border: 1px solid transparent;"
+-                    "border-radius: 13px; padding: 6px 18px;"
+-                    f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:13px;"
++                    f"color:{TEXT_DIM}; background: transparent;"
++                    "border: none; border-bottom: 2px solid transparent;"
++                    "border-radius: 0; padding: 8px 16px 6px;"
++                    f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
++                    "font-size:11px; font-weight:600; letter-spacing:1px;"
+                     "}"
+-                    "QPushButton:hover { background: rgba(255,255,255,0.06); }")
++                    f"QPushButton:hover {{ color:{TEXT_MUTED}; }}")
+         self.changed.emit(idx)
+ 
+     def select_name(self, name: str) -> None:
+@@ -9753,7 +9767,12 @@ class TitleBar(QWidget):
+         lay.addWidget(self._dot("#febc2e", self._minimise)) # yellow
+         lay.addWidget(self._dot("#28c840", self._maximise)) # green
+         lay.addStretch(1)
+-        self.session = QLabel("iris \u00b7 session 00:00:00")
++        wordmark = QLabel("iris")
++        wordmark.setStyleSheet(
++            f"color:{TEXT_PRIMARY}; background:transparent; border:none;"
++            f"font-family:'{FONT_SERIF}'; font-size:15px; font-style:italic;")
++        lay.addWidget(wordmark)
++        self.session = QLabel("\u00b7 session 00:00:00")
+         self.session.setStyleSheet(
+             f"color:{TEXT_DIM}; background:transparent; border:none;"
+             f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:12px;")
+@@ -9776,7 +9795,7 @@ class TitleBar(QWidget):
+         self._secs += 1
+         h, rem = divmod(self._secs, 3600)
+         m, s = divmod(rem, 60)
+-        self.session.setText(f"iris \u00b7 session {h:02d}:{m:02d}:{s:02d}")
++        self.session.setText(f"\u00b7 session {h:02d}:{m:02d}:{s:02d}")
+     def _close(self):     self.window().close()
+     def _minimise(self):  self.window().showMinimized()
+     def _maximise(self):
+@@ -10065,11 +10084,16 @@ class IrisApp(QWidget):
+         super().closeEvent(evt)
+ def main() -> int:
+     app = QApplication(sys.argv)
+-    # Prefer Cascadia Code; fall back to a mono the OS has.
++    # Professional type pass (Option D): Consolas for data/mono, Segoe UI
++    # for body, a real installed serif for section headings/wordmark.
+     families = set(QFontDatabase.families())
+-    mono = ("Cascadia Code" if "Cascadia Code" in families else
+-            "Consolas" if "Consolas" in families else "Monospace")
++    mono = ("Consolas" if "Consolas" in families else
++            "Cascadia Code" if "Cascadia Code" in families else "Monospace")
+     globals()["FONT_MONO"] = mono
++    serif = next((f for f in ("Georgia", "Cambria", "Constantia",
++                               "Times New Roman") if f in families),
++                 "Serif")
++    globals()["FONT_SERIF"] = serif
+     app.setFont(QFont(FONT_SANS if FONT_SANS in families else "Sans", 10))
+     controller = None
+     if Controller is not None:
+diff --git a/liquid-glass-gloss.patch b/liquid-glass-gloss.patch
+deleted file mode 100644
+index 87de858..0000000
+--- a/liquid-glass-gloss.patch
++++ /dev/null
+@@ -1,195 +0,0 @@
+-From 7bad433e8ed397a2f0a3113a6eb263bb93eca63f Mon Sep 17 00:00:00 2001
+-From: Claude <claude@anthropic.com>
+-Date: Thu, 9 Jul 2026 23:07:40 +0000
+-Subject: [PATCH] Liquid glass gloss pass: specular glint + bevel border on
+- GlassFrame and window shell
+-
+----
+- iris_gui.py | 136 +++++++++++++++++++++++++++++++++++++++++++++-------
+- 1 file changed, 120 insertions(+), 16 deletions(-)
+-
+-diff --git a/iris_gui.py b/iris_gui.py
+-index 29d262e..dcd77b0 100644
+---- a/iris_gui.py
+-+++ b/iris_gui.py
+-@@ -35,8 +35,9 @@ from pathlib import Path
+- from typing import Optional
+- from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QSize, QRectF, QPoint
+- from PyQt6.QtGui import (
+--    QColor, QLinearGradient, QPainter, QBrush, QFont, QFontDatabase, QImage,
+--    QPainterPath, QPen, QShortcut, QKeySequence, QGuiApplication, QPixmap,
+-+    QColor, QLinearGradient, QRadialGradient, QPainter, QBrush, QFont,
+-+    QFontDatabase, QImage, QPainterPath, QPen, QShortcut, QKeySequence,
+-+    QGuiApplication, QPixmap,
+- )
+- from PyQt6.QtWidgets import (
+-     QApplication, QWidget, QLabel, QFrame, QLineEdit, QPushButton,
+-@@ -511,6 +512,33 @@ WINDOW_RADIUS  = 26
+- WINDOW_OUTLINE = QColor(100, 180, 255, 90)
+- FONT_MONO = "Cascadia Code"
+- FONT_SANS = "Segoe UI"
+-+# ── Liquid-glass ambient blobs — soft colour pools painted behind every glass
+-+#    panel so there is actually something for the "glass" to sit on top of.
+-+#    Without these the glass has nothing to catch light against and just
+-+#    reads as a tinted dark box. Kept low-alpha; they're a backdrop, not a
+-+#    decoration in their own right.
+-+GLASS_BLOB_COLORS = [
+-+    QColor(130, 90, 255, 46),   # purple
+-+    QColor(70, 170, 255, 40),   # blue
+-+    QColor(255, 100, 170, 26),  # pink
+-+    QColor(40, 210, 175, 24),   # teal
+-+]
+-+def _parse_rgba(value) -> QColor:
+-+    """Accept a QColor, '#rrggbb', or an 'rgba(r,g,b,a)' / 'rgb(r,g,b)'
+-+    string (the shorthand used throughout this file for glass tints) and
+-+    return a QColor. Centralised here so the custom-painted GlassFrame can
+-+    consume the same string params the old QSS-based version did."""
+-+    if isinstance(value, QColor):
+-+        return QColor(value)
+-+    s = str(value).strip()
+-+    if s.startswith("#"):
+-+        return QColor(s)
+-+    if s.startswith("rgba") or s.startswith("rgb"):
+-+        nums = s[s.index("(") + 1:s.index(")")].split(",")
+-+        r, g, b = (int(float(n)) for n in nums[:3])
+-+        a = float(nums[3]) if len(nums) > 3 else 1.0
+-+        return QColor(r, g, b, max(0, min(255, int(a * 255))))
+-+    return QColor(s)
+- def _glass_gradient_qss(radius: int = 18,
+-                         top: str = GLASS_FILL_TOP,
+-                         mid: str = GLASS_FILL_MID,
+-@@ -918,18 +946,75 @@ def _photos_dir() -> str:
+- # Glass widget primitives
+- # ─────────────────────────────────────────────────────────────────────────────
+- class GlassFrame(QFrame):
+-+    """A rounded glass panel that paints its own gloss instead of relying on
+-+    a flat QSS gradient. Three things make this read as *glass* rather than
+-+    a tinted box:
+-+      1. A specular glint — a soft bright blob near the top-left, like a
+-+         light source catching curved glass.
+-+      2. A thin rim highlight along the top edge.
+-+      3. A two-tone bevel border — bright top/left, dim bottom/right — so
+-+         the edge itself looks like it's catching and losing light.
+-+    Constructor signature is unchanged from the old QSS version, so every
+-+    existing subclass (Avatar, SnapshotCard, PhotoThumb, chat bubbles, etc.)
+-+    picks this up automatically with no call-site changes."""
+-     def __init__(self, parent=None, radius: int = 18,
+-                  top=GLASS_FILL_TOP, mid=GLASS_FILL_MID, bot=GLASS_FILL_BOT,
+-                  border=GLASS_BORDER, shadow: bool = True,
+-                  blur: int = 32, dy: int = 7, shadow_alpha: int = 110):
+-         super().__init__(parent)
+-         self.setObjectName("glass")
+--        self.setStyleSheet(
+--            "QFrame#glass {" + _glass_gradient_qss(radius, top, mid, bot, border)
+--            + "}"
+--        )
+-+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+-+        self._radius = radius
+-+        self._top = _parse_rgba(top)
+-+        self._mid = _parse_rgba(mid)
+-+        self._bot = _parse_rgba(bot)
+-+        self._border = _parse_rgba(border)
+-         if shadow:
+-             _add_glass_shadow(self, blur=blur, dy=dy, alpha=shadow_alpha)
+-+
+-+    def paintEvent(self, _evt) -> None:
+-+        p = QPainter(self)
+-+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+-+        rect = QRectF(self.rect()).adjusted(0.6, 0.6, -0.6, -0.6)
+-+        if rect.width() <= 0 or rect.height() <= 0:
+-+            return
+-+        path = QPainterPath()
+-+        path.addRoundedRect(rect, self._radius, self._radius)
+-+        p.setClipPath(path)
+-+        # 1) base fill — same vertical top/mid/bot fade as the old QSS.
+-+        base = QLinearGradient(0, 0, 0, rect.height())
+-+        base.setColorAt(0.0, self._top)
+-+        base.setColorAt(0.07, self._top)
+-+        base.setColorAt(0.5, self._mid)
+-+        base.setColorAt(1.0, self._bot)
+-+        p.fillPath(path, QBrush(base))
+-+        # 2) specular glint.
+-+        glint = QRadialGradient(rect.width() * 0.22, rect.height() * -0.05,
+-+                                 max(rect.width(), rect.height()) * 0.85)
+-+        glint.setColorAt(0.0, QColor(255, 255, 255, 60))
+-+        glint.setColorAt(0.45, QColor(255, 255, 255, 16))
+-+        glint.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+        p.fillPath(path, QBrush(glint))
+-+        p.setClipping(False)
+-+        # 3) thin rim highlight along the top edge.
+-+        rim = QLinearGradient(rect.left() + rect.width() * 0.1, 0,
+-+                               rect.right() - rect.width() * 0.1, 0)
+-+        rim.setColorAt(0.0, QColor(255, 255, 255, 0))
+-+        rim.setColorAt(0.5, QColor(255, 255, 255, 120))
+-+        rim.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+        p.setPen(QPen(QBrush(rim), 1.1))
+-+        p.drawLine(QPoint(int(rect.left() + rect.width() * 0.08), int(rect.top()) + 1),
+-+                   QPoint(int(rect.right() - rect.width() * 0.08), int(rect.top()) + 1))
+-+        # 4) two-tone bevel border.
+-+        bevel = QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
+-+        bright = QColor(self._border).lighter(150)
+-+        bright.setAlpha(min(255, self._border.alpha() + 90))
+-+        dim = QColor(self._border).darker(160)
+-+        dim.setAlpha(max(20, self._border.alpha() - 60))
+-+        bevel.setColorAt(0.0, bright)
+-+        bevel.setColorAt(1.0, dim)
+-+        p.setPen(QPen(QBrush(bevel), 1.1))
+-+        p.drawPath(path)
+- class Avatar(GlassFrame):
+-     def __init__(self, parent, initials: str, fg: str, tint: str):
+-         super().__init__(parent, radius=9,
+-@@ -9892,22 +9977,41 @@ class IrisApp(QWidget):
+-         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+-         path = QPainterPath()
+-         path.addRoundedRect(rect, WINDOW_RADIUS, WINDOW_RADIUS)
+--        # Blue -> black liquid-glass gradient. Kept ~92% opaque so it always
+--        # reads as the deep-blue glass look; if a native backdrop is active,
+--        # the small remaining translucency lets a hint of blur show through.
+--        # Deep, near-black frosted gradient (Apple-style dark glass).
+--        # No bright top highlight band.
+-+        p.setClipPath(path)
+-+        # Deep, near-black frosted gradient (Apple-style dark glass) base shell.
+-         g = QLinearGradient(0, 0, self.width(), self.height())
+-         g.setColorAt(0.0, QColor(6, 9, 18, 210))
+-         g.setColorAt(0.5, QColor(8, 12, 24, 210))
+-         g.setColorAt(1.0, QColor(11, 16, 32, 210))
+-         p.fillPath(path, QBrush(g))
+-+        # Ambient colour pools — soft, low-alpha blobs so every glass panel
+-+        # floating on top of this shell has something to actually catch and
+-+        # refract. This is what separates "glass" from "tinted plastic".
+-+        w, h = rect.width(), rect.height()
+-+        blob_positions = [(0.12, 0.10), (0.85, 0.08), (0.78, 0.85), (0.15, 0.88)]
+-+        for (bx, by), color in zip(blob_positions, GLASS_BLOB_COLORS):
+-+            blob = QRadialGradient(w * bx, h * by, max(w, h) * 0.38)
+-+            blob.setColorAt(0.0, color)
+-+            faded = QColor(color)
+-+            faded.setAlpha(0)
+-+            blob.setColorAt(1.0, faded)
+-+            p.fillPath(path, QBrush(blob))
+-         # very subtle cool tint for depth (uniform, not a top band)
+--        p.fillPath(path, QColor(40, 80, 170, 12))
+--        # soft hairline border
+--        pen = QPen(QColor(120, 160, 230, 55))
+--        pen.setWidth(1)
+--        p.setPen(pen)
+-+        p.fillPath(path, QColor(40, 80, 170, 10))
+-+        p.setClipping(False)
+-+        # thin rim highlight along the top edge
+-+        rim = QLinearGradient(rect.left() + w * 0.15, 0, rect.right() - w * 0.15, 0)
+-+        rim.setColorAt(0.0, QColor(255, 255, 255, 0))
+-+        rim.setColorAt(0.5, QColor(255, 255, 255, 70))
+-+        rim.setColorAt(1.0, QColor(255, 255, 255, 0))
+-+        p.setPen(QPen(QBrush(rim), 1.2))
+-+        p.drawLine(QPoint(int(rect.left() + w * 0.1), int(rect.top()) + 1),
+-+                   QPoint(int(rect.right() - w * 0.1), int(rect.top()) + 1))
+-+        # two-tone bevel hairline border — bright top/left, dim bottom/right
+-+        bevel = QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
+-+        bevel.setColorAt(0.0, QColor(160, 195, 240, 100))
+-+        bevel.setColorAt(1.0, QColor(80, 110, 160, 40))
+-+        p.setPen(QPen(QBrush(bevel), 1.0))
+-         p.drawPath(path)
+-     def resizeEvent(self, evt):
+-         self._grip.move(self.width() - self._grip.width() - 8,
+--- 
+-2.43.0
+-
+-- 
+2.43.0
+

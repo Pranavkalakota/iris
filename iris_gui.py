@@ -10054,9 +10054,9 @@ class IrisApp(QWidget):
         p.setClipPath(path)
         # Deep, near-black frosted gradient (Apple-style dark glass) base shell.
         g = QLinearGradient(0, 0, self.width(), self.height())
-        g.setColorAt(0.0, QColor(6, 9, 18, 50))
-        g.setColorAt(0.5, QColor(8, 12, 24, 50))
-        g.setColorAt(1.0, QColor(11, 16, 32, 50))
+        g.setColorAt(0.0, QColor(6, 9, 18, 96))
+        g.setColorAt(0.5, QColor(8, 12, 24, 96))
+        g.setColorAt(1.0, QColor(11, 16, 32, 96))
         p.fillPath(path, QBrush(g))
         # Ambient colour pools — soft, low-alpha blobs so every glass panel
         # floating on top of this shell has something to actually catch and
