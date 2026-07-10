@@ -487,9 +487,9 @@ ESP32_CAMERA_WAIT_SECONDS = float(_cfg("ESP32_CAMERA_WAIT_SECONDS", 20.0))
 BG_TOP        = "#020818"
 BG_MID        = "#050f2e"
 BG_BOT        = "#091a3d"
-TEXT_PRIMARY  = "#d0eaff"
-TEXT_MUTED    = "#8fb8f0"
-TEXT_DIM      = "#6f8fc0"
+TEXT_PRIMARY  = "#eef5ff"
+TEXT_MUTED    = "#b3d2ff"
+TEXT_DIM      = "#96b4e2"
 TEXT_FAINT    = "#4b5563"
 ACCENT        = "#79bbff"
 ACCENT_HOVER  = "#57a5ff"
@@ -555,6 +555,18 @@ def _glass_gradient_qss(radius: int = 18,
     )
 def _add_glass_shadow(w: QWidget, blur: int = 32, dy: int = 7,
                       alpha: int = 105) -> None:
+    eff = QGraphicsDropShadowEffect(w)
+    eff.setBlurRadius(blur)
+    eff.setXOffset(0)
+    eff.setYOffset(dy)
+    eff.setColor(QColor(0, 0, 0, alpha))
+    w.setGraphicsEffect(eff)
+
+
+def _add_text_shadow(w: QWidget, blur: int = 6, dy: int = 1,
+                     alpha: int = 210) -> None:
+    """Dark halo behind text so labels stay readable on light OR dark
+    backgrounds (tabs, header, clock, chat text) even at high transparency."""
     eff = QGraphicsDropShadowEffect(w)
     eff.setBlurRadius(blur)
     eff.setXOffset(0)
@@ -1043,20 +1055,45 @@ class Avatar(GlassFrame):
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl.setStyleSheet(
             f"color:{fg}; background:transparent; border:none;"
-            f"font-family:'{FONT_SANS}'; font-size:11px; font-weight:700;"
+            f"font-family:'{FONT_SANS}'; font-size:15px; font-weight:700;"
         )
         lay.addWidget(lbl)
+
+
+class RingAvatar(QWidget):
+    """The model's avatar: a clean, larger, empty drawn circle with a dark
+    shadow halo so it stays high-contrast on light OR dark backgrounds."""
+    def __init__(self, parent, color: str, size: int = 40):
+        super().__init__(parent)
+        self._color = color
+        self.setFixedSize(size, size)
+        _add_glass_shadow(self, blur=10, dy=2, alpha=170)
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        m = 5
+        d = self.width() - 2 * m
+        pen = QPen(QColor(self._color))
+        pen.setWidth(3)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(m, m, d, d)
+
+
 class Pill(QLabel):
     def __init__(self, parent, text: str, fg: str):
         super().__init__(text, parent)
         self.setStyleSheet(
             f"color:{fg};"
-            f"background: rgba({_rgb(fg)},0.12);"
-            f"border: 1px solid rgba({_rgb(fg)},0.30);"
+            "background: rgba(8,12,26,0.68);"
+            f"border: 1px solid rgba({_rgb(fg)},0.60);"
             f"border-radius: 8px; padding: 2px 9px;"
-            f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:10px;"
+            f"font-family:'{FONT_MONO}','Consolas',monospace;"
+            " font-size:10px; font-weight:700;"
         )
         self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        _add_text_shadow(self, blur=5, dy=1, alpha=200)
 class SnapshotCard(GlassFrame):
     def __init__(self, parent, label: str):
         super().__init__(parent, radius=10, blur=18, dy=4, shadow_alpha=120)
@@ -1229,6 +1266,7 @@ class BubbleLabel(QLabel):
             | Qt.TextInteractionFlag.LinksAccessibleByMouse)
         self.setOpenExternalLinks(True)
         self.setText(text)
+        _add_text_shadow(self, blur=5, dy=1, alpha=200)
     def setText(self, text: str) -> None:
         super().setText(text)
         fm = self.fontMetrics()
@@ -1836,11 +1874,6 @@ class ChatTab(QWidget):
         lay.setContentsMargins(22, 18, 22, 18)
         lay.setSpacing(0)
         header = QHBoxLayout()
-        title = QLabel("new session")
-        title.setStyleSheet(
-            f"color:{TEXT_PRIMARY}; background:transparent;"
-            f"font-family:'{FONT_SERIF}'; font-size:18px; font-weight:400;")
-        header.addWidget(title)
         header.addStretch(1)
         rec_pill = Pill(pane, "\u25CF  ready", REC_FG)
         face_pill = Pill(pane, "face: \u2014", TEXT_DIM)
@@ -1995,10 +2028,11 @@ class ChatTab(QWidget):
         self._model_pill.setText(f"{label} · {short_model}")
         self._model_pill.setStyleSheet(
             f"color:{color};"
-            f"background: rgba({_rgb(color)},0.12);"
-            f"border: 1px solid rgba({_rgb(color)},0.30);"
+            "background: rgba(8,12,26,0.68);"
+            f"border: 1px solid rgba({_rgb(color)},0.60);"
             f"border-radius: 8px; padding: 2px 9px;"
-            f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:10px;")
+            f"font-family:'{FONT_MONO}','Consolas',monospace;"
+            " font-size:10px; font-weight:700;")
         # Announce a provider/model change in chat exactly once per change
         prior_provider = getattr(self, "_last_seen_provider", "ollama")
         prior_model = getattr(self, "_last_seen_model", OLLAMA_MODEL)
@@ -2049,7 +2083,7 @@ class ChatTab(QWidget):
         if log:
             self._log("assistant", body)
         return self._render_message(
-            "iris", body, is_user=False, avatar_initials="AI",
+            "iris", body, is_user=False, avatar_initials="\u25CF",
             avatar_fg=ACCENT, pills=pills, snapshots=snapshots,
             photo_paths=photo_paths)
     def _append_user(self, body: str, log: bool = True) -> QLabel:
@@ -2068,7 +2102,10 @@ class ChatTab(QWidget):
         rlay = QHBoxLayout(row)
         rlay.setContentsMargins(4, 10, 4, 0)
         rlay.setSpacing(12)
-        avatar = Avatar(row, avatar_initials, avatar_fg, avatar_fg)
+        if is_user:
+            avatar = Avatar(row, avatar_initials, avatar_fg, avatar_fg)
+        else:
+            avatar = RingAvatar(row, TEXT_PRIMARY, size=34)
         col = QVBoxLayout()
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(4)
@@ -2076,13 +2113,7 @@ class ChatTab(QWidget):
         rlay.addLayout(col, 1)
         head = QHBoxLayout()
         head.setSpacing(8)
-        name = QLabel(author)
-        name.setStyleSheet(
-            f"color:{avatar_fg}; background:transparent; border:none;"
-            f"font-family:'{FONT_MONO}','Consolas',monospace;"
-            "font-size:11px; font-weight:700;")
-        head.addWidget(name)
-        tm = QLabel(f"\u00b7  {datetime.now().strftime('%H:%M')}")
+        tm = QLabel(datetime.now().strftime('%H:%M'))
         tm.setStyleSheet(
             f"color:{TEXT_DIM}; background:transparent; border:none;"
             f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:10px;")
@@ -5711,10 +5742,11 @@ class PeopleTab(QWidget):
     @staticmethod
     def _restyle_pill(pill: Pill, fg: str) -> None:
         pill.setStyleSheet(
-            f"color:{fg}; background: rgba({_rgb(fg)},0.12);"
-            f"border: 1px solid rgba({_rgb(fg)},0.30);"
+            f"color:{fg}; background: rgba(8,12,26,0.68);"
+            f"border: 1px solid rgba({_rgb(fg)},0.60);"
             f"border-radius: 8px; padding: 2px 9px;"
-            f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:10px;")
+            f"font-family:'{FONT_MONO}','Consolas',monospace;"
+            " font-size:10px; font-weight:700;")
     def _selected_person_id(self) -> Optional[int]:
         rows = self.table.selectionModel().selectedRows() \
             if self.table.selectionModel() else []
@@ -9735,6 +9767,7 @@ class TabBar(QWidget):
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda _=False, idx=i: self._select(idx))
             self._buttons.append(b)
+            _add_text_shadow(b, blur=6, dy=1, alpha=235)
             lay.addWidget(b)
         lay.addStretch(1)
         self._select(0)
@@ -9746,22 +9779,26 @@ class TabBar(QWidget):
             if on:
                 b.setStyleSheet(
                     "QPushButton {"
-                    f"color:{TEXT_PRIMARY}; background: transparent;"
+                    f"color:{TEXT_PRIMARY};"
+                    "background: rgba(255,255,255,0.12);"
                     f"border: none; border-bottom: 2px solid {ACCENT};"
-                    "border-radius: 0; padding: 8px 16px 6px;"
+                    "border-top-left-radius: 8px; border-top-right-radius: 8px;"
+                    "border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
+                    "padding: 8px 16px 6px;"
                     f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
                     "font-size:11px; font-weight:600; letter-spacing:1px;"
                     "}")
             else:
                 b.setStyleSheet(
                     "QPushButton {"
-                    f"color:{TEXT_DIM}; background: transparent;"
+                    f"color:{TEXT_PRIMARY}; background: transparent;"
                     "border: none; border-bottom: 2px solid transparent;"
                     "border-radius: 0; padding: 8px 16px 6px;"
                     f"font-family:'Segoe UI Semibold','{FONT_SANS}',sans-serif;"
                     "font-size:11px; font-weight:600; letter-spacing:1px;"
                     "}"
-                    f"QPushButton:hover {{ color:{TEXT_MUTED}; }}")
+                    "QPushButton:hover { background: rgba(255,255,255,0.06);"
+                    " border-top-left-radius: 8px; border-top-right-radius: 8px; }")
         self.changed.emit(idx)
 
     def select_name(self, name: str) -> None:
@@ -9797,6 +9834,7 @@ class TitleBar(QWidget):
         self.session.setStyleSheet(
             f"color:{TEXT_DIM}; background:transparent; border:none;"
             f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:12px;")
+        _add_text_shadow(self.session, blur=5, dy=1, alpha=215)
         lay.addWidget(self.session)
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
@@ -10054,9 +10092,9 @@ class IrisApp(QWidget):
         p.setClipPath(path)
         # Deep, near-black frosted gradient (Apple-style dark glass) base shell.
         g = QLinearGradient(0, 0, self.width(), self.height())
-        g.setColorAt(0.0, QColor(6, 9, 18, 96))
-        g.setColorAt(0.5, QColor(8, 12, 24, 96))
-        g.setColorAt(1.0, QColor(11, 16, 32, 96))
+        g.setColorAt(0.0, QColor(5, 7, 20, 70))
+        g.setColorAt(0.5, QColor(11, 8, 26, 70))
+        g.setColorAt(1.0, QColor(17, 10, 32, 70))
         p.fillPath(path, QBrush(g))
         # Ambient colour pools — soft, low-alpha blobs so every glass panel
         # floating on top of this shell has something to actually catch and
