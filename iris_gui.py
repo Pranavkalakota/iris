@@ -9864,7 +9864,6 @@ def _enable_win11_backdrop(widget, kind: str = "acrylic") -> bool:
                 dwm.DwmSetWindowAttribute(hwnd, attr, byref(v), sizeof(v))
             _dwm(20, 1)                # DWMWA_USE_IMMERSIVE_DARK_MODE
             _dwm(33, 2)                # rounded corners
-            _dwm(38, 3)                # DWMWA_SYSTEMBACKDROP_TYPE = Acrylic
         except Exception:
             pass
         return ok
@@ -10002,7 +10001,7 @@ class IrisApp(QWidget):
         # real HWND. Falls back silently to the painted shell everywhere else.
         if not getattr(self, "_backdrop_applied", False):
             self._backdrop_applied = True
-            self._backdrop_on = _enable_win11_backdrop(self, "acrylic")
+            self._backdrop_on = _enable_win11_backdrop(self, "aero")
             if self._backdrop_on:
                 self.update()
 
@@ -10015,9 +10014,9 @@ class IrisApp(QWidget):
         p.setClipPath(path)
         # Deep, near-black frosted gradient (Apple-style dark glass) base shell.
         g = QLinearGradient(0, 0, self.width(), self.height())
-        g.setColorAt(0.0, QColor(6, 9, 18, 210))
-        g.setColorAt(0.5, QColor(8, 12, 24, 210))
-        g.setColorAt(1.0, QColor(11, 16, 32, 210))
+        g.setColorAt(0.0, QColor(6, 9, 18, 50))
+        g.setColorAt(0.5, QColor(8, 12, 24, 50))
+        g.setColorAt(1.0, QColor(11, 16, 32, 50))
         p.fillPath(path, QBrush(g))
         # Ambient colour pools — soft, low-alpha blobs so every glass panel
         # floating on top of this shell has something to actually catch and
