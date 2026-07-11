@@ -1412,7 +1412,7 @@ class BubbleLabel(QLabel):
         fm = self.fontMetrics()
         widest = max((fm.horizontalAdvance(ln)
                       for ln in raw.split("\n")), default=0)
-        self.setFixedWidth(min(widest + 26, self.MAXW))
+        self.setFixedWidth(min(widest + 10, self.MAXW))
         self.updateGeometry()
 class GradientBackground(QWidget):
     def paintEvent(self, _evt):
