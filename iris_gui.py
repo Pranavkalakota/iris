@@ -5177,6 +5177,75 @@ class PlaceholderTab(QWidget):
 # ─────────────────────────────────────────────────────────────────────────────
 # People tab — M5 registry UI.
 # ─────────────────────────────────────────────────────────────────────────────
+# --- IRIS people-dialog: ADD ---
+# QInputDialog.getText / getItem inherit no styling on this app's dark
+# glass palette, so on the People tab they render as unreadable black
+# rectangles (buttons invisible, text invisible). These wrappers build a
+# QInputDialog instance manually and apply the same look the other
+# People-tab dialogs already use.
+_INPUT_DIALOG_STYLE_TEMPLATE = (
+    "QDialog, QInputDialog {{ background: {bg}; color: {fg};"
+    " font-family: '{font}'; }}"
+    "QLabel {{ color: {fg}; background: transparent; font-size: 12px; }}"
+    "QLineEdit, QTextEdit {{ background: rgba(255,255,255,0.06);"
+    " color: {fg}; border: 1px solid rgba(255,255,255,0.16);"
+    " border-radius: 6px; padding: 6px 8px; font-size: 12px; }}"
+    "QComboBox {{ background: rgba(255,255,255,0.06); color: {fg};"
+    " border: 1px solid rgba(255,255,255,0.16); border-radius: 6px;"
+    " padding: 5px 8px; font-size: 12px; }}"
+    "QComboBox QAbstractItemView {{ background: {bg}; color: {fg};"
+    " selection-background-color: rgba(90,160,255,0.30);"
+    " selection-color: white;"
+    " border: 1px solid rgba(255,255,255,0.14); }}"
+    "QListView {{ background: {bg}; color: {fg};"
+    " border: 1px solid rgba(255,255,255,0.14); }}"
+    "QListView::item {{ padding: 4px 8px; }}"
+    "QListView::item:selected {{ background: rgba(90,160,255,0.30);"
+    " color: white; }}"
+    "QPushButton {{ background: rgba(255,255,255,0.06); color: {fg};"
+    " border: 1px solid rgba(255,255,255,0.14); border-radius: 6px;"
+    " padding: 6px 14px; font-size: 11px; }}"
+    "QPushButton:default {{ background: rgba(90,160,255,0.24);"
+    " border: 1px solid rgba(90,160,255,0.55); color: white; }}"
+    "QPushButton:hover {{ background: rgba(255,255,255,0.11); }}"
+)
+
+def _themed_input_dialog_style() -> str:
+    return _INPUT_DIALOG_STYLE_TEMPLATE.format(
+        bg=BG_TOP, fg=TEXT_PRIMARY, font=FONT_SANS)
+
+def _themed_get_text(parent, title: str, label: str,
+                     text: str = "") -> tuple:
+    """Drop-in for QInputDialog.getText with the People-tab dark theme."""
+    from PyQt6.QtWidgets import QInputDialog
+    dlg = QInputDialog(parent)
+    dlg.setInputMode(QInputDialog.InputMode.TextInput)
+    dlg.setWindowTitle(title)
+    dlg.setLabelText(label)
+    dlg.setTextValue(text)
+    dlg.setStyleSheet(_themed_input_dialog_style())
+    ok = dlg.exec() == QDialog.DialogCode.Accepted
+    return (dlg.textValue() if ok else ""), ok
+
+def _themed_get_item(parent, title: str, label: str,
+                     items: list, current: int = 0,
+                     editable: bool = False) -> tuple:
+    """Drop-in for QInputDialog.getItem with the People-tab dark theme."""
+    from PyQt6.QtWidgets import QInputDialog
+    dlg = QInputDialog(parent)
+    dlg.setWindowTitle(title)
+    dlg.setLabelText(label)
+    dlg.setComboBoxItems(items)
+    dlg.setOption(
+        QInputDialog.InputDialogOption.UseListViewForComboBoxItems, True)
+    dlg.setComboBoxEditable(editable)
+    if 0 <= current < len(items):
+        dlg.setTextValue(items[current])
+    dlg.setStyleSheet(_themed_input_dialog_style())
+    ok = dlg.exec() == QDialog.DialogCode.Accepted
+    return (dlg.textValue() if ok else ""), ok
+# --- IRIS people-dialog: END ---
+
 class _ProfileDialog(QDialog):
     """Shared base for Add/Edit profile dialogs — holds the form widgets
     so both can reuse the same layout and validation."""
@@ -5392,7 +5461,22 @@ class _ConversationsDialog(QDialog):
                     item.setForeground(QColor(fg))
                 table.setItem(row, col, item)
         if table.rowCount() == 0:
-            empty = QLabel("No conversations recorded yet.")
+            # --- IRIS people-dialog: CHANGE ---
+            # Distinguish "person has been seen many times but no audio
+            # recording has been ingested" (times_seen>0, conversations=0)
+            # from "genuinely never seen". Prevents confusion when the
+            # header says "1133 total encounters" but the table is empty.
+            if person.times_seen > 0:
+                empty = QLabel(
+                    f"{person.name} has been seen {person.times_seen} "
+                    f"time{'s' if person.times_seen != 1 else ''} live, "
+                    "but no audio recordings have been ingested yet. "
+                    "Conversations appear here once a recording finishes "
+                    "processing.")
+            else:
+                empty = QLabel("No conversations recorded yet.")
+            empty.setWordWrap(True)
+            # --- IRIS people-dialog: END ---
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(
                 f"color:{TEXT_DIM}; background:transparent;"
@@ -5967,6 +6051,11 @@ class PeopleTab(QWidget):
         self._open_profile_editor(person)
 
     def _open_profile_editor(self, person) -> None:
+        # --- IRIS people-dialog: CHANGE ---
+        # allow_face_pick was False, so editing an existing profile hid
+        # the "Choose face image..." row. Enabling it lets the user
+        # attach a profile picture from the edit dialog (fixes "can't
+        # add a picture" complaint).
         dlg = _ProfileDialog(
             self, title=f"Edit profile \u2014 {person.name}",
             fusion=self.fusion,
@@ -5978,7 +6067,8 @@ class PeopleTab(QWidget):
                 "role_note": person.role_note,
                 "is_self": person.is_self,
             },
-            allow_face_pick=False, allow_is_self=True)
+            allow_face_pick=True, allow_is_self=True)
+        # --- IRIS people-dialog: END ---
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return
         v = dlg.values()
@@ -5993,8 +6083,90 @@ class PeopleTab(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Update failed", str(e))
             return
+        # --- IRIS people-dialog: ADD ---
+        # If the user picked a face image, best-effort: save it to the
+        # person's folder as avatar.png AND feed it through iris_faces
+        # so ArcFace picks up the face embedding for future recognition.
+        face_path = v.get("face_image_path") or ""
+        if face_path and os.path.exists(face_path):
+            try:
+                self._attach_face_image(person.id, face_path)
+                self._append_activity(f"attached picture to {v['name']}")
+            except Exception as e:
+                QMessageBox.warning(self, "Face image",
+                                     f"Couldn't attach the picture: {e}")
+        # --- IRIS people-dialog: END ---
         self._append_activity(f"updated {v['name']}")
         self.refresh()
+
+    # --- IRIS people-dialog: ADD ---
+    def _attach_face_image(self, person_id: int, image_path: str) -> None:
+        """Copy image to person's folder as avatar.png AND (best-effort)
+        run ArcFace on it so face recognition picks up the new sample.
+        Every step is defensive — a failure at any point still leaves
+        the profile editable and refreshable."""
+        import shutil
+        person = (self.fusion.get_person(person_id)
+                  if self.fusion is not None else None)
+        if person is None:
+            return
+        # (1) Ensure a folder exists for this person.
+        folder = getattr(person, "folder_path", "") or ""
+        if not folder:
+            try:
+                base = os.path.dirname(getattr(self.fusion, "db_path", "")) \
+                       or os.getcwd()
+                safe_name = "".join(c if c.isalnum() or c in "-_ " else "_"
+                                     for c in person.name).strip() or "person"
+                folder = os.path.join(base, "people",
+                                       f"{person.id}_{safe_name}")
+                os.makedirs(folder, exist_ok=True)
+                if hasattr(self.fusion, "set_folder_path"):
+                    self.fusion.set_folder_path(person.id, folder)
+                else:
+                    store = getattr(self.fusion, "people_store", None) \
+                            or getattr(self.fusion, "store", None)
+                    if store is not None and hasattr(store, "set_folder_path"):
+                        store.set_folder_path(person.id, folder)
+            except Exception as e:
+                print(f"[people-tab] could not create folder: {e}")
+                folder = ""
+        # (2) Copy the picked file next to the profile.
+        if folder and os.path.isdir(folder):
+            try:
+                dst = os.path.join(folder, "avatar.png")
+                shutil.copyfile(image_path, dst)
+                print(f"[people-tab] avatar saved to {dst}")
+            except Exception as e:
+                print(f"[people-tab] avatar copy failed: {e}")
+        # (3) Add a face embedding via iris_faces so ArcFace matches
+        # this person going forward.
+        try:
+            import cv2                              # type: ignore
+            import iris_faces                       # type: ignore
+            import iris_people                      # type: ignore
+            pipe = iris_faces.get_pipeline()
+            pipe.warm_up(blocking=True, timeout=30.0)
+            img = cv2.imread(image_path)
+            if img is None:
+                print("[people-tab] cv2 could not read image")
+                return
+            crops = pipe.extract_faces(img)
+            if not crops:
+                print("[people-tab] no face detected in picked image")
+                return
+            emb = pipe.embed(crops[0].image)
+            if emb is None:
+                print("[people-tab] embed returned None")
+                return
+            store = (getattr(self.fusion, "people_store", None)
+                     or getattr(self.fusion, "store", None))
+            if store is not None and hasattr(store, "add_embedding"):
+                store.add_embedding(person_id, iris_people.KIND_FACE, emb)
+                print(f"[people-tab] face embedding added for id={person_id}")
+        except Exception as e:
+            print(f"[people-tab] direct face enrollment failed: {e}")
+    # --- IRIS people-dialog: END ---
 
     def _show_conversations_selected(self) -> None:
         pid = self._selected_person_id()
@@ -6078,16 +6250,19 @@ class PeopleTab(QWidget):
                 if w is not None:
                     w.deleteLater()
     def _rename_selected(self) -> None:
-        from PyQt6.QtWidgets import QInputDialog
         pid = self._selected_person_id()
         if pid is None or self.fusion is None:
             return
         person = self.fusion.get_person(pid)
         if person is None:
             return
-        new_name, ok = QInputDialog.getText(
+        # --- IRIS people-dialog: CHANGE ---
+        # Was QInputDialog.getText — rendered as an unreadable black box
+        # on our dark palette. Themed wrapper matches the People tab.
+        new_name, ok = _themed_get_text(
             self, "Rename person",
             f"New name for \u201c{person.name}\u201d:", text=person.name)
+        # --- IRIS people-dialog: END ---
         if not ok:
             return
         new_name = (new_name or "").strip()
@@ -6097,20 +6272,21 @@ class PeopleTab(QWidget):
             self._append_activity(f"renamed \u2192 {new_name}")
             self.refresh()
     def _edit_role_selected(self) -> None:
-        from PyQt6.QtWidgets import QInputDialog
-        pid = self._selected_person_id()
-        if pid is None or self.fusion is None:
+       pid = self._selected_person_id()
+       if pid is None or self.fusion is None:
             return
-        person = self.fusion.get_person(pid)
-        if person is None:
+       person = self.fusion.get_person(pid)
+       if person is None:
             return
-        new_note, ok = QInputDialog.getText(
+        # --- IRIS people-dialog: CHANGE ---
+       new_note, ok = _themed_get_text(
             self, "Edit role note",
             f"Role note for \u201c{person.name}\u201d:",
             text=person.role_note or "")
-        if not ok:
+        # --- IRIS people-dialog: END ---
+       if not ok:
             return
-        if self.fusion.update_role_note(pid, (new_note or "").strip()):
+       if self.fusion.update_role_note(pid, (new_note or "").strip()):
             self.refresh()
     def _delete_selected(self) -> None:
         pid = self._selected_person_id()
@@ -6131,7 +6307,6 @@ class PeopleTab(QWidget):
             self._append_activity(f"deleted {person.name}")
             self.refresh()
     def _merge_selected(self) -> None:
-        from PyQt6.QtWidgets import QInputDialog
         drop_id = self._selected_person_id()
         if drop_id is None or self.fusion is None:
             return
@@ -6143,10 +6318,12 @@ class PeopleTab(QWidget):
             QMessageBox.information(self, "Merge", "No other people to merge with.")
             return
         labels = [f"{p.name}  (id {p.id})" for p in others]
-        choice, ok = QInputDialog.getItem(
+        # --- IRIS people-dialog: CHANGE ---
+        choice, ok = _themed_get_item(
             self, "Merge into\u2026",
             f"Merge \u201c{drop.name}\u201d into which person?",
             labels, 0, False)
+        # --- IRIS people-dialog: END ---
         if not ok or not choice:
             return
         keep = others[labels.index(choice)]
