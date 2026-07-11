@@ -1,0 +1,20 @@
+[00:09.52 -> 00:18.36]  okay good morning my name is Hamza Akhtar just we're gonna do a rundown
+[00:18.36 -> 00:22.40]  through what we're trying to test here we're trying to make sure that our
+[00:22.40 -> 00:33.46]  audio tab actually is getting connected to our people's tab where it's
+[00:33.46 -> 00:40.54]  able to then also understand based off like our footage if the person
+[00:40.54 -> 00:45.38]  it's person it sees is actually me you should be me I would assume it would be
+[00:45.38 -> 00:53.82]  me and then it's also taking into account the video which kind of helps
+[00:53.82 -> 01:00.02]  assume who the person the person is in each setting for example this
+[01:00.02 -> 01:06.46]  conversation that I'm currently having is just me so there shouldn't be 80,000
+[01:06.46 -> 01:13.06]  speakers it should just be Hamza is the only one speaking so be interesting to
+[01:13.06 -> 01:19.54]  see how this test comes out I think some of the some of the issues might
+[01:19.54 -> 01:23.62]  actually stem from the fact that you have to click on the people's tab and
+[01:23.62 -> 01:30.42]  then determine oh is this Hamza speaking or is this user unknown 63
+[01:30.42 -> 01:40.94]  something like that which causes a bit of a problem because then we're not able
+[01:40.94 -> 01:49.34]  to really under stand who the user is on the people registry quickly and
+[01:49.34 -> 01:52.06]  efficiently because if we try to go back to the chat we're asking
+[01:52.06 -> 01:56.42]  questions on the conversation we would have to manually go in and determine oh
+[01:56.42 -> 01:59.90]  yeah this was Hamza this is Jacob this is Jonathan this is Joshua
+[01:59.90 -> 02:07.02]  XYZ which then makes the chat run slow so yeah this is that demo and
+[02:07.02 -> 02:14.02]  hopefully we will see because I've gotten I think three videos now and
+[02:14.02 -> 02:17.82]  we're in two minutes in with audio so

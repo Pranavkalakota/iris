@@ -1,0 +1,121 @@
+{
+  "audio_file": "live_2026-07-11_09-57-22.wav",
+  "model": "medium.en",
+  "duration_seconds": 102.361375,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 18.826651334762573,
+  "realtime_factor": 0.18392339234171654,
+  "segments": [
+    {
+      "start": 1.94,
+      "end": 8.56,
+      "text": "A new friend of mine will always just be me and you, baby",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 8.56,
+      "end": 14.56,
+      "text": "And don't try to blame me as one of your sorry fools",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 14.56,
+      "end": 18.56,
+      "text": "Pones in closing time, oh sweet love of mine",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 18.56,
+      "end": 20.56,
+      "text": "In a world that's growing so",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 20.56,
+      "end": 50.86,
+      "text": "Cool off me singing your voice",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 50.86,
+      "end": 53.86,
+      "text": "Reminds me of back home",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 53.86,
+      "end": 59.86,
+      "text": "Singing you all the songs that our open eyes upon",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 59.86,
+      "end": 64.86,
+      "text": "I'll go out drinking with all my shameless friends",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 64.86,
+      "end": 69.86,
+      "text": "I've been having trouble just finding hope again",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 69.86,
+      "end": 93.61,
+      "text": "I've been sharing the rest of this in my mind",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 93.61,
+      "end": 96.61,
+      "text": "And dies out when you're right here",
+      "speaker": "Unknown 9",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 96.61,
+      "end": 101.61,
+      "text": "Finally made it over that damn four year drought",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

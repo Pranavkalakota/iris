@@ -1,0 +1,27 @@
+{
+  "ingested_at": 1783789161.9882376,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\live_2026-07-11_09-57-22.wav",
+  "clusters_total": 2,
+  "clusters_matched": 1,
+  "clusters_enrolled": 1,
+  "people": [
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.646,
+      "cluster_id": 8,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 135,
+      "name": "Unknown 2",
+      "similarity": 0.0,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    }
+  ]
+}

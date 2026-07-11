@@ -1,0 +1,193 @@
+{
+  "audio_file": "live_2026-07-11_10-03-00.wav",
+  "model": "medium.en",
+  "duration_seconds": 137.31975,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 56.38467574119568,
+  "realtime_factor": 0.41060863962536837,
+  "segments": [
+    {
+      "start": 9.52,
+      "end": 18.36,
+      "text": "okay good morning my name is Hamza Akhtar just we're gonna do a rundown",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 18.36,
+      "end": 22.4,
+      "text": "through what we're trying to test here we're trying to make sure that our",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 22.4,
+      "end": 33.46,
+      "text": "audio tab actually is getting connected to our people's tab where it's",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 33.46,
+      "end": 40.54,
+      "text": "able to then also understand based off like our footage if the person",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 40.54,
+      "end": 45.38,
+      "text": "it's person it sees is actually me you should be me I would assume it would be",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 45.38,
+      "end": 53.82,
+      "text": "me and then it's also taking into account the video which kind of helps",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 53.82,
+      "end": 60.02,
+      "text": "assume who the person the person is in each setting for example this",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 60.02,
+      "end": 66.46,
+      "text": "conversation that I'm currently having is just me so there shouldn't be 80,000",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 66.46,
+      "end": 73.06,
+      "text": "speakers it should just be Hamza is the only one speaking so be interesting to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 73.06,
+      "end": 79.54,
+      "text": "see how this test comes out I think some of the some of the issues might",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 79.54,
+      "end": 83.62,
+      "text": "actually stem from the fact that you have to click on the people's tab and",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 83.62,
+      "end": 90.42,
+      "text": "then determine oh is this Hamza speaking or is this user unknown 63",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 90.42,
+      "end": 100.94,
+      "text": "something like that which causes a bit of a problem because then we're not able",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 100.94,
+      "end": 109.34,
+      "text": "to really under stand who the user is on the people registry quickly and",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 109.34,
+      "end": 112.06,
+      "text": "efficiently because if we try to go back to the chat we're asking",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 112.06,
+      "end": 116.42,
+      "text": "questions on the conversation we would have to manually go in and determine oh",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 116.42,
+      "end": 119.9,
+      "text": "yeah this was Hamza this is Jacob this is Jonathan this is Joshua",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 119.9,
+      "end": 127.02,
+      "text": "XYZ which then makes the chat run slow so yeah this is that demo and",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 127.02,
+      "end": 134.02,
+      "text": "hopefully we will see because I've gotten I think three videos now and",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 134.02,
+      "end": 137.82,
+      "text": "we're in two minutes in with audio so",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.708,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

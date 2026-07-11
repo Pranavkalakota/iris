@@ -1253,26 +1253,166 @@ def _rgb(hex_color: str) -> str:
 
     h = hex_color.lstrip("#")
     return f"{int(h[0:2],16)},{int(h[2:4],16)},{int(h[4:6],16)}"
+def _md_to_html(text: str) -> str:
+    """Lightweight, clean Markdown -> HTML for chat bubbles (bold, italic,
+    inline code, code blocks, bullet/numbered lists, headings, links,
+    paragraphs). Produces inline-styled HTML that QLabel renders crisply.
+    Never raises — falls back to escaped plain text."""
+    import html as _html
+    import re as _re
+    try:
+        src = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+        blocks = []
+
+        def _stash(m):
+            code = _html.escape(m.group(2))
+            blocks.append(
+                "<pre style=\"margin:6px 0; padding:8px 10px;"
+                " background:rgba(255,255,255,0.06); border-radius:6px;"
+                " font-family:Consolas,monospace; font-size:12.5px;"
+                " white-space:pre-wrap;\">" + code + "</pre>")
+            return "\x00B%d\x00" % (len(blocks) - 1)
+
+        src = _re.sub(r"```[ \t]*[\w+-]*\n(.*?)```",
+                      lambda m: _stash(type("M", (), {"group":
+                          staticmethod(lambda i, mm=m: mm.group(1))})),
+                      src, flags=_re.S)
+
+        def _inline(t):
+            t = _html.escape(t)
+            t = _re.sub(r"`([^`]+)`",
+                        r"<code style='background:rgba(255,255,255,0.10);"
+                        r" padding:1px 4px; border-radius:4px;"
+                        r" font-family:Consolas,monospace;'>\1</code>", t)
+            t = _re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", t)
+            t = _re.sub(r"__([^_]+)__", r"<b>\1</b>", t)
+            t = _re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<i>\1</i>", t)
+            t = _re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
+                        r"<a href='\2' style='color:#8fc0ff;'>\1</a>", t)
+            return t
+
+        lines = src.split("\n")
+        out, i = [], 0
+        while i < len(lines):
+            ln = lines[i]
+            bm = _re.match(r"\x00B(\d+)\x00", ln.strip())
+            if bm:
+                out.append(blocks[int(bm.group(1))]); i += 1; continue
+            hm = _re.match(r"(#{1,6})\s+(.*)", ln)
+            if hm:
+                sz = {1: 17, 2: 16, 3: 15}.get(len(hm.group(1)), 14)
+                out.append("<div style='font-weight:700; font-size:%dpx;"
+                           " margin:6px 0 2px;'>%s</div>"
+                           % (sz, _inline(hm.group(2)))); i += 1; continue
+            if _re.match(r"\s*[-*+]\s+", ln):
+                items = []
+                while i < len(lines) and _re.match(r"\s*[-*+]\s+", lines[i]):
+                    items.append("<li style='margin:2px 0;'>%s</li>"
+                                 % _inline(_re.sub(r"^\s*[-*+]\s+", "",
+                                                   lines[i]))); i += 1
+                out.append("<ul style='margin:2px 0 2px 18px;"
+                           " padding:0;'>%s</ul>" % "".join(items)); continue
+            if _re.match(r"\s*\d+\.\s+", ln):
+                items = []
+                while i < len(lines) and _re.match(r"\s*\d+\.\s+", lines[i]):
+                    items.append("<li style='margin:2px 0;'>%s</li>"
+                                 % _inline(_re.sub(r"^\s*\d+\.\s+", "",
+                                                   lines[i]))); i += 1
+                out.append("<ol style='margin:2px 0 2px 18px;"
+                           " padding:0;'>%s</ol>" % "".join(items)); continue
+            if ln.strip() == "":
+                i += 1; continue
+            para = [ln]; i += 1
+            while (i < len(lines) and lines[i].strip() != "" and not
+                   _re.match(r"(#{1,6})\s+|\s*[-*+]\s+|\s*\d+\.\s+|\x00B",
+                             lines[i])):
+                para.append(lines[i]); i += 1
+            out.append("<div style='margin:1px 0;'>%s</div>"
+                       % "<br>".join(_inline(x) for x in para))
+        return "".join(out)
+    except Exception:
+        import html as _h
+        return _h.escape(text or "").replace("\n", "<br>")
+
+
+def _user_avatar_path() -> Optional[str]:
+    """A user-set profile photo for their own messages, if present. Drop a
+    file named user_avatar.png/.jpg next to iris_gui.py (or set
+    config_phase9.USER_AVATAR_PATH). Upload UI arrives with the pull-out tab."""
+    cands = []
+    try:
+        import config_phase9 as _c                            # type: ignore
+        v = getattr(_c, "USER_AVATAR_PATH", None)
+        if v:
+            cands.append(str(v))
+    except Exception:
+        pass
+    roots = [os.getcwd()]
+    try:
+        roots.append(os.path.dirname(os.path.abspath(__file__)))
+    except Exception:
+        pass
+    for r in roots:
+        for name in ("user_avatar.png", "user_avatar.jpg", "user_avatar.jpeg"):
+            cands.append(os.path.join(r, name))
+    for c in cands:
+        try:
+            if c and os.path.exists(c):
+                return c
+        except Exception:
+            continue
+    return None
+
+
+class _PhotoAvatar(QWidget):
+    """Circular profile photo used for the user's own messages."""
+    def __init__(self, parent, path: str, size: int = 34):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+        self._pm = QPixmap(path)
+        _add_glass_shadow(self, blur=10, dy=2, alpha=150)
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        clip = QPainterPath()
+        clip.addEllipse(0, 0, self.width(), self.height())
+        p.setClipPath(clip)
+        if not self._pm.isNull():
+            sc = self._pm.scaled(
+                self.width(), self.height(),
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation)
+            x = (sc.width() - self.width()) // 2
+            y = (sc.height() - self.height()) // 2
+            p.drawPixmap(-x, -y, sc)
+        p.setClipping(False)
+        pen = QPen(QColor(TEXT_PRIMARY)); pen.setWidth(2)
+        p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(1, 1, self.width() - 2, self.height() - 2)
+
+
 class BubbleLabel(QLabel):
-    MAXW = 500
+    MAXW = 560
     def __init__(self, text: str = ""):
         super().__init__("")
-        f = QFont(FONT_MONO)
-        f.setPixelSize(13)
+        f = QFont(FONT_SANS)
+        f.setPixelSize(14)
         self.setFont(f)
         self.setWordWrap(True)
+        self.setTextFormat(Qt.TextFormat.RichText)
         self.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
             | Qt.TextInteractionFlag.LinksAccessibleByMouse)
         self.setOpenExternalLinks(True)
         self.setText(text)
-        _add_text_shadow(self, blur=5, dy=1, alpha=200)
     def setText(self, text: str) -> None:
-        super().setText(text)
+        raw = str(text)
+        super().setText(_md_to_html(raw))
         fm = self.fontMetrics()
         widest = max((fm.horizontalAdvance(ln)
-                      for ln in str(text).split("\n")), default=0)
-        self.setFixedWidth(min(widest + 2, self.MAXW))
+                      for ln in raw.split("\n")), default=0)
+        self.setFixedWidth(min(widest + 10, self.MAXW))
         self.updateGeometry()
 class GradientBackground(QWidget):
     def paintEvent(self, _evt):
@@ -1445,6 +1585,22 @@ class ChatTab(QWidget):
         root.setSpacing(0)
         root.addWidget(self._build_sidebar())
         root.addWidget(self._build_main_pane(), 1)
+
+    def _toggle_sidebar(self) -> None:
+        """Slide the session drawer open/closed."""
+        sb = getattr(self, "_sidebar", None)
+        if sb is None:
+            return
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
+        opening = not getattr(self, "_sidebar_open", True)
+        self._sidebar_open = opening
+        anim = QPropertyAnimation(sb, b"maximumWidth", self)
+        anim.setDuration(190)
+        anim.setStartValue(sb.maximumWidth())
+        anim.setEndValue(236 if opening else 0)
+        anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        anim.start()
+        self._sidebar_anim = anim
     # ── Sidebar (live session history) ───────────────────────────────────
     def _build_sidebar(self) -> QWidget:
         panel = GlassFrame(self, radius=16, shadow=True, blur=24, dy=6,
@@ -1453,7 +1609,10 @@ class ChatTab(QWidget):
                            mid="rgba(8,11,22,0.50)",
                            bot="rgba(6,9,18,0.48)",
                            border=GLASS_BORDER_SOFT)
-        panel.setFixedWidth(236)
+        panel.setMinimumWidth(0)
+        panel.setMaximumWidth(236)
+        self._sidebar = panel
+        self._sidebar_open = True
         lay = QVBoxLayout(panel)
         lay.setContentsMargins(14, 16, 14, 16)
         lay.setSpacing(0)
@@ -1896,6 +2055,19 @@ class ChatTab(QWidget):
         lay.setContentsMargins(22, 18, 22, 18)
         lay.setSpacing(0)
         header = QHBoxLayout()
+        self._drawer_btn = QPushButton("\u2630")
+        self._drawer_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._drawer_btn.setFixedSize(32, 28)
+        self._drawer_btn.setToolTip("Show / hide sessions")
+        self._drawer_btn.setStyleSheet(
+            "QPushButton {"
+            f"color:{TEXT_PRIMARY};"
+            " background: rgba(255,255,255,0.08);"
+            f" border: 1px solid {GLASS_BORDER_SOFT};"
+            " border-radius: 8px; font-size:14px; }"
+            "QPushButton:hover { background: rgba(255,255,255,0.16); }")
+        self._drawer_btn.clicked.connect(self._toggle_sidebar)
+        header.addWidget(self._drawer_btn)
         header.addStretch(1)
         rec_pill = Pill(pane, "\u25CF  ready", REC_FG)
         face_pill = Pill(pane, "face: \u2014", TEXT_DIM)
@@ -2112,7 +2284,7 @@ class ChatTab(QWidget):
         if log:
             self._log("user", body)
         return self._render_message(
-            "you", body, is_user=True, avatar_initials="MA",
+            "you", body, is_user=True, avatar_initials="HA",
             avatar_fg=USER_ACCENT)
     def _render_message(self, author: str, body: str, is_user: bool,
                         avatar_initials: str, avatar_fg: str,
@@ -2124,32 +2296,54 @@ class ChatTab(QWidget):
         rlay = QHBoxLayout(row)
         rlay.setContentsMargins(4, 10, 4, 0)
         rlay.setSpacing(12)
+        # Avatar: model = drawn circle; user = their photo (if set) else initials.
         if is_user:
-            avatar = Avatar(row, avatar_initials, avatar_fg, avatar_fg)
+            _av = _user_avatar_path()
+            avatar = (_PhotoAvatar(row, _av, size=34) if _av
+                      else Avatar(row, avatar_initials, avatar_fg, avatar_fg))
         else:
             avatar = RingAvatar(row, TEXT_PRIMARY, size=34)
         col = QVBoxLayout()
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(4)
-        rlay.addWidget(avatar, 0, Qt.AlignmentFlag.AlignTop)
-        rlay.addLayout(col, 1)
+        # Model messages sit on the LEFT, the user's on the RIGHT (text-msg style).
+        if is_user:
+            rlay.addLayout(col, 1)
+            rlay.addWidget(avatar, 0, Qt.AlignmentFlag.AlignTop)
+        else:
+            rlay.addWidget(avatar, 0, Qt.AlignmentFlag.AlignTop)
+            rlay.addLayout(col, 1)
         head = QHBoxLayout()
         head.setSpacing(8)
         tm = QLabel(datetime.now().strftime('%H:%M'))
         tm.setStyleSheet(
             f"color:{TEXT_DIM}; background:transparent; border:none;"
             f"font-family:'{FONT_MONO}','Consolas',monospace; font-size:10px;")
-        head.addWidget(tm)
-        if pills:
-            for text, fg in pills:
-                head.addWidget(Pill(row, text, fg))
-        head.addStretch(1)
+        if is_user:
+            head.addStretch(1)
+            head.addWidget(tm)
+            if pills:
+                for text, fg in pills:
+                    head.addWidget(Pill(row, text, fg))
+        else:
+            head.addWidget(tm)
+            if pills:
+                for text, fg in pills:
+                    head.addWidget(Pill(row, text, fg))
+            head.addStretch(1)
         col.addLayout(head)
-        bubble = GlassFrame(row, radius=14, border=BUBBLE_BORDER,
-                            top="rgba(10,14,28,0.55)",
-                            mid="rgba(8,11,22,0.50)",
-                            bot="rgba(6,9,18,0.48)",
-                            blur=22, dy=5, shadow_alpha=140)
+        if is_user:
+            bubble = GlassFrame(row, radius=14, border=BUBBLE_BORDER,
+                                top="rgba(42,88,182,0.55)",
+                                mid="rgba(34,72,152,0.50)",
+                                bot="rgba(28,60,130,0.48)",
+                                blur=22, dy=5, shadow_alpha=140)
+        else:
+            bubble = GlassFrame(row, radius=14, border=BUBBLE_BORDER,
+                                top="rgba(10,14,28,0.55)",
+                                mid="rgba(8,11,22,0.50)",
+                                bot="rgba(6,9,18,0.48)",
+                                blur=22, dy=5, shadow_alpha=140)
         blay = QVBoxLayout(bubble)
         blay.setContentsMargins(16, 11, 16, 11)
         body_lbl = BubbleLabel(body)
@@ -2158,8 +2352,12 @@ class ChatTab(QWidget):
         blay.addWidget(body_lbl)
         brow = QHBoxLayout()
         brow.setContentsMargins(0, 0, 0, 0)
-        brow.addWidget(bubble)
-        brow.addStretch(1)
+        if is_user:
+            brow.addStretch(1)
+            brow.addWidget(bubble)
+        else:
+            brow.addWidget(bubble)
+            brow.addStretch(1)
         col.addLayout(brow)
         if snapshots:
             snaps = QHBoxLayout()

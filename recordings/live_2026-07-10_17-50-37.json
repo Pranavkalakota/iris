@@ -1,0 +1,40 @@
+{
+  "audio_file": "live_2026-07-10_17-50-37.wav",
+  "model": "medium.en",
+  "duration_seconds": 714.958625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 7.172071218490601,
+  "realtime_factor": 0.01003144932826092,
+  "segments": [
+    {
+      "start": 0.66,
+      "end": 8.34,
+      "text": "Well, I'm wearing pajamas right now, bro. All right. Hey Jarvis open up Gmail",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 18.09,
+      "end": 20.09,
+      "text": "There you go it works",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 24.77,
+      "end": 31.11,
+      "text": "Yeah, I'll test it thank you for fixing I appreciate it yeah peace out",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

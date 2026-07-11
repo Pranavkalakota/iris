@@ -1,8 +1,8 @@
 {
-  "event_id": "evt_e74cc2a7fdd4",
-  "started_at": 1783286018.148823,
-  "last_clip_at": 1783286360.255005,
-  "n_clips": 1,
+  "event_id": "evt_165560801d14",
+  "started_at": 1783286360.255005,
+  "last_clip_at": 1783789497.274156,
+  "n_clips": 5,
   "people": [
     "Unknown 1"
   ],
@@ -19,7 +19,7 @@
     "region": "Indiana",
     "country": "United States",
     "provider": "ip-api",
-    "timestamp_iso": "2026-07-05T14:14:25"
+    "timestamp_iso": "2026-07-11T10:05:41"
   },
   "prev_visual": null,
   "prev_mfcc": null,
@@ -27,30 +27,12 @@
     "Unknown 1"
   ],
   "motion_baseline": null,
-  "pending_count": 1,
-  "pending_since": 1783286360.255005,
-  "pending_reason": "6 min gap (override)",
-  "pending_people": [
-    "Unknown 1"
-  ],
-  "pending_location": {
-    "location": "ATT5XBY34a",
-    "source": "wifi",
-    "confidence": "medium",
-    "label": "",
-    "ssid": "ATT5XBY34a",
-    "lat": 39.9594,
-    "lon": -86.0199,
-    "accuracy_m": 50000,
-    "city": "Fishers",
-    "region": "Indiana",
-    "country": "United States",
-    "provider": "ip-api",
-    "timestamp_iso": "2026-07-05T14:20:07"
-  },
+  "pending_count": 0,
+  "pending_since": 0.0,
+  "pending_reason": "",
+  "pending_people": [],
+  "pending_location": null,
   "pending_visual": null,
   "pending_mfcc": null,
-  "pending_faces": [
-    "Unknown 1"
-  ]
+  "pending_faces": null
 }

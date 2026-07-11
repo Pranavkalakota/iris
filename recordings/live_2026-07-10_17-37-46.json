@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-07-10_17-37-46.wav",
+  "model": "medium.en",
+  "duration_seconds": 145.23275,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 4.576897621154785,
+  "realtime_factor": 0.031514225415099455,
+  "segments": [
+    {
+      "start": 15.12,
+      "end": 18.0,
+      "text": "Hey Jarvis, open up Gmail please.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

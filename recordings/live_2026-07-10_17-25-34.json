@@ -1,0 +1,46 @@
+{
+  "audio_file": "live_2026-07-10_17-25-34.wav",
+  "model": "medium.en",
+  "duration_seconds": 502.28725,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 16.443626880645752,
+  "realtime_factor": 0.03273749608544862,
+  "segments": [
+    {
+      "start": 14.99,
+      "end": 24.79,
+      "text": "okay this is a live transcription we're testing basically I think I got an email"
+    },
+    {
+      "start": 24.79,
+      "end": 35.18,
+      "text": "from you know from Joshua I'm not too sure if I did also could you please"
+    },
+    {
+      "start": 35.18,
+      "end": 214.42,
+      "text": "you please open up my email open email email open open email could we"
+    },
+    {
+      "start": 214.42,
+      "end": 409.98,
+      "text": "hop on a call and call and go through the demo how's it going check"
+    },
+    {
+      "start": 409.98,
+      "end": 454.85,
+      "text": "my email email oh there you go I'm trying to do the full testing thing so I"
+    },
+    {
+      "start": 454.85,
+      "end": 497.57,
+      "text": "don't know you can hop on the desktop I have the microphone right now on I did"
+    },
+    {
+      "start": 497.57,
+      "end": 503.87,
+      "text": "this right before you start clear the pythons"
+    }
+  ]
+}

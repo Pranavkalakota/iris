@@ -1,0 +1,29 @@
+[
+  {
+    "event_id": "evt_e74cc2a7fdd4",
+    "started_at": 1783286018.148823,
+    "ended_at": 1783286360.255005,
+    "started_iso": "2026-07-05T14:13:38",
+    "ended_iso": "2026-07-05T14:19:20",
+    "duration_seconds": 342.1061818599701,
+    "n_clips": 1,
+    "people": [
+      "Unknown 1"
+    ],
+    "location": {
+      "location": "ATT5XBY34a",
+      "source": "wifi",
+      "confidence": "medium",
+      "label": "",
+      "ssid": "ATT5XBY34a",
+      "lat": 39.9594,
+      "lon": -86.0199,
+      "accuracy_m": 50000,
+      "city": "Fishers",
+      "region": "Indiana",
+      "country": "United States",
+      "provider": "ip-api",
+      "timestamp_iso": "2026-07-05T14:14:25"
+    }
+  }
+]
