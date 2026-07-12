@@ -1548,6 +1548,16 @@ class _AppProfileDialog(QDialog):
 
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
                                 | QDialogButtonBox.StandardButton.Cancel)
+        btns.setStyleSheet(
+            f"QPushButton {{ background: rgba(255,255,255,0.06);"
+            f" color: {TEXT_PRIMARY}; border: 1px solid rgba(255,255,255,0.10);"
+            f" border-radius: 6px; padding: 6px 14px;"
+            f" font-family: '{FONT_SANS}'; font-size: 11px; }}"
+            f"QPushButton:hover {{ background: rgba(255,255,255,0.12); }}"
+            f"QPushButton:default {{"
+            f" background: rgba({_rgb(ACCENT)},0.22);"
+            f" color: {ACCENT};"
+            f" border: 1px solid rgba({_rgb(ACCENT)},0.45); }}")
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         outer.addWidget(btns)
@@ -2563,8 +2573,10 @@ class ChatTab(QWidget):
     def _append_user(self, body: str, log: bool = True) -> QLabel:
         if log:
             self._log("user", body)
+        prof = getattr(self, "_app_profile", None) or _load_app_profile()
         return self._render_message(
-            "you", body, is_user=True, avatar_initials="HA",
+            "you", body, is_user=True,
+            avatar_initials=_initials_for(prof.get("name")),
             avatar_fg=USER_ACCENT)
     def _render_message(self, author: str, body: str, is_user: bool,
                         avatar_initials: str, avatar_fg: str,
@@ -2576,10 +2588,14 @@ class ChatTab(QWidget):
         rlay = QHBoxLayout(row)
         rlay.setContentsMargins(4, 10, 4, 0)
         rlay.setSpacing(12)
-        # Avatar: model = drawn circle; user = their photo (if set) else initials.
+        # Avatar: model = drawn circle; user = their sidebar-profile photo
+        # (data/app_profile.json) if set, else the older fixed-filename
+        # avatar, else initials.
         if is_user:
-            _av = _user_avatar_path()
-            avatar = (_PhotoAvatar(row, _av, size=34) if _av
+            prof = getattr(self, "_app_profile", None) or _load_app_profile()
+            _av = prof.get("avatar") or _user_avatar_path()
+            avatar = (_PhotoAvatar(row, _av, size=34)
+                      if _av and os.path.exists(_av)
                       else Avatar(row, avatar_initials, avatar_fg, avatar_fg))
         else:
             avatar = RingAvatar(row, TEXT_PRIMARY, size=34)
