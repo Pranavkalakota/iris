@@ -955,6 +955,47 @@ def _photos_dir() -> str:
     except Exception:
         pass
     return base
+def _app_data_dir() -> str:
+    """The repo's local 'data' folder, used here only for the lightweight
+    sidebar profile card (name/email/avatar). Deliberately separate from
+    the People DB (data/sqlite/people.db) — that DB drives face/voice
+    recognition, this is just GUI personalization."""
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    try:
+        os.makedirs(base, exist_ok=True)
+    except Exception:
+        pass
+    return base
+def _app_profile_path() -> str:
+    return os.path.join(_app_data_dir(), "app_profile.json")
+def _load_app_profile() -> dict:
+    """name/email/avatar for the sidebar profile card. Independent of the
+    People DB self-profile."""
+    default = {"name": "You", "email": "", "avatar": ""}
+    try:
+        with open(_app_profile_path(), "r", encoding="utf-8") as f:
+            saved = json.load(f)
+        for k in default:
+            if saved.get(k):
+                default[k] = saved[k]
+    except Exception:
+        pass
+    return default
+def _save_app_profile(data: dict) -> None:
+    try:
+        with open(_app_profile_path(), "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[profile] could not save app profile: {e}")
+def _initials_for(name: Optional[str]) -> str:
+    """First-letter-of-first-two-words initials for an avatar badge, e.g.
+    'Humza Akhtar' -> 'HA'. Falls back to '?' for an empty name."""
+    words = [w for w in (name or "").strip().split() if w]
+    if not words:
+        return "?"
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return (words[0][0] + words[1][0]).upper()
 # ─────────────────────────────────────────────────────────────────────────────
 # Glass widget primitives
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1450,6 +1491,108 @@ class _SessionRow(QFrame):
         super().mousePressEvent(ev)
 
 
+class _AppProfileDialog(QDialog):
+    """Local, independent GUI profile — name / email / avatar shown at the
+    bottom of the session sidebar. This is NOT the People-DB self-profile
+    (which drives face/voice recognition); it's just personalization for
+    the chat window itself, stored in data/app_profile.json."""
+    def __init__(self, parent, current: dict):
+        super().__init__(parent)
+        self.setWindowTitle("Profile")
+        self.setMinimumWidth(360)
+        self.setStyleSheet(
+            f"QDialog {{ background: {BG_TOP}; color: {TEXT_PRIMARY};"
+            f" font-family: '{FONT_SANS}'; }}"
+            f"QLabel {{ color: {TEXT_MUTED}; background: transparent;"
+            f" font-size: 11px; }}"
+            f"QLineEdit {{ background: rgba(255,255,255,0.05);"
+            f" color: {TEXT_PRIMARY}; border: 1px solid rgba(255,255,255,0.08);"
+            f" border-radius: 6px; padding: 6px 8px;"
+            f" font-family: '{FONT_SANS}'; font-size: 12px; }}")
+        self._avatar_path = current.get("avatar", "") or ""
+        self._name_seed = current.get("name") or "You"
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(18, 16, 18, 14)
+        outer.setSpacing(12)
+
+        top = QHBoxLayout()
+        top.setSpacing(12)
+        self._avatar_slot = QHBoxLayout()
+        top.addLayout(self._avatar_slot)
+        btn_col = QVBoxLayout()
+        btn_col.setSpacing(6)
+        btn_col.addWidget(_audio_btn("Change photo\u2026", self._pick_photo,
+                                     height=26))
+        self._remove_btn = _audio_btn("Remove photo", self._remove_photo,
+                                      height=26, accent=_rgb(COLOR_DANGER),
+                                      fg=COLOR_DANGER)
+        btn_col.addWidget(self._remove_btn)
+        btn_col.addStretch(1)
+        top.addLayout(btn_col, 1)
+        outer.addLayout(top)
+        self._refresh_avatar_preview()
+
+        from PyQt6.QtWidgets import QFormLayout, QDialogButtonBox
+        form = QFormLayout()
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        form.setHorizontalSpacing(12)
+        form.setVerticalSpacing(8)
+        self.ed_name = QLineEdit(current.get("name", ""))
+        self.ed_name.setPlaceholderText("e.g. Humza Akhtar")
+        self.ed_email = QLineEdit(current.get("email", ""))
+        self.ed_email.setPlaceholderText("e.g. humza@example.com")
+        form.addRow("Name", self.ed_name)
+        form.addRow("Email", self.ed_email)
+        outer.addLayout(form)
+
+        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
+                                | QDialogButtonBox.StandardButton.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        outer.addWidget(btns)
+
+    def _refresh_avatar_preview(self) -> None:
+        while self._avatar_slot.count():
+            item = self._avatar_slot.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+        if self._avatar_path and os.path.exists(self._avatar_path):
+            av = _PhotoAvatar(self, self._avatar_path, size=64)
+        else:
+            av = Avatar(self, _initials_for(self._name_seed), ACCENT, ACCENT)
+        self._avatar_slot.addWidget(av)
+        self._remove_btn.setVisible(bool(self._avatar_path))
+
+    def _pick_photo(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Choose profile photo", "",
+            "Images (*.png *.jpg *.jpeg *.webp)")
+        if not path:
+            return
+        try:
+            ext = os.path.splitext(path)[1].lower() or ".png"
+            dest = os.path.join(_app_data_dir(), f"app_profile_avatar{ext}")
+            shutil.copyfile(path, dest)
+            self._avatar_path = dest
+        except Exception as e:
+            print(f"[profile] could not copy avatar: {e}")
+            return
+        self._refresh_avatar_preview()
+
+    def _remove_photo(self) -> None:
+        self._avatar_path = ""
+        self._refresh_avatar_preview()
+
+    def values(self) -> dict:
+        return {
+            "name": self.ed_name.text().strip() or "You",
+            "email": self.ed_email.text().strip(),
+            "avatar": self._avatar_path,
+        }
+
+
 class ChatTab(QWidget):
     _main_invoke = pyqtSignal(object)
     def __init__(self, parent=None, controller=None, audio_gui=None,
@@ -1658,8 +1801,66 @@ class ChatTab(QWidget):
         self._sidebar_lay.addStretch(1)
         scroll.setWidget(self._sidebar_holder)
         lay.addWidget(scroll, 1)
+        lay.addWidget(self._build_profile_bar())
         self._refresh_sidebar()
         return panel
+    # ── Sidebar profile card (bottom of sidebar) ─────────────────────────
+    def _build_profile_bar(self) -> QWidget:
+        """Bottom-of-sidebar profile row — avatar + name, click to edit
+        name/email/photo. Purely local GUI personalization; independent of
+        the People-DB self-profile used for face/voice recognition."""
+        self._app_profile = _load_app_profile()
+        row = _SessionRow(on_click=self._open_app_profile)
+        row.setStyleSheet(
+            "QFrame#srow { background: transparent;"
+            f" border-top: 1px solid {GLASS_BORDER_SOFT}; }}"
+            "QFrame#srow:hover { background: rgba(255,255,255,0.06); }")
+        rlay = QHBoxLayout(row)
+        rlay.setContentsMargins(6, 10, 6, 2)
+        rlay.setSpacing(10)
+        self._profile_avatar_slot = QHBoxLayout()
+        self._profile_avatar_slot.setContentsMargins(0, 0, 0, 0)
+        rlay.addLayout(self._profile_avatar_slot)
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(1)
+        self._profile_name_lbl = QLabel()
+        self._profile_name_lbl.setStyleSheet(
+            f"color:{TEXT_PRIMARY}; background:transparent; border:none;"
+            f"font-family:'{FONT_SANS}'; font-size:12px; font-weight:700;")
+        self._profile_sub_lbl = QLabel()
+        self._profile_sub_lbl.setStyleSheet(
+            f"color:{TEXT_DIM}; background:transparent; border:none;"
+            f"font-family:'{FONT_SANS}'; font-size:10px;")
+        col.addWidget(self._profile_name_lbl)
+        col.addWidget(self._profile_sub_lbl)
+        rlay.addLayout(col, 1)
+        self._profile_bar = row
+        self._refresh_profile_bar()
+        return row
+    def _refresh_profile_bar(self) -> None:
+        prof = getattr(self, "_app_profile", None) or _load_app_profile()
+        self._app_profile = prof
+        while self._profile_avatar_slot.count():
+            item = self._profile_avatar_slot.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+        avatar_path = prof.get("avatar") or ""
+        if avatar_path and os.path.exists(avatar_path):
+            av = _PhotoAvatar(self._profile_bar, avatar_path, size=32)
+        else:
+            av = Avatar(self._profile_bar, _initials_for(prof.get("name")),
+                        ACCENT, ACCENT)
+        self._profile_avatar_slot.addWidget(av)
+        self._profile_name_lbl.setText(prof.get("name") or "You")
+        self._profile_sub_lbl.setText(prof.get("email") or "Tap to edit profile")
+    def _open_app_profile(self) -> None:
+        dlg = _AppProfileDialog(self, self._app_profile)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._app_profile = dlg.values()
+            _save_app_profile(self._app_profile)
+            self._refresh_profile_bar()
     def _refresh_sidebar(self) -> None:
         lay = getattr(self, "_sidebar_lay", None)
         if lay is None:
