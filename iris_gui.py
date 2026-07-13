@@ -512,8 +512,41 @@ BUBBLE_BORDER  = "rgba(120,190,255,0.30)"
 WINDOW_RADIUS  = 26
 WINDOW_OUTLINE = QColor(100, 180, 255, 90)
 FONT_MONO = "Consolas"
-FONT_SANS = "Segoe UI"
+FONT_SANS = "Roboto"
 FONT_SERIF = "Georgia"
+
+# ── User-adjustable UI settings (bubble color, sidebar style) ─────────────
+_UI_SETTINGS = {"user_bubble_color": "37, 99, 235", "solid_sidebar": True}
+
+def _ui_settings_path() -> str:
+    import os as _os
+    base = (_os.environ.get("APPDATA")
+            or _os.path.join(_os.path.expanduser("~"), ".iris"))
+    try:
+        d = _os.path.join(base, "iris"); _os.makedirs(d, exist_ok=True)
+        return _os.path.join(d, "iris_ui_settings.json")
+    except Exception:
+        return _os.path.join(_os.getcwd(), "iris_ui_settings.json")
+
+def _load_ui_settings() -> None:
+    import json as _j
+    try:
+        with open(_ui_settings_path(), "r", encoding="utf-8") as f:
+            data = _j.load(f)
+        if isinstance(data, dict):
+            _UI_SETTINGS.update({k: data[k] for k in _UI_SETTINGS if k in data})
+    except Exception:
+        pass
+
+def _save_ui_settings() -> None:
+    import json as _j
+    try:
+        with open(_ui_settings_path(), "w", encoding="utf-8") as f:
+            _j.dump(_UI_SETTINGS, f)
+    except Exception:
+        pass
+
+_load_ui_settings()
 # ── Liquid-glass ambient blobs — soft colour pools painted behind every glass
 #    panel so there is actually something for the "glass" to sit on top of.
 #    Without these the glass has nothing to catch light against and just
@@ -1649,6 +1682,76 @@ class _SidebarResizeHandle(QWidget):
         super().mouseReleaseEvent(ev)
 
 
+class _UISettingsDialog(QDialog):
+    """Small appearance settings: user-bubble color + solid/contrast sidebar."""
+    def __init__(self, parent, apply_cb=None):
+        super().__init__(parent)
+        self._apply_cb = apply_cb
+        self.setWindowTitle("Settings")
+        self.setMinimumWidth(280)
+        self.setStyleSheet(
+            f"QDialog {{ background:{BG_TOP}; }}"
+            f"QLabel {{ color:{TEXT_PRIMARY}; font-family:'{FONT_SANS}'; }}")
+        from PyQt6.QtWidgets import QCheckBox
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(20, 18, 20, 18)
+        lay.setSpacing(12)
+        head = QLabel("Appearance")
+        head.setStyleSheet(f"color:{TEXT_PRIMARY}; font-size:14px; font-weight:700;")
+        lay.addWidget(head)
+        lay.addWidget(QLabel("User bubble color"))
+        self._color_btn = QPushButton("Choose color\u2026")
+        self._color_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._color_btn.setStyleSheet(
+            f"QPushButton {{ color:{TEXT_PRIMARY};"
+            " background: rgba(255,255,255,0.08);"
+            f" border:1px solid {GLASS_BORDER_SOFT}; border-radius:8px;"
+            " padding:6px 12px; }"
+            " QPushButton:hover { background: rgba(255,255,255,0.16); }")
+        self._color_btn.clicked.connect(self._pick_color)
+        lay.addWidget(self._color_btn)
+        self._swatch = QLabel()
+        self._swatch.setFixedHeight(22)
+        self._update_swatch()
+        lay.addWidget(self._swatch)
+        self._solid_cb = QCheckBox("Solid black sidebar")
+        self._solid_cb.setChecked(bool(_UI_SETTINGS.get("solid_sidebar", True)))
+        self._solid_cb.setStyleSheet(f"color:{TEXT_PRIMARY};")
+        self._solid_cb.toggled.connect(self._on_solid)
+        lay.addWidget(self._solid_cb)
+        done = QPushButton("Done")
+        done.setCursor(Qt.CursorShape.PointingHandCursor)
+        done.setStyleSheet(
+            f"QPushButton {{ color:{TEXT_PRIMARY};"
+            f" background: rgba({_rgb(ACCENT)},0.18);"
+            f" border:1px solid rgba({_rgb(ACCENT)},0.35); border-radius:8px;"
+            " padding:6px 14px; font-weight:700; }"
+            f" QPushButton:hover {{ background: rgba({_rgb(ACCENT)},0.28); }}")
+        done.clicked.connect(self.accept)
+        lay.addWidget(done)
+
+    def _update_swatch(self):
+        self._swatch.setStyleSheet(
+            f"background: rgba({_UI_SETTINGS.get('user_bubble_color','37, 99, 235')},1.0);"
+            " border-radius:6px; border:1px solid rgba(255,255,255,0.2);")
+
+    def _pick_color(self):
+        from PyQt6.QtWidgets import QColorDialog
+        c = QColorDialog.getColor(parent=self)
+        if c.isValid():
+            _UI_SETTINGS["user_bubble_color"] = f"{c.red()}, {c.green()}, {c.blue()}"
+            _save_ui_settings()
+            self._update_swatch()
+            if self._apply_cb:
+                self._apply_cb()
+
+    def _on_solid(self, on):
+        _UI_SETTINGS["solid_sidebar"] = bool(on)
+        _save_ui_settings()
+        if self._apply_cb:
+            self._apply_cb()
+
+
 class ChatTab(QWidget):
     _main_invoke = pyqtSignal(object)
     def __init__(self, parent=None, controller=None, audio_gui=None,
@@ -1782,7 +1885,9 @@ class ChatTab(QWidget):
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._build_sidebar_container())
+        # Sidebar is mounted app-level (full height) by IrisApp; build it here
+        # (all its logic stays on ChatTab) and expose it as sidebar_container.
+        self.sidebar_container = self._build_sidebar_container()
         root.addWidget(self._build_main_pane(), 1)
 
     def _build_sidebar_container(self) -> QWidget:
@@ -1830,6 +1935,48 @@ class ChatTab(QWidget):
         anim.start()
         self._sidebar_anim = anim
     # ── Sidebar (live session history) ───────────────────────────────────
+    def _sidebar_qss(self) -> str:
+        bg = ("#000000" if _UI_SETTINGS.get("solid_sidebar", True)
+              else "qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+                   "stop:0 rgba(10,14,28,0.55), stop:0.5 rgba(8,11,22,0.50),"
+                   "stop:1 rgba(6,9,18,0.48))")
+        return (
+            "QFrame#sidebarPanel {"
+            f"background: {bg};"
+            f"border: none; border-right: 1px solid {GLASS_BORDER_SOFT};"
+            "border-top-left-radius: 18px; border-bottom-left-radius: 18px;"
+            "border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+            "}")
+
+    def _apply_sidebar_style(self) -> None:
+        panel = getattr(self, "_sidebar", None)
+        if panel is not None:
+            panel.setStyleSheet(self._sidebar_qss())
+
+    def _open_settings(self) -> None:
+        dlg = _UISettingsDialog(self, self._apply_ui_settings)
+        dlg.exec()
+
+    def _apply_ui_settings(self) -> None:
+        try:
+            self._apply_sidebar_style()
+        except Exception:
+            pass
+
+    def _delete_session(self, sid: str) -> None:
+        if self._sessions is None or not sid:
+            return
+        try:
+            if self._session is not None and self._session.id == sid:
+                self._new_session()
+            self._sessions.delete(sid)
+        except Exception as e:
+            print(f"[sessions] delete failed: {e}")
+        try:
+            self._refresh_sidebar()
+        except Exception:
+            pass
+
     def _build_sidebar(self) -> QWidget:
         # Flat panel, not a floating glass card: no shadow, square right
         # corners (flush against the main pane), gently rounded left
@@ -1837,15 +1984,7 @@ class ChatTab(QWidget):
         # (see IrisApp._on_tab_changed for the matching left gutter).
         panel = QFrame(self)
         panel.setObjectName("sidebarPanel")
-        panel.setStyleSheet(
-            "QFrame#sidebarPanel {"
-            "background: qlineargradient(x1:0,y1:0,x2:0,y2:1,"
-            "stop:0 rgba(10,14,28,0.55), stop:0.5 rgba(8,11,22,0.50),"
-            "stop:1 rgba(6,9,18,0.48));"
-            f"border: none; border-right: 1px solid {GLASS_BORDER_SOFT};"
-            "border-top-left-radius: 18px; border-bottom-left-radius: 18px;"
-            "border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
-            "}")
+        panel.setStyleSheet(self._sidebar_qss())
         self._sidebar_width = 236
         panel.setMinimumWidth(self._sidebar_width)
         panel.setMaximumWidth(self._sidebar_width)
@@ -1857,6 +1996,18 @@ class ChatTab(QWidget):
         lay.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         top_row = QHBoxLayout()
         top_row.setContentsMargins(0, 0, 0, 0)
+        self._settings_btn = QPushButton("\u2699")
+        self._settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._settings_btn.setFixedSize(28, 26)
+        self._settings_btn.setToolTip("Settings")
+        self._settings_btn.setStyleSheet(
+            "QPushButton {"
+            f"color:{TEXT_MUTED}; background: transparent;"
+            "border:none; border-radius:7px; font-size:13px; }"
+            "QPushButton:hover { background: rgba(255,255,255,0.10);"
+            f" color:{TEXT_PRIMARY}; }}")
+        self._settings_btn.clicked.connect(self._open_settings)
+        top_row.addWidget(self._settings_btn)
         top_row.addStretch(1)
         self._sidebar_toggle_btn = QPushButton("\u2630")
         self._sidebar_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1872,7 +2023,7 @@ class ChatTab(QWidget):
         top_row.addWidget(self._sidebar_toggle_btn)
         lay.addLayout(top_row)
         lay.addSpacing(6)
-        new_btn = QPushButton("+  new session")
+        new_btn = QPushButton("+  New Session")
         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         new_btn.setFixedHeight(34)
         new_btn.setStyleSheet(
@@ -1886,7 +2037,7 @@ class ChatTab(QWidget):
         lay.addWidget(new_btn)
         lay.addSpacing(8)
         self._sidebar_search = QLineEdit()
-        self._sidebar_search.setPlaceholderText("search sessions\u2026")
+        self._sidebar_search.setPlaceholderText("Search sessions\u2026")
         self._sidebar_search.setClearButtonEnabled(True)
         self._sidebar_search.setFixedHeight(30)
         self._sidebar_search.setStyleSheet(
@@ -1995,7 +2146,7 @@ class ChatTab(QWidget):
         query = getattr(self, "_sidebar_query", "")
         if not groups:
             lay.insertWidget(0, self._section("TODAY"))
-            lay.insertWidget(1, self._session_label("new session", active=True))
+            lay.insertWidget(1, self._session_label("New session", active=True))
             return
         idx = 0
         any_shown = False
@@ -2006,14 +2157,14 @@ class ChatTab(QWidget):
             lay.insertWidget(idx, self._section(label)); idx += 1
             for s in visible:
                 row = self._session_label(self._format_session_label(s),
-                                          self._session_timestamp(s),
+                                          "",
                                           active=(s.id == active_id), sid=s.id)
                 lay.insertWidget(idx, row); idx += 1
                 any_shown = True
         if not any_shown:
             lay.insertWidget(0, self._section("SEARCH"))
             lay.insertWidget(1, self._session_label(
-                "no matches" if query else "new session", active=not query))
+                "No matches" if query else "New session", active=not query))
     def _section(self, text: str) -> QLabel:
         lbl = QLabel(text.upper())
         lbl.setStyleSheet(
@@ -2048,6 +2199,18 @@ class ChatTab(QWidget):
             f"color:{color}; background:transparent; border:none;"
             f"font-family:'{FONT_SANS}'; font-size:12px; font-weight:{weight};")
         top.addWidget(topic_lbl, 1)
+        if sid is not None:
+            del_btn = QPushButton("\u00d7")
+            del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            del_btn.setFixedSize(18, 18)
+            del_btn.setToolTip("Delete chat")
+            del_btn.setStyleSheet(
+                f"QPushButton {{ color:{TEXT_DIM}; background:transparent;"
+                " border:none; font-size:15px; }"
+                " QPushButton:hover { color:#ff6b6b; }")
+            del_btn.clicked.connect(
+                lambda _=False, i=sid: self._delete_session(i))
+            top.addWidget(del_btn, 0, Qt.AlignmentFlag.AlignTop)
         col.addLayout(top)
         if stamp:
             time_lbl = QLabel(stamp)
@@ -2158,7 +2321,7 @@ class ChatTab(QWidget):
             base = iris_sessions.session_label(s)
         except Exception:
             base = "chat"
-        return base
+        return (base[:1].upper() + base[1:]) if base else base
 
     def _session_timestamp(self, s) -> str:
         """Session time as [Mon DD - h:MM AM/PM] in US Eastern (EST/EDT),
@@ -2444,7 +2607,7 @@ class ChatTab(QWidget):
             "font-size:16px; font-weight:700;")
         ib.addWidget(prefix)
         self.input = QLineEdit()
-        self.input.setPlaceholderText("ask iris anything\u2026")
+        self.input.setPlaceholderText("Ask Iris anything\u2026")
         self.input.setStyleSheet(
             f"QLineEdit {{ color:{TEXT_PRIMARY}; background:transparent;"
             f"border:none; font-family:'{FONT_SANS}'; font-size:13px; }}")
@@ -2660,17 +2823,17 @@ class ChatTab(QWidget):
             head.addStretch(1)
         col.addLayout(head)
         if is_user:
-            bubble = GlassFrame(row, radius=14, border=BUBBLE_BORDER,
-                                top="rgba(42,88,182,0.55)",
-                                mid="rgba(34,72,152,0.50)",
-                                bot="rgba(28,60,130,0.48)",
-                                blur=22, dy=5, shadow_alpha=140)
+            _solid = f"rgba({_UI_SETTINGS.get('user_bubble_color', '37, 99, 235')}, 1.0)"
         else:
-            bubble = GlassFrame(row, radius=14, border=BUBBLE_BORDER,
-                                top="rgba(10,14,28,0.55)",
-                                mid="rgba(8,11,22,0.50)",
-                                bot="rgba(6,9,18,0.48)",
-                                blur=22, dy=5, shadow_alpha=140)
+            _solid = "rgba(26, 31, 46, 1.0)"
+        bubble = QFrame(row)
+        bubble.setObjectName("bubble")
+        bubble.setStyleSheet(
+            "QFrame#bubble {"
+            f" background: {_solid};"
+            f" border: 1px solid {BUBBLE_BORDER};"
+            " border-radius: 14px; }")
+        _add_glass_shadow(bubble, blur=22, dy=5, alpha=140)
         blay = QVBoxLayout(bubble)
         blay.setContentsMargins(16, 11, 16, 11)
         body_lbl = BubbleLabel(body)
@@ -2725,8 +2888,8 @@ class ChatTab(QWidget):
         if getattr(self, "_suggest_topic", None) == "location":
             return ["what did I do there?", "who was I with?",
                     "how long was I there?"]
-        return ["what's in my last recording?", "summarize today",
-                "where am I right now?"]
+        return ["What's in my last recording?", "Summarize today",
+                "Where am I right now?"]
 
     def _refresh_suggestions(self) -> None:
         """Rebuild the chip row above the input bar from the latest context."""
@@ -10692,7 +10855,7 @@ class TabBar(QWidget):
         self._buttons: list[QPushButton] = []
         self._labels = list(labels)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 14, 0, 8)
+        lay.setContentsMargins(0, 3, 0, 8)
         lay.setSpacing(2)
         lay.addStretch(1)
         for i, name in enumerate(labels):
@@ -10748,16 +10911,13 @@ class TabBar(QWidget):
 class TitleBar(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setFixedHeight(44)
+        self.setFixedHeight(34)
         self._drag: Optional[QPoint] = None
         self._secs = 0
         lay = QHBoxLayout(self)
         lay.setContentsMargins(18, 0, 20, 0)
         lay.setSpacing(8)
-        # Traffic lights — functional: close / minimise / maximise
-        lay.addWidget(self._dot("#ff5f57", self._close))   # red
-        lay.addWidget(self._dot("#febc2e", self._minimise)) # yellow
-        lay.addWidget(self._dot("#28c840", self._maximise)) # green
+        # Traffic lights live on the left rail now (see IrisApp).
         lay.addStretch(1)
         wordmark = QLabel("iris")
         wordmark.setStyleSheet(
@@ -10887,6 +11047,23 @@ def _enable_win11_backdrop(widget, kind: str = "acrylic") -> bool:
 class IrisApp(QWidget):
     TAB_NAMES = ["chat", "photos", "people", "audio", "location", "stream",
                  "about system"]   # M8: Chat, Photos, People prioritized
+    def _win_dot(self, color: str, on_click) -> QPushButton:
+        b = QPushButton()
+        b.setCursor(Qt.CursorShape.PointingHandCursor)
+        b.setFixedSize(13, 13)
+        b.setStyleSheet(
+            "QPushButton {"
+            f"background:{color}; border:none; border-radius:6px; }}"
+            "QPushButton:hover { border: 1px solid rgba(0,0,0,0.25); }")
+        b.clicked.connect(on_click)
+        return b
+
+    def _toggle_max(self) -> None:
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+
     def _on_tab_changed(self, idx: int) -> None:
         """Chat's sidebar hugs the true left window edge (like Claude's);
         every other tab keeps the fuller floating gutter so their panels
@@ -10896,6 +11073,12 @@ class IrisApp(QWidget):
             return
         is_chat = (idx == 0)
         bl.setContentsMargins(4 if is_chat else 14, 0, 14, 14)
+        try:
+            sc = getattr(getattr(self, "chat", None), "sidebar_container", None)
+            if sc is not None:
+                sc.setVisible(is_chat)
+        except Exception:
+            pass
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
@@ -10906,9 +11089,36 @@ class IrisApp(QWidget):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint
                             | Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        root = QVBoxLayout(self)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        # Left rail: window buttons on top of a full-height sidebar host.
+        self._left_rail = QWidget(self)
+        self._left_rail.setObjectName("leftRail")
+        self._left_rail.setStyleSheet(
+            "QWidget#leftRail { background:#000000;"
+            " border-top-left-radius:18px; border-bottom-left-radius:18px; }")
+        _leftlay = QVBoxLayout(self._left_rail)
+        _leftlay.setContentsMargins(0, 0, 0, 0)
+        _leftlay.setSpacing(0)
+        _tlrow = QWidget()
+        _tll = QHBoxLayout(_tlrow)
+        _tll.setContentsMargins(16, 12, 10, 10)
+        _tll.setSpacing(8)
+        _tll.addWidget(self._win_dot("#ff5f57", self.close))
+        _tll.addWidget(self._win_dot("#febc2e", self.showMinimized))
+        _tll.addWidget(self._win_dot("#28c840", self._toggle_max))
+        _tll.addStretch(1)
+        _leftlay.addWidget(_tlrow)
+        self._left_rail_slot = _leftlay
+        outer.addWidget(self._left_rail)
+        # Right column: title strip + tabs + tab content.
+        _rightw = QWidget(self)
+        _rightw.setStyleSheet("background: transparent;")
+        root = QVBoxLayout(_rightw)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
+        outer.addWidget(_rightw, 1)
         self.titlebar = TitleBar(self)
         root.addWidget(self.titlebar)
         self.tabbar = TabBar(self, self.TAB_NAMES)
@@ -10938,6 +11148,11 @@ class IrisApp(QWidget):
         self.chat = ChatTab(
             self, controller=controller, audio_gui=self.audio,
             switch_to_audio=lambda: self.tabbar.select_name("audio"))
+        # Mount the chat's session sidebar into the full-height left rail.
+        try:
+            self._left_rail_slot.addWidget(self.chat.sidebar_container, 1)
+        except Exception as e:
+            print(f"[iris] sidebar mount failed: {e}")
         # Set up the stream tab first so the chat can route ESP32 selfies
         # to it. The stream tab handles its own ESP32 networking exactly
         # like terminal.py and is the right home for "of me" photos.
@@ -11095,6 +11310,17 @@ def main() -> int:
     # Professional type pass (Option D): Consolas for data/mono, Segoe UI
     # for body, a real installed serif for section headings/wordmark.
     families = set(QFontDatabase.families())
+    # Prefer Roboto: register a bundled Roboto*.ttf if present, else fall back.
+    try:
+        for _fn in ("Roboto-Regular.ttf", "Roboto-Medium.ttf",
+                    "Roboto-Bold.ttf", "roboto.ttf"):
+            _fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), _fn)
+            if os.path.exists(_fp):
+                QFontDatabase.addApplicationFont(_fp)
+        families = set(QFontDatabase.families())
+    except Exception:
+        pass
+    QFont.insertSubstitution("Roboto", "Segoe UI")
     mono = ("Consolas" if "Consolas" in families else
             "Cascadia Code" if "Cascadia Code" in families else "Monospace")
     globals()["FONT_MONO"] = mono
@@ -11102,7 +11328,7 @@ def main() -> int:
                                "Times New Roman") if f in families),
                  "Serif")
     globals()["FONT_SERIF"] = serif
-    app.setFont(QFont(FONT_SANS if FONT_SANS in families else "Sans", 10))
+    app.setFont(QFont(FONT_SANS if FONT_SANS in families else "Segoe UI", 10))
     controller = None
     if Controller is not None:
         try:
