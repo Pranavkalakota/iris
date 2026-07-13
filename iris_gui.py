@@ -1548,6 +1548,16 @@ class _AppProfileDialog(QDialog):
 
         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
                                 | QDialogButtonBox.StandardButton.Cancel)
+        btns.setStyleSheet(
+            f"QPushButton {{ background: rgba(255,255,255,0.06);"
+            f" color: {TEXT_PRIMARY}; border: 1px solid rgba(255,255,255,0.10);"
+            f" border-radius: 6px; padding: 6px 14px;"
+            f" font-family: '{FONT_SANS}'; font-size: 11px; }}"
+            f"QPushButton:hover {{ background: rgba(255,255,255,0.12); }}"
+            f"QPushButton:default {{"
+            f" background: rgba({_rgb(ACCENT)},0.22);"
+            f" color: {ACCENT};"
+            f" border: 1px solid rgba({_rgb(ACCENT)},0.45); }}")
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         outer.addWidget(btns)
@@ -1591,6 +1601,51 @@ class _AppProfileDialog(QDialog):
             "email": self.ed_email.text().strip(),
             "avatar": self._avatar_path,
         }
+
+
+class _SidebarResizeHandle(QWidget):
+    """Thin invisible drag strip glued to the sidebar's right edge — lets
+    the user resize the session sidebar by dragging, the way Claude's
+    sidebar does. `target` is the panel being resized; `on_resize` (if
+    given) is called with the new width so the caller can remember it
+    across open/close toggles."""
+    def __init__(self, parent, target: QWidget, *,
+                 min_w: int = 200, max_w: int = 440, on_resize=None):
+        super().__init__(parent)
+        self._target = target
+        self._min_w = min_w
+        self._max_w = max_w
+        self._on_resize = on_resize
+        self._dragging = False
+        self._start_x = 0
+        self._start_w = target.width()
+        self.setFixedWidth(6)
+        self.setCursor(Qt.CursorShape.SizeHorCursor)
+        self.setStyleSheet("background: transparent;")
+
+    def mousePressEvent(self, ev) -> None:
+        if ev.button() == Qt.MouseButton.LeftButton:
+            self._dragging = True
+            self._start_x = ev.globalPosition().toPoint().x()
+            self._start_w = self._target.width()
+        super().mousePressEvent(ev)
+
+    def mouseMoveEvent(self, ev) -> None:
+        if self._dragging:
+            dx = ev.globalPosition().toPoint().x() - self._start_x
+            new_w = max(self._min_w, min(self._max_w, self._start_w + dx))
+            self._target.setMinimumWidth(new_w)
+            self._target.setMaximumWidth(new_w)
+            if self._on_resize is not None:
+                try:
+                    self._on_resize(new_w)
+                except Exception:
+                    pass
+        super().mouseMoveEvent(ev)
+
+    def mouseReleaseEvent(self, ev) -> None:
+        self._dragging = False
+        super().mouseReleaseEvent(ev)
 
 
 class ChatTab(QWidget):
@@ -1726,34 +1781,68 @@ class ChatTab(QWidget):
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._build_sidebar())
+        root.addWidget(self._build_sidebar_container())
         root.addWidget(self._build_main_pane(), 1)
 
+    def _build_sidebar_container(self) -> QWidget:
+        """Session panel + its drag handle, glued together with zero
+        spacing so the handle sits right on the panel's edge."""
+        wrap = QWidget(self)
+        wl = QHBoxLayout(wrap)
+        wl.setContentsMargins(0, 0, 0, 0)
+        wl.setSpacing(0)
+        wl.addWidget(self._build_sidebar())
+        self._sidebar_handle = _SidebarResizeHandle(
+            wrap, self._sidebar, min_w=200, max_w=440,
+            on_resize=lambda w: setattr(self, "_sidebar_width", w))
+        wl.addWidget(self._sidebar_handle)
+        return wrap
+
     def _toggle_sidebar(self) -> None:
-        """Slide the session drawer open/closed."""
+        """Slide the session drawer open/closed, remembering whatever
+        width the user last dragged it to."""
         sb = getattr(self, "_sidebar", None)
         if sb is None:
             return
         from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
         opening = not getattr(self, "_sidebar_open", True)
         self._sidebar_open = opening
+        target_w = getattr(self, "_sidebar_width", 236) if opening else 0
+        sb.setMinimumWidth(0)          # unlock so the animation can move it
+        handle = getattr(self, "_sidebar_handle", None)
+        if handle is not None and opening:
+            handle.setVisible(True)
         anim = QPropertyAnimation(sb, b"maximumWidth", self)
         anim.setDuration(190)
         anim.setStartValue(sb.maximumWidth())
-        anim.setEndValue(236 if opening else 0)
+        anim.setEndValue(target_w)
         anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        if opening:
+            anim.finished.connect(lambda: sb.setMinimumWidth(target_w))
+        elif handle is not None:
+            anim.finished.connect(lambda: handle.setVisible(False))
         anim.start()
         self._sidebar_anim = anim
     # ── Sidebar (live session history) ───────────────────────────────────
     def _build_sidebar(self) -> QWidget:
-        panel = GlassFrame(self, radius=16, shadow=True, blur=24, dy=6,
-                           shadow_alpha=120,
-                           top="rgba(10,14,28,0.55)",
-                           mid="rgba(8,11,22,0.50)",
-                           bot="rgba(6,9,18,0.48)",
-                           border=GLASS_BORDER_SOFT)
-        panel.setMinimumWidth(0)
-        panel.setMaximumWidth(236)
+        # Flat panel, not a floating glass card: no shadow, square right
+        # corners (flush against the main pane), gently rounded left
+        # corners so it still nests inside the window's own rounded shell
+        # (see IrisApp._on_tab_changed for the matching left gutter).
+        panel = QFrame(self)
+        panel.setObjectName("sidebarPanel")
+        panel.setStyleSheet(
+            "QFrame#sidebarPanel {"
+            "background: qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+            "stop:0 rgba(10,14,28,0.55), stop:0.5 rgba(8,11,22,0.50),"
+            "stop:1 rgba(6,9,18,0.48));"
+            f"border: none; border-right: 1px solid {GLASS_BORDER_SOFT};"
+            "border-top-left-radius: 18px; border-bottom-left-radius: 18px;"
+            "border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+            "}")
+        self._sidebar_width = 236
+        panel.setMinimumWidth(self._sidebar_width)
+        panel.setMaximumWidth(self._sidebar_width)
         self._sidebar = panel
         self._sidebar_open = True
         lay = QVBoxLayout(panel)
@@ -1792,7 +1881,11 @@ class ChatTab(QWidget):
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{width:6px;background:transparent;}"
             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
-            "border-radius:3px;}")
+            "border-radius:3px;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
+            "height:0;width:0;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
+            "background:transparent;}")
         self._sidebar_holder = QWidget()
         self._sidebar_holder.setStyleSheet("background: transparent;")
         self._sidebar_lay = QVBoxLayout(self._sidebar_holder)
@@ -2484,8 +2577,10 @@ class ChatTab(QWidget):
     def _append_user(self, body: str, log: bool = True) -> QLabel:
         if log:
             self._log("user", body)
+        prof = getattr(self, "_app_profile", None) or _load_app_profile()
         return self._render_message(
-            "you", body, is_user=True, avatar_initials="HA",
+            "you", body, is_user=True,
+            avatar_initials=_initials_for(prof.get("name")),
             avatar_fg=USER_ACCENT)
     def _render_message(self, author: str, body: str, is_user: bool,
                         avatar_initials: str, avatar_fg: str,
@@ -2497,10 +2592,14 @@ class ChatTab(QWidget):
         rlay = QHBoxLayout(row)
         rlay.setContentsMargins(4, 10, 4, 0)
         rlay.setSpacing(12)
-        # Avatar: model = drawn circle; user = their photo (if set) else initials.
+        # Avatar: model = drawn circle; user = their sidebar-profile photo
+        # (data/app_profile.json) if set, else the older fixed-filename
+        # avatar, else initials.
         if is_user:
-            _av = _user_avatar_path()
-            avatar = (_PhotoAvatar(row, _av, size=34) if _av
+            prof = getattr(self, "_app_profile", None) or _load_app_profile()
+            _av = prof.get("avatar") or _user_avatar_path()
+            avatar = (_PhotoAvatar(row, _av, size=34)
+                      if _av and os.path.exists(_av)
                       else Avatar(row, avatar_initials, avatar_fg, avatar_fg))
         else:
             avatar = RingAvatar(row, TEXT_PRIMARY, size=34)
@@ -5991,7 +6090,11 @@ class PeopleTab(QWidget):
         feed_scroll.setStyleSheet(
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{width:8px;background:transparent;}"
-            "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);border-radius:4px;}")
+            "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);border-radius:4px;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
+            "height:0;width:0;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
+            "background:transparent;}")
         self._feed_holder = QWidget()
         self._feed_holder.setStyleSheet("background: transparent;")
         self._feed_layout = QVBoxLayout(self._feed_holder)
@@ -8361,7 +8464,11 @@ class AudioTab(QWidget):
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{width:8px;background:transparent;}"
             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
-            "border-radius:4px;}")
+            "border-radius:4px;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
+            "height:0;width:0;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
+            "background:transparent;}")
         scroll.setWidget(w)
         lay = QVBoxLayout(w)
         lay.setContentsMargins(0, 0, 6, 0)
@@ -8502,7 +8609,11 @@ class AudioTab(QWidget):
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{width:8px;background:transparent;}"
             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
-            "border-radius:4px;}")
+            "border-radius:4px;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
+            "height:0;width:0;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
+            "background:transparent;}")
         self._list_holder = QWidget()
         self._list_holder.setStyleSheet("background: transparent;")
         self._list_lay = QVBoxLayout(self._list_holder)
@@ -9618,7 +9729,11 @@ class PhotosTab(QWidget):
             "QScrollArea{background:transparent;border:none;}"
             "QScrollBar:vertical{width:8px;background:transparent;}"
             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
-            "border-radius:4px;}")
+            "border-radius:4px;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
+            "height:0;width:0;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
+            "background:transparent;}")
         self._sections_holder = QWidget()
         self._sections_holder.setStyleSheet("background: transparent;")
         self._sections = QVBoxLayout(self._sections_holder)
@@ -10723,6 +10838,15 @@ def _enable_win11_backdrop(widget, kind: str = "acrylic") -> bool:
 class IrisApp(QWidget):
     TAB_NAMES = ["chat", "photos", "people", "audio", "location", "stream",
                  "about system"]   # M8: Chat, Photos, People prioritized
+    def _on_tab_changed(self, idx: int) -> None:
+        """Chat's sidebar hugs the true left window edge (like Claude's);
+        every other tab keeps the fuller floating gutter so their panels
+        don't poke past the window's own rounded corners."""
+        bl = getattr(self, "_body_layout", None)
+        if bl is None:
+            return
+        is_chat = (idx == 0)
+        bl.setContentsMargins(4 if is_chat else 14, 0, 14, 14)
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
@@ -10742,11 +10866,16 @@ class IrisApp(QWidget):
         root.addWidget(self.tabbar)
         # Body holds the tab stack inside a small gutter so panels float and the
         # rounded window corners stay clean (no square widget pokes through).
+        # The Chat tab is the exception: its sidebar hugs the true left
+        # window edge like Claude's does, so it gets a much thinner left
+        # gutter (just enough to nest inside the rounded window corner) —
+        # see _on_tab_changed, which flips this back to 14 on other tabs.
         body = QWidget(self)
         body.setStyleSheet("background: transparent;")
         bl = QVBoxLayout(body)
-        bl.setContentsMargins(14, 0, 14, 14)
+        bl.setContentsMargins(4, 0, 14, 14)
         bl.setSpacing(0)
+        self._body_layout = bl
         self.stack = QStackedWidget(body)
         bl.addWidget(self.stack)
         root.addWidget(body, 1)
@@ -10837,6 +10966,7 @@ class IrisApp(QWidget):
         self.stack.addWidget(self.stream)        # 5 stream
         self.stack.addWidget(self.about_system)  # 6 about system
         self.tabbar.changed.connect(self.stack.setCurrentIndex)
+        self.tabbar.changed.connect(self._on_tab_changed)
         self.stack.setCurrentIndex(0)
         # Bottom-right resize grip (frameless windows lose native resizing)
         self._grip = QSizeGrip(self)
