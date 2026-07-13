@@ -46,7 +46,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QScrollArea, QGraphicsDropShadowEffect,
     QStackedWidget, QFileDialog, QSizePolicy, QSizeGrip,
     QGridLayout, QTextEdit, QComboBox, QDialog,
-    QProgressBar, QCheckBox,   # ── IRIS about-system feature: ADD ──
+    QGridLayout, QLayout, QTextEdit, QComboBox, QDialog,
 )
 # Optional: real map needs PyQt6-WebEngine. Degrades to a glass list if absent.
 try:
@@ -1783,6 +1783,7 @@ class ChatTab(QWidget):
         root.setSpacing(0)
         root.addWidget(self._build_sidebar_container())
         root.addWidget(self._build_main_pane(), 1)
+        self._drawer_btn.setVisible(not self._sidebar_open)
 
     def _build_sidebar_container(self) -> QWidget:
         """Session panel + its drag handle, glued together with zero
@@ -1807,7 +1808,9 @@ class ChatTab(QWidget):
         from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
         opening = not getattr(self, "_sidebar_open", True)
         self._sidebar_open = opening
+        self._drawer_btn.setVisible(not opening)
         target_w = getattr(self, "_sidebar_width", 236) if opening else 0
+
         sb.setMinimumWidth(0)          # unlock so the animation can move it
         handle = getattr(self, "_sidebar_handle", None)
         if handle is not None and opening:
@@ -1848,6 +1851,24 @@ class ChatTab(QWidget):
         lay = QVBoxLayout(panel)
         lay.setContentsMargins(14, 16, 14, 16)
         lay.setSpacing(0)
+        lay.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.addStretch(1)
+        self._sidebar_toggle_btn = QPushButton("\u2630")
+        self._sidebar_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._sidebar_toggle_btn.setFixedSize(28, 26)
+        self._sidebar_toggle_btn.setToolTip("Hide sessions")
+        self._sidebar_toggle_btn.setStyleSheet(
+            "QPushButton {"
+            f"color:{TEXT_MUTED}; background: transparent;"
+            "border:none; border-radius:7px; font-size:13px; }"
+            "QPushButton:hover { background: rgba(255,255,255,0.10);"
+            f" color:{TEXT_PRIMARY}; }}")
+        self._sidebar_toggle_btn.clicked.connect(self._toggle_sidebar)
+        top_row.addWidget(self._sidebar_toggle_btn)
+        lay.addLayout(top_row)
+        lay.addSpacing(6)
         new_btn = QPushButton("+  new session")
         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         new_btn.setFixedHeight(34)
