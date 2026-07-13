@@ -1784,7 +1784,6 @@ class ChatTab(QWidget):
         root.setSpacing(0)
         root.addWidget(self._build_sidebar_container())
         root.addWidget(self._build_main_pane(), 1)
-        self._drawer_btn.setVisible(not self._sidebar_open)
 
     def _build_sidebar_container(self) -> QWidget:
         """Session panel + its drag handle, glued together with zero
@@ -1801,30 +1800,33 @@ class ChatTab(QWidget):
         return wrap
 
     def _toggle_sidebar(self) -> None:
-        """Slide the session drawer open/closed, remembering whatever
-        width the user last dragged it to."""
+        """Slide the session drawer between full width and a slim icon
+        rail — toggle button + avatar only stay visible, like Claude's
+        collapsed sidebar (not fully hidden)."""
         sb = getattr(self, "_sidebar", None)
         if sb is None:
             return
         from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
         opening = not getattr(self, "_sidebar_open", True)
         self._sidebar_open = opening
-        self._drawer_btn.setVisible(not opening)
-        target_w = getattr(self, "_sidebar_width", 236) if opening else 0
+        collapsed_w = 64
+        target_w = getattr(self, "_sidebar_width", 236) if opening else collapsed_w
 
         sb.setMinimumWidth(0)          # unlock so the animation can move it
         handle = getattr(self, "_sidebar_handle", None)
-        if handle is not None and opening:
-            handle.setVisible(True)
+        if handle is not None:
+            handle.setVisible(opening)
+        for w in (self._sidebar_new_btn, self._sidebar_search,
+                  self._sidebar_scroll):
+            w.setVisible(opening)
+        self._profile_name_lbl.setVisible(opening)
+        self._profile_sub_lbl.setVisible(opening)
         anim = QPropertyAnimation(sb, b"maximumWidth", self)
         anim.setDuration(190)
         anim.setStartValue(sb.maximumWidth())
         anim.setEndValue(target_w)
         anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
-        if opening:
-            anim.finished.connect(lambda: sb.setMinimumWidth(target_w))
-        elif handle is not None:
-            anim.finished.connect(lambda: handle.setVisible(False))
+        anim.finished.connect(lambda: sb.setMinimumWidth(target_w))
         anim.start()
         self._sidebar_anim = anim
     # ── Sidebar (live session history) ───────────────────────────────────
@@ -1880,6 +1882,7 @@ class ChatTab(QWidget):
             f"font-family:'{FONT_SANS}'; font-size:12px; font-weight:700; }}"
             f"QPushButton:hover {{ background: rgba({_rgb(ACCENT)},0.20); }}")
         new_btn.clicked.connect(self._new_session)
+        self._sidebar_new_btn = new_btn
         lay.addWidget(new_btn)
         lay.addSpacing(8)
         self._sidebar_search = QLineEdit()
@@ -1915,6 +1918,7 @@ class ChatTab(QWidget):
         self._sidebar_lay.setSpacing(0)
         self._sidebar_lay.addStretch(1)
         scroll.setWidget(self._sidebar_holder)
+        self._sidebar_scroll = scroll
         lay.addWidget(scroll, 1)
         lay.addWidget(self._build_profile_bar())
         self._refresh_sidebar()
@@ -2384,6 +2388,7 @@ class ChatTab(QWidget):
             "QPushButton:hover { background: rgba(255,255,255,0.16); }")
         self._drawer_btn.clicked.connect(self._toggle_sidebar)
         header.addWidget(self._drawer_btn)
+        self._drawer_btn.setVisible(False)   # sidebar's own button replaces this now
         header.addStretch(1)
         rec_pill = Pill(pane, "\u25CF  ready", REC_FG)
         face_pill = Pill(pane, "face: \u2014", TEXT_DIM)
