@@ -1,0 +1,310 @@
+{
+  "audio_file": "live_2026-07-13_13-11-32.wav",
+  "model": "medium.en",
+  "duration_seconds": 182.981625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 58.42331027984619,
+  "realtime_factor": 0.31928512100516204,
+  "segments": [
+    {
+      "start": 24.46,
+      "end": 29.58,
+      "text": "Hello, this is Humza speaking.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 29.58,
+      "end": 31.78,
+      "text": "Hi Sarah, thanks for calling.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 31.78,
+      "end": 36.58,
+      "text": "Yes, I have a few minutes.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 36.58,
+      "end": 40.7,
+      "text": "Okay, so you're asking about the implementation timeline",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 40.7,
+      "end": 45.7,
+      "text": "and whether this pricing includes onboarding, right?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 67.62,
+      "end": 69.76,
+      "text": "Yes, that's correct.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 9
+    },
+    {
+      "start": 69.76,
+      "end": 70.94,
+      "text": "With the current timeline,",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 70.94,
+      "end": 75.02,
+      "text": "it's about six weeks from contract signing to deployment.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 75.02,
+      "end": 77.3,
+      "text": "And the prices include the software setup,",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 77.3,
+      "end": 87.56,
+      "text": "the onboarding and the one year of support, right?",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 87.64,
+      "end": 90.2,
+      "text": "And regarding the employee training,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 90.2,
+      "end": 92.76,
+      "text": "yes, that's all included as well.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 92.76,
+      "end": 94.96,
+      "text": "We'll provide two live training sessions",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 94.96,
+      "end": 100.94,
+      "text": "along with documentation and recorded materials.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 100.94,
+      "end": 103.12,
+      "text": "Yeah, totally, I understand.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 103.12,
+      "end": 106.58,
+      "text": "I always know that we always want to review things",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 106.58,
+      "end": 108.38,
+      "text": "internally before we make final decisions.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 108.38,
+      "end": 109.86,
+      "text": "So that's completely fine.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 113.2,
+      "end": 116.1,
+      "text": "I actually, it looks like I have another meeting",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 116.1,
+      "end": 116.94,
+      "text": "in a minute.",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 116.94,
+      "end": 118.72,
+      "text": "So I'll try to call you back.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 118.72,
+      "end": 122.76,
+      "text": "It's Thursday around like 3.45 p.m. on Thursday.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 122.76,
+      "end": 127.76,
+      "text": "I'll call you back later, 3.45 p.m. Thursday, August 20th",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 128.08,
+      "end": 132.46,
+      "text": "after I prepare the update implementation schedule",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 132.46,
+      "end": 135.32,
+      "text": "and the revised proposal to you guys.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 138.3,
+      "end": 140.8,
+      "text": "Also, before I call you back,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 140.8,
+      "end": 143.24,
+      "text": "I'll also try to email you the revised quote,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 143.24,
+      "end": 146.84,
+      "text": "the project timelines, the service agreement draft,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 146.84,
+      "end": 148.4,
+      "text": "the deployment checklist",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 148.44,
+      "end": 154.51,
+      "text": "so that you'll have everything on your end.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 154.51,
+      "end": 155.35,
+      "text": "Sounds good.",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 155.35,
+      "end": 164.72,
+      "text": "Thank you for your time and I'll speak with you later.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.652,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 164.72,
+      "end": 166.04,
+      "text": "Take care, goodbye.",
+      "speaker": "Unknown 9",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

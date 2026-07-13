@@ -1,0 +1,86 @@
+From d38bd51049be0968210400b76ceb3d94dbd84786 Mon Sep 17 00:00:00 2001
+From: Zahin <zahin@iris.local>
+Date: Sun, 12 Jul 2026 21:41:51 +0000
+Subject: [PATCH] Move sidebar toggle button onto the sidebar itself
+ (Claude-style)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The hamburger button used to live only in the main pane's header, so
+it always floated to the right of the sidebar rather than looking
+like part of it.
+
+- New top row inside the sidebar panel itself (_sidebar_toggle_btn),
+  right-aligned like Claude's collapse icon. Clicking it closes the
+  drawer.
+- The main-header hamburger (_drawer_btn) is now hidden while the
+  sidebar is open, and only appears once it's collapsed — since at
+  that point the sidebar (and its own toggle button) is gone, so
+  there needs to be *something* left to click to bring it back.
+- Reopening restores the sidebar to its normal 236px width and swaps
+  the header button back out for the in-sidebar one.
+
+Note: this is built directly on main, not on top of the still-open
+sidebar-flush-resizable branch — merge whichever lands first, then
+flag if the other needs a quick rebase (both touch _build_sidebar /
+_toggle_sidebar).
+---
+ iris_gui.py | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/iris_gui.py b/iris_gui.py
+index 0042548..381aae7 100644
+--- a/iris_gui.py
++++ b/iris_gui.py
+@@ -1728,15 +1728,22 @@ class ChatTab(QWidget):
+         root.setSpacing(0)
+         root.addWidget(self._build_sidebar())
+         root.addWidget(self._build_main_pane(), 1)
++        # The in-sidebar toggle handles closing; the header one only
++        # needs to be visible while the sidebar itself is hidden.
++        self._drawer_btn.setVisible(not self._sidebar_open)
+ 
+     def _toggle_sidebar(self) -> None:
+-        """Slide the session drawer open/closed."""
++        """Slide the session drawer open/closed. The toggle button lives
++        on whichever side currently makes sense — inside the sidebar's
++        own top row while it's open (like Claude), and in the main
++        header once it's collapsed, since the sidebar itself vanishes."""
+         sb = getattr(self, "_sidebar", None)
+         if sb is None:
+             return
+         from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
+         opening = not getattr(self, "_sidebar_open", True)
+         self._sidebar_open = opening
++        self._drawer_btn.setVisible(not opening)
+         anim = QPropertyAnimation(sb, b"maximumWidth", self)
+         anim.setDuration(190)
+         anim.setStartValue(sb.maximumWidth())
+@@ -1759,6 +1766,23 @@ class ChatTab(QWidget):
+         lay = QVBoxLayout(panel)
+         lay.setContentsMargins(14, 16, 14, 16)
+         lay.setSpacing(0)
++        top_row = QHBoxLayout()
++        top_row.setContentsMargins(0, 0, 0, 0)
++        top_row.addStretch(1)
++        self._sidebar_toggle_btn = QPushButton("\u2630")
++        self._sidebar_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
++        self._sidebar_toggle_btn.setFixedSize(28, 26)
++        self._sidebar_toggle_btn.setToolTip("Hide sessions")
++        self._sidebar_toggle_btn.setStyleSheet(
++            "QPushButton {"
++            f"color:{TEXT_MUTED}; background: transparent;"
++            "border:none; border-radius:7px; font-size:13px; }"
++            "QPushButton:hover { background: rgba(255,255,255,0.10);"
++            f" color:{TEXT_PRIMARY}; }}")
++        self._sidebar_toggle_btn.clicked.connect(self._toggle_sidebar)
++        top_row.addWidget(self._sidebar_toggle_btn)
++        lay.addLayout(top_row)
++        lay.addSpacing(6)
+         new_btn = QPushButton("+  new session")
+         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+         new_btn.setFixedHeight(34)
+-- 
+2.43.0
+

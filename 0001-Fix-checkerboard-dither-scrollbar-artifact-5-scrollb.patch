@@ -1,0 +1,95 @@
+From e24991055c36f36005d234bf34e84e8e43ebf7cc Mon Sep 17 00:00:00 2001
+From: Zahin <zahin@iris.local>
+Date: Sun, 12 Jul 2026 00:59:51 +0000
+Subject: [PATCH] Fix checkerboard/dither scrollbar artifact (5 scrollbars)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Every custom-styled QScrollArea in the app only set QScrollBar:vertical
+and ::handle:vertical, leaving ::add-line/::sub-line (arrow buttons)
+and ::add-page/::sub-page (track) unstyled. On Windows, Qt's native
+style falls back to painting those un-styled sub-controls with its
+default disabled-widget dither brush when the rest of the bar is
+transparent-styled — that's the black/white hex-grid pattern.
+
+Fixed by explicitly zeroing the arrow buttons and making the track
+transparent for all 5 occurrences: the session sidebar (the one you
+saw it on), the audio feed scroller, the status panel, the recordings
+list, and the sections list.
+---
+ iris_gui.py | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/iris_gui.py b/iris_gui.py
+index 0042548..86a7ed6 100644
+--- a/iris_gui.py
++++ b/iris_gui.py
+@@ -1792,7 +1792,11 @@ class ChatTab(QWidget):
+             "QScrollArea{background:transparent;border:none;}"
+             "QScrollBar:vertical{width:6px;background:transparent;}"
+             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
+-            "border-radius:3px;}")
++            "border-radius:3px;}"
++            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
++            "height:0;width:0;background:none;border:none;}"
++            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
++            "background:transparent;}")
+         self._sidebar_holder = QWidget()
+         self._sidebar_holder.setStyleSheet("background: transparent;")
+         self._sidebar_lay = QVBoxLayout(self._sidebar_holder)
+@@ -5991,7 +5995,11 @@ class PeopleTab(QWidget):
+         feed_scroll.setStyleSheet(
+             "QScrollArea{background:transparent;border:none;}"
+             "QScrollBar:vertical{width:8px;background:transparent;}"
+-            "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);border-radius:4px;}")
++            "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);border-radius:4px;}"
++            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
++            "height:0;width:0;background:none;border:none;}"
++            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
++            "background:transparent;}")
+         self._feed_holder = QWidget()
+         self._feed_holder.setStyleSheet("background: transparent;")
+         self._feed_layout = QVBoxLayout(self._feed_holder)
+@@ -8361,7 +8369,11 @@ class AudioTab(QWidget):
+             "QScrollArea{background:transparent;border:none;}"
+             "QScrollBar:vertical{width:8px;background:transparent;}"
+             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
+-            "border-radius:4px;}")
++            "border-radius:4px;}"
++            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
++            "height:0;width:0;background:none;border:none;}"
++            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
++            "background:transparent;}")
+         scroll.setWidget(w)
+         lay = QVBoxLayout(w)
+         lay.setContentsMargins(0, 0, 6, 0)
+@@ -8502,7 +8514,11 @@ class AudioTab(QWidget):
+             "QScrollArea{background:transparent;border:none;}"
+             "QScrollBar:vertical{width:8px;background:transparent;}"
+             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
+-            "border-radius:4px;}")
++            "border-radius:4px;}"
++            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
++            "height:0;width:0;background:none;border:none;}"
++            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
++            "background:transparent;}")
+         self._list_holder = QWidget()
+         self._list_holder.setStyleSheet("background: transparent;")
+         self._list_lay = QVBoxLayout(self._list_holder)
+@@ -9618,7 +9634,11 @@ class PhotosTab(QWidget):
+             "QScrollArea{background:transparent;border:none;}"
+             "QScrollBar:vertical{width:8px;background:transparent;}"
+             "QScrollBar::handle:vertical{background:rgba(255,255,255,0.14);"
+-            "border-radius:4px;}")
++            "border-radius:4px;}"
++            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{"
++            "height:0;width:0;background:none;border:none;}"
++            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{"
++            "background:transparent;}")
+         self._sections_holder = QWidget()
+         self._sections_holder.setStyleSheet("background: transparent;")
+         self._sections = QVBoxLayout(self._sections_holder)
+-- 
+2.43.0
+

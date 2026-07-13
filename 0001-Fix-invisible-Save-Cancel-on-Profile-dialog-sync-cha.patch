@@ -1,0 +1,76 @@
+From 84da3e75c8dac523d15ec529d344df44eef241d9 Mon Sep 17 00:00:00 2001
+From: Zahin <zahin@iris.local>
+Date: Sun, 12 Jul 2026 00:47:53 +0000
+Subject: [PATCH] Fix invisible Save/Cancel on Profile dialog + sync chat
+ bubble avatar
+
+- _AppProfileDialog's QDialogButtonBox had no explicit QPushButton
+  style, so Save/Cancel rendered as default near-invisible dark-on-dark
+  buttons (same styling gap the other profile dialogs already avoid).
+  Now styled to match the rest of the app, with the default button
+  (Save) picked out in the accent color.
+- Chat bubbles for 'you' messages were hardcoded to initials 'HA' and
+  a separate fixed-filename avatar (user_avatar.png next to the
+  script), completely unrelated to the new sidebar profile card.
+  _append_user / _render_message now read name+avatar from
+  self._app_profile first (falling back to the old file-based lookup,
+  then initials), so editing your profile immediately changes the
+  avatar/initials on every new message you send from then on.
+---
+ iris_gui.py | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/iris_gui.py b/iris_gui.py
+index 0042548..a853174 100644
+--- a/iris_gui.py
++++ b/iris_gui.py
+@@ -1548,6 +1548,16 @@ class _AppProfileDialog(QDialog):
+ 
+         btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
+                                 | QDialogButtonBox.StandardButton.Cancel)
++        btns.setStyleSheet(
++            f"QPushButton {{ background: rgba(255,255,255,0.06);"
++            f" color: {TEXT_PRIMARY}; border: 1px solid rgba(255,255,255,0.10);"
++            f" border-radius: 6px; padding: 6px 14px;"
++            f" font-family: '{FONT_SANS}'; font-size: 11px; }}"
++            f"QPushButton:hover {{ background: rgba(255,255,255,0.12); }}"
++            f"QPushButton:default {{"
++            f" background: rgba({_rgb(ACCENT)},0.22);"
++            f" color: {ACCENT};"
++            f" border: 1px solid rgba({_rgb(ACCENT)},0.45); }}")
+         btns.accepted.connect(self.accept)
+         btns.rejected.connect(self.reject)
+         outer.addWidget(btns)
+@@ -2484,8 +2494,10 @@ class ChatTab(QWidget):
+     def _append_user(self, body: str, log: bool = True) -> QLabel:
+         if log:
+             self._log("user", body)
++        prof = getattr(self, "_app_profile", None) or _load_app_profile()
+         return self._render_message(
+-            "you", body, is_user=True, avatar_initials="HA",
++            "you", body, is_user=True,
++            avatar_initials=_initials_for(prof.get("name")),
+             avatar_fg=USER_ACCENT)
+     def _render_message(self, author: str, body: str, is_user: bool,
+                         avatar_initials: str, avatar_fg: str,
+@@ -2497,10 +2509,14 @@ class ChatTab(QWidget):
+         rlay = QHBoxLayout(row)
+         rlay.setContentsMargins(4, 10, 4, 0)
+         rlay.setSpacing(12)
+-        # Avatar: model = drawn circle; user = their photo (if set) else initials.
++        # Avatar: model = drawn circle; user = their sidebar-profile photo
++        # (data/app_profile.json) if set, else the older fixed-filename
++        # avatar, else initials.
+         if is_user:
+-            _av = _user_avatar_path()
+-            avatar = (_PhotoAvatar(row, _av, size=34) if _av
++            prof = getattr(self, "_app_profile", None) or _load_app_profile()
++            _av = prof.get("avatar") or _user_avatar_path()
++            avatar = (_PhotoAvatar(row, _av, size=34)
++                      if _av and os.path.exists(_av)
+                       else Avatar(row, avatar_initials, avatar_fg, avatar_fg))
+         else:
+             avatar = RingAvatar(row, TEXT_PRIMARY, size=34)
+-- 
+2.43.0
+

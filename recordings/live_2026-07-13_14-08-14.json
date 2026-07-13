@@ -1,0 +1,175 @@
+{
+  "audio_file": "live_2026-07-13_14-08-14.wav",
+  "model": "medium.en",
+  "duration_seconds": 135.3340625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 79.07988047599792,
+  "realtime_factor": 0.5843309438523501,
+  "segments": [
+    {
+      "start": 4.21,
+      "end": 15.84,
+      "text": "Hi, this is Hamza speaking. I'm calling to follow up on the North Star Technologies",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 15.84,
+      "end": 22.28,
+      "text": "project update. I wanted to confirm the important details from our previous discussion.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 22.28,
+      "end": 30.2,
+      "text": "As you remember, the project kickoff meeting is actually scheduled for this upcoming Tuesday,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 30.2,
+      "end": 39.8,
+      "text": "September 22nd, 2026 at 10 a.m. EST time through Microsoft Teams, and I would send out the meeting",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 39.8,
+      "end": 46.08,
+      "text": "link via email. The updated project documents, including the timeline, the budget breakdown,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 46.08,
+      "end": 52.68,
+      "text": "and the technical requirements will need to be completed by you guys by Wednesday,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 52.68,
+      "end": 62.08,
+      "text": "September 16th, 2026 at 3 p.m. Just reviewing the approved project budget, we've set that to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 62.08,
+      "end": 72.56,
+      "text": "$75,000 with the first payment of $25,000 due Thursday, October 1st, 2026. The implementation",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 72.56,
+      "end": 79.12,
+      "text": "phase will officially begin Monday, October 5th, 2026, and the expected completion date is",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 79.12,
+      "end": 87.68,
+      "text": "Friday, November 20th, 2026. The main contacts for this project are the following Emily Johnson,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 87.68,
+      "end": 93.96,
+      "text": "the project manager, Michael Reed, the technical lead, and Sarah Patel, the client",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 93.96,
+      "end": 99.32,
+      "text": "representative. I will also need to schedule a follow up meeting Thursday, September 24th,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 99.32,
+      "end": 106.4,
+      "text": "2026 at 2.30 p.m. EST time to review the feedback and discuss the next steps. Before I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 106.52,
+      "end": 111.92,
+      "text": "end this call, I wanted to make sure I remembered everything correctly. The documents are due the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 111.92,
+      "end": 118.16,
+      "text": "16th is 3 p.m. The kickoff meeting, September 22nd at 10 a.m. The follow-up meeting is",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 118.16,
+      "end": 125.2,
+      "text": "September 24th at 2.30 p.m. The payment is due October 1st, and the project starts October 5th,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 125.2,
+      "end": 130.8,
+      "text": "and the project should be completed November 20th. I have another meeting starting soon,",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 130.8,
+      "end": 135.16,
+      "text": "so I'll have to call you back later today, probably 8 p.m.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.619,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

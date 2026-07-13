@@ -1,0 +1,76 @@
+{
+  "audio_file": "live_2026-07-13_14-16-45.wav",
+  "model": "medium.en",
+  "duration_seconds": 99.091,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 14.751620292663574,
+  "realtime_factor": 0.1488694260090581,
+  "segments": [
+    {
+      "start": 0.21,
+      "end": 2.21,
+      "text": "And it should be",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 3.01,
+      "end": 11.8,
+      "text": "Hey Jarvis, I think I got an email from hums in the past 24 hours. I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.668,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 20.32,
+      "end": 21.92,
+      "text": "think I",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 21.92,
+      "end": 31.99,
+      "text": "Got an email from him regarding my Netflix subscription. Could you please put it up? Hey Jarvis. I I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.668,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 42.45,
+      "end": 57.76,
+      "text": "Got an email from him regarding scription. I think I got it. Yeah, I should probably say that first",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.668,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 57.76,
+      "end": 59.44,
+      "text": "Um",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 59.44,
+      "end": 96.62,
+      "text": "Hum, I think hums that emailed the family reunion. I think I think hums that emailed me about a family reunion",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.668,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,58 @@
+{
+  "audio_file": "live_2026-07-13_14-18-43.wav",
+  "model": "medium.en",
+  "duration_seconds": 110.384375,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 13.942826509475708,
+  "realtime_factor": 0.12631159536370712,
+  "segments": [
+    {
+      "start": 0.18,
+      "end": 9.45,
+      "text": "could maybe if I do I got a let me try this I think I got an email in regards",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.704,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 9.45,
+      "end": 78.23,
+      "text": "to a grocery list I think I got it I got an email about a",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 78.23,
+      "end": 95.38,
+      "text": "CAD file I think humza sent me email requesting information so I got a I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.704,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 95.38,
+      "end": 105.29,
+      "text": "kind of got to say it like that okay that's a little bit better I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.704,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 105.29,
+      "end": 110.61,
+      "text": "I think humza sent me an email about",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.704,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

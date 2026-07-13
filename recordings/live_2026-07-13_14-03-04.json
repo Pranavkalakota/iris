@@ -1,0 +1,112 @@
+{
+  "audio_file": "live_2026-07-13_14-03-04.wav",
+  "model": "medium.en",
+  "duration_seconds": 356.9340625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 35.33026695251465,
+  "realtime_factor": 0.09898261517843972,
+  "segments": [
+    {
+      "start": 0.05,
+      "end": 21.23,
+      "text": "okay yeah hey Jarvis open my email okay perfect",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 25.23,
+      "end": 36.03,
+      "text": "okay okay so what we'll do then is I'm gonna I want to still have you on call",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 36.75,
+      "end": 41.95,
+      "text": "and we'll just go through it I'll just move it to the yeah we'll move it to the engineering",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 139.01,
+      "end": 158.83,
+      "text": "so currently the model switched to alama right if you just want to want to go ahead and start",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 158.83,
+      "end": 166.51,
+      "text": "a new session just start asking try to like pre-prompt um something on the email",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 166.83,
+      "end": 170.35,
+      "text": "right just go for it because it might be a second",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 172.43,
+      "end": 176.11,
+      "text": "so you can open up a new session kind of hard coding email questions",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 250.64,
+      "end": 256.4,
+      "text": "it's both slightly different in the email I think it's just pulling exactly what it says",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 256.4,
+      "end": 270.37,
+      "text": "so yeah grocery yeah okay there you go and then ask like when do I have to be",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 270.37,
+      "end": 341.82,
+      "text": "when do I have to pick this up by yeah please don't throw out an error message",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 349.66,
+      "end": 356.75,
+      "text": "is that for email it shouldn't be for email email should be just ask the question again",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

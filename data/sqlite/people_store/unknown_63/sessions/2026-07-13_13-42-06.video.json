@@ -1,0 +1,13 @@
+{
+  "received_at": 1783975326.0,
+  "source": "esp32",
+  "people_count": 1,
+  "people_names": [
+    "Unknown 1"
+  ],
+  "duration_sec": 35.86206896551724,
+  "frames_sampled": 36,
+  "method": "fusion",
+  "note": "36 keyframes over 1040 frames via face recognition",
+  "analyzed_at": 1783976789.451352
+}

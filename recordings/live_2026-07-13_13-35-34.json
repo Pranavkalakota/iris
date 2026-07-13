@@ -1,0 +1,121 @@
+{
+  "audio_file": "live_2026-07-13_13-35-34.wav",
+  "model": "medium.en",
+  "duration_seconds": 523.212375,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 37.546565771102905,
+  "realtime_factor": 0.0717616164394103,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 11.44,
+      "text": "think if I do audio too it should work fine I think I got an email from humza",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.744,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    },
+    {
+      "start": 11.44,
+      "end": 18.12,
+      "text": "in regards to grocery list for this week could you check and make sure that",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.744,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    },
+    {
+      "start": 18.12,
+      "end": 102.74,
+      "text": "is true can you open up my email Jarvis can you open up my email",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 102.74,
+      "end": 150.54,
+      "text": "you have the command document by chance you know where he put the command",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 150.54,
+      "end": 153.3,
+      "text": "document or no",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 158.38,
+      "end": 202.9,
+      "text": "Irish testing got a good guy check my email",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 212.84,
+      "end": 240.09,
+      "text": "I'm confused on what the verbal cues are",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 242.29,
+      "end": 312.7,
+      "text": "I'm trying to look at that I have a document did did humza email me open",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 312.7,
+      "end": 353.23,
+      "text": "email I should also automatically open up gmail take take photo hey Jarvis",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 353.23,
+      "end": 447.62,
+      "text": "take a photo of me hey hey Jarvis open email email Jarvis hey Jarvis Jarvis",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 447.62,
+      "end": 492.92,
+      "text": "open email should just open up a new tab that's the thing hey Jarvis open",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 492.92,
+      "end": 495.48,
+      "text": "up email",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

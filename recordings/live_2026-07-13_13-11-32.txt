@@ -1,0 +1,33 @@
+[00:24.46 -> 00:29.58]  Hello, this is Humza speaking.
+[00:29.58 -> 00:31.78]  Hi Sarah, thanks for calling.
+[00:31.78 -> 00:36.58]  Yes, I have a few minutes.
+[00:36.58 -> 00:40.70]  Okay, so you're asking about the implementation timeline
+[00:40.70 -> 00:45.70]  and whether this pricing includes onboarding, right?
+[01:07.62 -> 01:09.76]  Yes, that's correct.
+[01:09.76 -> 01:10.94]  With the current timeline,
+[01:10.94 -> 01:15.02]  it's about six weeks from contract signing to deployment.
+[01:15.02 -> 01:17.30]  And the prices include the software setup,
+[01:17.30 -> 01:27.56]  the onboarding and the one year of support, right?
+[01:27.64 -> 01:30.20]  And regarding the employee training,
+[01:30.20 -> 01:32.76]  yes, that's all included as well.
+[01:32.76 -> 01:34.96]  We'll provide two live training sessions
+[01:34.96 -> 01:40.94]  along with documentation and recorded materials.
+[01:40.94 -> 01:43.12]  Yeah, totally, I understand.
+[01:43.12 -> 01:46.58]  I always know that we always want to review things
+[01:46.58 -> 01:48.38]  internally before we make final decisions.
+[01:48.38 -> 01:49.86]  So that's completely fine.
+[01:53.20 -> 01:56.10]  I actually, it looks like I have another meeting
+[01:56.10 -> 01:56.94]  in a minute.
+[01:56.94 -> 01:58.72]  So I'll try to call you back.
+[01:58.72 -> 02:02.76]  It's Thursday around like 3.45 p.m. on Thursday.
+[02:02.76 -> 02:07.76]  I'll call you back later, 3.45 p.m. Thursday, August 20th
+[02:08.08 -> 02:12.46]  after I prepare the update implementation schedule
+[02:12.46 -> 02:15.32]  and the revised proposal to you guys.
+[02:18.30 -> 02:20.80]  Also, before I call you back,
+[02:20.80 -> 02:23.24]  I'll also try to email you the revised quote,
+[02:23.24 -> 02:26.84]  the project timelines, the service agreement draft,
+[02:26.84 -> 02:28.40]  the deployment checklist
+[02:28.44 -> 02:34.51]  so that you'll have everything on your end.
+[02:34.51 -> 02:35.35]  Sounds good.
+[02:35.35 -> 02:44.72]  Thank you for your time and I'll speak with you later.
+[02:44.72 -> 02:46.04]  Take care, goodbye.

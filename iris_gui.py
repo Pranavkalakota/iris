@@ -4975,7 +4975,7 @@ class ChatTab(QWidget):
         # Unknown intent value from the LLM — reject.
         return False
     # --- IRIS router-guard: END ---
-    
+   
     def _llm_route_intent(self, text: str):
         """Ollama-backed universal fallback for _dispatch_intent. Called
         when every hardcoded classifier returned kind='none'. Ask
@@ -9096,6 +9096,28 @@ class AudioTab(QWidget):
             return
         QTimer.singleShot(self._WAKE_POLL_MS,
                           lambda: self._wake_cycle_poll(snippet, 0))
+    @staticmethod
+    def _is_wake_command(text: str) -> bool:
+        """True if a heard phrase is something IRIS should act on (not just
+        chatter). Was gated on iq.is_photo_trigger alone — which is why only
+        photo requests fired. Checks photo, then UI actions (open email /
+        start video / start audio), then a read-email command."""
+        if iq is None or not text:
+            return False
+        if iq.is_photo_trigger(text):
+            return True
+        try:
+            if iq.classify_action(text).kind != "none":
+                return True
+        except Exception:
+            pass
+        try:
+            if iq.classify_email(text).kind != "none":
+                return True
+        except Exception:
+            pass
+        return False
+
     def _wake_cycle_poll(self, snippet: str, attempts: int) -> None:
         if not self._wake_active:
             self._cleanup_wake_snippet(snippet)
@@ -9125,7 +9147,7 @@ class AudioTab(QWidget):
         # Show chunk in rolling transcript
         if text:
             self._append_live_text(text)
-        if text and iq is not None and iq.is_photo_trigger(text):
+        if text and iq is not None and self._is_wake_command(text):
             heard = text.strip()
             short = heard if len(heard) <= 50 else heard[:47] + "\u2026"
             self.dot_wake.set(

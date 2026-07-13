@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-07-13_13-53-13.wav",
+  "model": "medium.en",
+  "duration_seconds": 45.930875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 4.904544830322266,
+  "realtime_factor": 0.10678100145756565,
+  "segments": [
+    {
+      "start": 0.56,
+      "end": 21.82,
+      "text": "maybe it was the old mama open email yeah hey Jarvis open my email",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

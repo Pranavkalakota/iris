@@ -1,0 +1,11 @@
+[00:00.05 -> 00:21.23]  okay yeah hey Jarvis open my email okay perfect
+[00:25.23 -> 00:36.03]  okay okay so what we'll do then is I'm gonna I want to still have you on call
+[00:36.75 -> 00:41.95]  and we'll just go through it I'll just move it to the yeah we'll move it to the engineering
+[02:19.01 -> 02:38.83]  so currently the model switched to alama right if you just want to want to go ahead and start
+[02:38.83 -> 02:46.51]  a new session just start asking try to like pre-prompt um something on the email
+[02:46.83 -> 02:50.35]  right just go for it because it might be a second
+[02:52.43 -> 02:56.11]  so you can open up a new session kind of hard coding email questions
+[04:10.64 -> 04:16.40]  it's both slightly different in the email I think it's just pulling exactly what it says
+[04:16.40 -> 04:30.37]  so yeah grocery yeah okay there you go and then ask like when do I have to be
+[04:30.37 -> 05:41.82]  when do I have to pick this up by yeah please don't throw out an error message
+[05:49.66 -> 05:56.75]  is that for email it shouldn't be for email email should be just ask the question again
