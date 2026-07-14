@@ -2017,7 +2017,7 @@ class ChatTab(QWidget):
         self._sidebar = panel
         self._sidebar_open = True
         lay = QVBoxLayout(panel)
-        lay.setContentsMargins(14, 16, 14, 16)
+        lay.setContentsMargins(14, 44, 14, 16)
         lay.setSpacing(0)
         lay.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         top_row = QHBoxLayout()
@@ -2777,11 +2777,9 @@ class ChatTab(QWidget):
             if self._client is not None and hasattr(
                     self._client, "pop_fallback_notice"):
                 notice = self._client.pop_fallback_notice()
-            if notice:
-                self._append_iris(
-                    f"⚠ {notice} — this message was answered by local "
-                    f"Ollama instead. Check your key in About System.",
-                    log=False)
+            # Silent cloud->Ollama fallback: consume the notice but never
+            # surface it in chat — Ollama already answered, so nothing to show.
+            _ = notice
         except Exception:
             pass
     # --- end ADD ---
@@ -10035,7 +10033,7 @@ class PhotosTab(QWidget):
         lay.setContentsMargins(14, 12, 14, 12)
         lay.setSpacing(8)
         head = QHBoxLayout()
-        title = QLabel("photos")
+        title = QLabel("Photos")
         title.setStyleSheet(f"color:{TEXT_PRIMARY}; background:transparent;"
                             f"border:none; font-family:'{FONT_SANS}';"
                             "font-size:15px; font-weight:700;")
@@ -10101,11 +10099,13 @@ class PhotosTab(QWidget):
         v = QVBoxLayout(sec)
         v.setContentsMargins(0, 10, 0, 4)
         v.setSpacing(10)
-        hl = QLabel(header.upper())
+        _n = len(photos)
+        hl = QLabel(f"{header.upper()}    {_n} PHOTO{'S' if _n != 1 else ''}")
         hl.setStyleSheet(
-            f"color:{TEXT_DIM}; background:transparent; border:none;"
+            f"color:{TEXT_DIM}; background:transparent;"
+            " border:none; border-bottom:1px solid rgba(255,255,255,0.08);"
             f"font-family:'{FONT_SANS}'; font-size:10px; font-weight:800;"
-            "letter-spacing:1.6px; padding: 0 2px 4px 2px;")
+            "letter-spacing:1.6px; padding: 0 2px 7px 2px;")
         v.addWidget(hl)
         holder = QWidget()
         holder.setStyleSheet("background: transparent;")
@@ -11026,16 +11026,19 @@ class TabBar(QWidget):
 # The whole strip is the window's drag handle (frameless windows have none).
 # ─────────────────────────────────────────────────────────────────────────────
 class TitleBar(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, tabbar=None):
         super().__init__(parent)
-        self.setFixedHeight(34)
+        self.setFixedHeight(44)
         self._drag: Optional[QPoint] = None
         self._secs = 0
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(18, 0, 20, 0)
+        lay.setContentsMargins(16, 4, 20, 4)
         lay.setSpacing(8)
-        # Traffic lights live on the left rail now (see IrisApp).
-        lay.addStretch(1)
+        # Window buttons live in the top-left corner overlay (see IrisApp).
+        if tabbar is not None:
+            lay.addWidget(tabbar, 1)
+        else:
+            lay.addStretch(1)
         wordmark = QLabel("iris")
         wordmark.setStyleSheet(
             f"color:{TEXT_PRIMARY}; background:transparent; border:none;"
@@ -11053,7 +11056,7 @@ class TitleBar(QWidget):
     def _dot(self, color: str, on_click) -> QPushButton:
         b = QPushButton()
         b.setCursor(Qt.CursorShape.PointingHandCursor)
-        b.setFixedSize(13, 13)
+        b.setFixedSize(11, 11)
         b.setStyleSheet(
             "QPushButton {"
             f"background:{color}; border:none; border-radius:6px;"
@@ -11161,16 +11164,36 @@ def _enable_win11_backdrop(widget, kind: str = "acrylic") -> bool:
         return False
 
 
+class _FrameOverlay(QWidget):
+    """Transparent, click-through overlay that paints the window's white edge
+    outline ON TOP of every child — so the frame wraps the black sidebar's
+    outer edges too, without touching the internal divider."""
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent;")
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect())
+        path = QPainterPath()
+        path.addRoundedRect(rect, WINDOW_RADIUS, WINDOW_RADIUS)
+        p.setPen(QPen(QColor(255, 255, 255, 190), 2.0))
+        p.drawPath(path)
+
+
 class IrisApp(QWidget):
     TAB_NAMES = ["chat", "photos", "people", "audio", "location", "stream",
                  "about system"]   # M8: Chat, Photos, People prioritized
     def _win_dot(self, color: str, on_click) -> QPushButton:
         b = QPushButton()
         b.setCursor(Qt.CursorShape.PointingHandCursor)
-        b.setFixedSize(13, 13)
+        b.setFixedSize(10, 10)
         b.setStyleSheet(
             "QPushButton {"
-            f"background:{color}; border:none; border-radius:6px; }}"
+            f"background:{color}; border:none; border-radius:5px; }}"
             "QPushButton:hover { border: 1px solid rgba(0,0,0,0.25); }")
         b.clicked.connect(on_click)
         return b
@@ -11205,26 +11228,16 @@ class IrisApp(QWidget):
         # down to a slim width, since sidebar_container is fully hidden
         # there and nothing else would shrink the rail on its own.
         rail = getattr(self, "_left_rail", None)
-        dots = getattr(self, "_dots_overlay", None)
         if rail is not None:
+            rail.setVisible(is_chat)
             if is_chat:
                 rail.setMinimumWidth(0)
                 rail.setMaximumWidth(16777215)  # Qt's "no cap" sentinel
-                rail.setStyleSheet(
-                    "QWidget#leftRail { background:#000000;"
-                    " border-top-left-radius:18px;"
-                    " border-bottom-left-radius:18px; }")
-                if dots is not None:
-                    dots.setVisible(False)
-            else:
-                # Zero width — the rail reserves no layout space at all
-                # here; the floating overlay dots take over instead, sitting
-                # on top of the tab content rather than pushing it over.
-                rail.setMinimumWidth(0)
-                rail.setMaximumWidth(0)
-                if dots is not None:
-                    dots.setVisible(True)
-                    dots.raise_()
+        try:
+            self._frame_overlay.raise_()
+            self._dots_overlay.raise_()
+        except Exception:
+            pass
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
@@ -11242,39 +11255,30 @@ class IrisApp(QWidget):
         self._left_rail = QWidget(self)
         self._left_rail.setObjectName("leftRail")
         self._left_rail.setStyleSheet(
-            "QWidget#leftRail { background:#000000;"
-            " border-top-left-radius:18px; border-bottom-left-radius:18px; }")
+            "QWidget#leftRail { background:#000000; border: none;"
+            " border-top-left-radius:26px; border-bottom-left-radius:26px; }")
         _leftlay = QVBoxLayout(self._left_rail)
         _leftlay.setContentsMargins(0, 0, 0, 0)
         _leftlay.setSpacing(0)
-        _tlrow = QWidget()
-        _tll = QHBoxLayout(_tlrow)
-        _tll.setContentsMargins(16, 12, 10, 10)
-        _tll.setSpacing(8)
-        _tll.addWidget(self._win_dot("#ff5f57", self.close))
-        _tll.addWidget(self._win_dot("#febc2e", self.showMinimized))
-        _tll.addWidget(self._win_dot("#28c840", self._toggle_max))
-        _tll.addStretch(1)
-        _leftlay.addWidget(_tlrow)
-        _leftlay.setAlignment(_tlrow, Qt.AlignmentFlag.AlignTop)
         self._left_rail_slot = _leftlay
         outer.addWidget(self._left_rail)
-        # Floating window-control dots for every non-Chat tab. These live
-        # directly on `self` — NOT inside any layout — so they float on
-        # top of the tab content with zero reserved width/padding, always
-        # pinned to the window's true top-left corner. _on_tab_changed
-        # swaps between this and the rail's own dots (never both at once).
+        # Window-control dots pinned to the top-left corner (circular, always on).
         self._dots_overlay = QWidget(self)
         self._dots_overlay.setStyleSheet("background: transparent;")
         _ol = QHBoxLayout(self._dots_overlay)
-        _ol.setContentsMargins(16, 12, 0, 0)
+        _ol.setContentsMargins(14, 12, 6, 6)
         _ol.setSpacing(8)
         _ol.addWidget(self._win_dot("#ff5f57", self.close))
         _ol.addWidget(self._win_dot("#febc2e", self.showMinimized))
         _ol.addWidget(self._win_dot("#28c840", self._toggle_max))
         self._dots_overlay.adjustSize()
         self._dots_overlay.move(0, 0)
-        self._dots_overlay.setVisible(False)   # chat tab uses the rail's own
+        self._dots_overlay.raise_()
+        # White edge outline painted above everything (wraps the sidebar too).
+        self._frame_overlay = _FrameOverlay(self)
+        self._frame_overlay.setGeometry(0, 0, self.width(), self.height())
+        self._frame_overlay.raise_()
+        self._dots_overlay.raise_()
         # Right column: title strip + tabs + tab content.
         _rightw = QWidget(self)
         _rightw.setStyleSheet("background: transparent;")
@@ -11282,10 +11286,9 @@ class IrisApp(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         outer.addWidget(_rightw, 1)
-        self.titlebar = TitleBar(self)
-        root.addWidget(self.titlebar)
         self.tabbar = TabBar(self, self.TAB_NAMES)
-        root.addWidget(self.tabbar)
+        self.titlebar = TitleBar(self, tabbar=self.tabbar)
+        root.addWidget(self.titlebar)
         # Body holds the tab stack inside a small gutter so panels float and the
         # rounded window corners stay clean (no square widget pokes through).
         # The Chat tab is the exception: its sidebar hugs the true left
@@ -11447,15 +11450,16 @@ class IrisApp(QWidget):
         p.setPen(QPen(QBrush(rim), 1.2))
         p.drawLine(QPoint(int(rect.left() + w * 0.1), int(rect.top()) + 1),
                    QPoint(int(rect.right() - w * 0.1), int(rect.top()) + 1))
-        # two-tone bevel hairline border — bright top/left, dim bottom/right
-        bevel = QLinearGradient(rect.left(), rect.top(), rect.right(), rect.bottom())
-        bevel.setColorAt(0.0, QColor(160, 195, 240, 100))
-        bevel.setColorAt(1.0, QColor(80, 110, 160, 40))
-        p.setPen(QPen(QBrush(bevel), 1.0))
-        p.drawPath(path)
+        # (window edge outline is drawn by _FrameOverlay on top of everything)
     def resizeEvent(self, evt):
         self._grip.move(self.width() - self._grip.width() - 8,
                         self.height() - self._grip.height() - 8)
+        try:
+            self._frame_overlay.setGeometry(0, 0, self.width(), self.height())
+            self._frame_overlay.raise_()
+            self._dots_overlay.raise_()
+        except Exception:
+            pass
         super().resizeEvent(evt)
     def closeEvent(self, evt):
         try:
