@@ -299,13 +299,16 @@ class VideoStore:
 
     # --- IRIS video-relook: ADD ---
     def answer_visual_question(self, path: str, question: str,
-                               frame_count: int = 4,
-                               frac_range: tuple = (0.0, 1.0)) -> str:
+                               frame_count: int = 6,
+                               frac_range: tuple = (0.0, 1.0),
+                               prior_description: str = "") -> str:
         """Fresh, uncached, targeted re-look for one specific follow-up
         question — e.g. 'what was he holding', or a specific segment of
-        the clip via frac_range. Returns '' if unavailable; callers should
-        fall back to the cached description rather than treat that as
-        'nothing visible'."""
+        the clip via frac_range. prior_description grounds this pass in
+        whatever the first describe_scene() call already established, so
+        a narrow follow-up doesn't drift onto something else in frame.
+        Returns '' if unavailable; callers should fall back to the cached
+        description rather than treat that as 'nothing visible'."""
         fusion = None
         if self._fusion_getter is not None:
             try:
@@ -322,7 +325,8 @@ class VideoStore:
                   f"sampled from {os.path.basename(path)}")
             return ""
         try:
-            return fusion.describe_scene_question(frames, question)
+            return fusion.describe_scene_question(
+                frames, question, prior_description=prior_description)
         except Exception as e:
             print(f"[video] describe_scene_question call failed: {e}")
             return ""

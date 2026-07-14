@@ -241,11 +241,19 @@ _SCENE_PROMPT = (
 # --- IRIS video-relook: ADD ---
 _SCENE_FOLLOWUP_PROMPT_TEMPLATE = (
     "These images are frames sampled from a short video clip from a "
-    "wearable camera, in time order. Look carefully and answer this "
+    "wearable camera, in time order.{prior_block} Look carefully at the "
+    "images themselves (not just the earlier summary) and answer this "
     "specific question in 1-3 plain sentences: {question}\n"
     "Only describe what is actually visible in these frames — if the "
     "answer isn't visible or you're not sure, say so honestly instead "
-    "of guessing. No preamble, no headers, plain prose only."
+    "of guessing. Stay consistent with the earlier summary where it "
+    "applies (e.g. the same objects/people) unless the images clearly "
+    "show otherwise. No preamble, no headers, plain prose only."
+)
+_PRIOR_BLOCK_TEMPLATE = (
+    "\nAn earlier pass already described this clip as: \"{prior}\" Use "
+    "that as context for what's in the scene, then look again for the "
+    "specific detail asked below."
 )
 # --- IRIS video-relook: END ---
 
@@ -313,6 +321,7 @@ class _LlavaInference:
                         "content": _LLAVA_PROMPT,
                         "images": [img_b64],
                     }],
+                    options={"temperature": 0},
                 )
             except Exception as e:
                 print(f"[llava] inference failed: {e}")
@@ -364,6 +373,7 @@ class _LlavaInference:
                         "content": _SCENE_PROMPT,
                         "images": imgs_b64,
                     }],
+                    options={"temperature": 0},
                 )
             except Exception as e:
                 print(f"[llava] scene inference failed: {e}")
@@ -380,9 +390,13 @@ class _LlavaInference:
             return ""
 
     # --- IRIS video-relook: ADD ---
-    def describe_frames_targeted(self, images_bgr: list, question: str) -> str:
+    def describe_frames_targeted(self, images_bgr: list, question: str,
+                                 prior_description: str = "") -> str:
         """Like describe_frames(), but asks LLaVA to answer ONE specific
-        follow-up question about the frames instead of a generic overview."""
+        follow-up question about the frames instead of a generic overview.
+        prior_description grounds this pass in what the first pass already
+        established, so a narrow question doesn't drift onto the wrong
+        object/person."""
         client = self._ensure_client()
         if client is None or not images_bgr or not question:
             return ""
@@ -391,7 +405,7 @@ class _LlavaInference:
             imgs_b64 = []
             for img in images_bgr:
                 ok, buf = cv2.imencode(
-                    ".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                    ".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
                 if ok:
                     imgs_b64.append(base64.b64encode(buf.tobytes())
                                     .decode("ascii"))
@@ -400,7 +414,10 @@ class _LlavaInference:
         except Exception as e:
             print(f"[llava] targeted image encode failed: {e}")
             return ""
-        prompt = _SCENE_FOLLOWUP_PROMPT_TEMPLATE.format(question=question)
+        prior_block = (_PRIOR_BLOCK_TEMPLATE.format(prior=prior_description)
+                       if prior_description else "")
+        prompt = _SCENE_FOLLOWUP_PROMPT_TEMPLATE.format(
+            question=question, prior_block=prior_block)
         with self._lock:
             try:
                 resp = client.chat(
@@ -410,6 +427,7 @@ class _LlavaInference:
                         "content": prompt,
                         "images": imgs_b64,
                     }],
+                    options={"temperature": 0},
                 )
             except Exception as e:
                 print(f"[llava] targeted inference failed: {e}")
@@ -458,6 +476,7 @@ class _LlavaInference:
                         "content": _OCR_PROMPT,
                         "images": imgs_b64,
                     }],
+                    options={"temperature": 0},
                 )
             except Exception as e:
                 print(f"[llava] ocr inference failed: {e}")

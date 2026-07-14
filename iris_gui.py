@@ -5894,7 +5894,8 @@ class ChatTab(QWidget):
                 try:
                     relook = self._videos.answer_visual_question(
                         clip.path, text, frame_count=6,
-                        frac_range=frac_range)
+                        frac_range=frac_range,
+                        prior_description=description)
                 except Exception as e:
                     print(f"[video] answer_visual_question failed: {e}")
                     relook = ""
