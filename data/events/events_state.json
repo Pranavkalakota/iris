@@ -1,8 +1,8 @@
 {
-  "event_id": "evt_165560801d14",
-  "started_at": 1783286360.255005,
-  "last_clip_at": 1783979104.504152,
-  "n_clips": 28,
+  "event_id": "evt_104673c3efa5",
+  "started_at": 1783991251.562453,
+  "last_clip_at": 1783991817.731366,
+  "n_clips": 4,
   "people": [
     "Unknown 1"
   ],
@@ -19,7 +19,7 @@
     "region": "Indiana",
     "country": "United States",
     "provider": "ip-api",
-    "timestamp_iso": "2026-07-13T14:45:48"
+    "timestamp_iso": "2026-07-13T18:17:41"
   },
   "prev_visual": null,
   "prev_mfcc": null,

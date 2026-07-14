@@ -1,0 +1,373 @@
+{
+  "audio_file": "live_2026-07-13_18-11-44.wav",
+  "model": "medium.en",
+  "duration_seconds": 118.7758125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 101.5303406715393,
+  "realtime_factor": 0.8548065345504524,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 2.6,
+      "text": "objectives, we'd rather you actually get some learning out",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 2.6,
+      "end": 5.56,
+      "text": "of this, or access to Figmind, and if you don't have that",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 5.56,
+      "end": 7.72,
+      "text": "already, or a new software that you're going to learn, and",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 21
+    },
+    {
+      "start": 7.72,
+      "end": 10.0,
+      "text": "would be useful for us, we can talk about that, and",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 10.0,
+      "end": 14.88,
+      "text": "that could be considered a new skill or something.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 25
+    },
+    {
+      "start": 14.88,
+      "end": 18.8,
+      "text": "And then also, practice in pitch deck making.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 18.8,
+      "end": 20.32,
+      "text": "You can make a bunch of pitch decks, and you still",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 14
+    },
+    {
+      "start": 20.32,
+      "end": 22.08,
+      "text": "need to learn how to duck for different industries.",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 22
+    },
+    {
+      "start": 25.2,
+      "end": 26.96,
+      "text": "Then the professional development and training,",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 18
+    },
+    {
+      "start": 26.96,
+      "end": 29.92,
+      "text": "that just kind of goes back to the practicing, and",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 15
+    },
+    {
+      "start": 29.92,
+      "end": 32.16,
+      "text": "making sure that you have educational hours, and",
+      "speaker": "Unknown 9",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 23
+    },
+    {
+      "start": 32.16,
+      "end": 38.88,
+      "text": "you need to scroll, and so basically from there, I'm",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 38.88,
+      "end": 45.42,
+      "text": "going to let Andrew catch up there for a second.",
+      "speaker": "Unknown 10",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 17
+    },
+    {
+      "start": 45.42,
+      "end": 47.1,
+      "text": "Did you say something?",
+      "speaker": "Unknown 11",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 19
+    },
+    {
+      "start": 47.1,
+      "end": 49.1,
+      "text": "Yeah, I said, Andrew, you need to scroll.",
+      "speaker": "Unknown 12",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 16
+    },
+    {
+      "start": 49.1,
+      "end": 55.45,
+      "text": "Oh, yeah, yeah, yeah.",
+      "speaker": "Unknown 13",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 55.45,
+      "end": 58.57,
+      "text": "Yeah, and basically along those lines, it also shows",
+      "speaker": "Unknown 14",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 24
+    },
+    {
+      "start": 58.57,
+      "end": 60.13,
+      "text": "that you're going to have open office hours.",
+      "speaker": "Unknown 15",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 20
+    },
+    {
+      "start": 60.13,
+      "end": 63.33,
+      "text": "I think, technically, there's your Friday night.",
+      "speaker": "Unknown 16",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 63.33,
+      "end": 65.73,
+      "text": "Fridays at 7 p.m., they're on a first",
+      "speaker": "Unknown 17",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 65.73,
+      "end": 68.61,
+      "text": "schedule basis, so it's pretty much an open time",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 68.61,
+      "end": 71.05,
+      "text": "slot for if you have any questions.",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 71.05,
+      "end": 73.93,
+      "text": "Drop us a message, we'll hop on a call, and that's an",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 73.93,
+      "end": 76.89,
+      "text": "extra hour in addition to the regular weekly meetings",
+      "speaker": "Unknown 19",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 26
+    },
+    {
+      "start": 76.89,
+      "end": 80.65,
+      "text": "that we will have, just running small questions.",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 80.65,
+      "end": 84.25,
+      "text": "That's also just an option, emailing works, too.",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 84.25,
+      "end": 85.97,
+      "text": "That's just another option you have.",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 85.97,
+      "end": 88.81,
+      "text": "We try and make it ourselves as open to your",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 88.81,
+      "end": 92.05,
+      "text": "schedule as possible, so whenever you have questions,",
+      "speaker": "Unknown 18",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 92.05,
+      "end": 93.61,
+      "text": "just feel free to message us, and we'll always",
+      "speaker": "Unknown 20",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 27
+    },
+    {
+      "start": 93.61,
+      "end": 95.65,
+      "text": "go back to you, and that's just what we've got.",
+      "speaker": "Unknown 21",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 11
+    },
+    {
+      "start": 95.65,
+      "end": 97.69,
+      "text": "Okay, internal responsibilities, just make sure you",
+      "speaker": "Unknown 22",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 9
+    },
+    {
+      "start": 97.69,
+      "end": 100.93,
+      "text": "meet your objectives or deliverables.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 100.93,
+      "end": 103.61,
+      "text": "If you can't, talk to us about it, we'll figure it out.",
+      "speaker": "Unknown 23",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 13
+    },
+    {
+      "start": 103.61,
+      "end": 106.61,
+      "text": "We went over that a little bit earlier.",
+      "speaker": "Unknown 24",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 12
+    },
+    {
+      "start": 106.61,
+      "end": 108.93,
+      "text": "Don't, you know, log false hours.",
+      "speaker": "Unknown 25",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 10
+    },
+    {
+      "start": 108.93,
+      "end": 112.29,
+      "text": "I mean, usually that's more important in cases",
+      "speaker": "Unknown 26",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 112.29,
+      "end": 115.93,
+      "text": "where you are trying to get paid, and then you",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 115.93,
+      "end": 117.57,
+      "text": "miss report hours, but here it's just more like",
+      "speaker": "Unknown 27",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 117.57,
+      "end": 119.69,
+      "text": "we need to make sure that the work is being done.",
+      "speaker": "Unknown 28",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

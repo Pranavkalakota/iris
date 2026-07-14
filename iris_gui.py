@@ -4504,6 +4504,12 @@ class ChatTab(QWidget):
             return False
         # Positive follow-up shapes — anything that plausibly asks about
         # the content of the last-referenced clip.
+        # --- IRIS video-followup-perceptual: ADD ---
+        # Added perceptual/POV shapes ("what device was I looking at",
+        # "where am I", "what am I seeing", "what's in front of me")
+        # so follow-ups about what the camera captured stay in the video
+        # handler instead of falling through to audio-recording lookup.
+        # --- IRIS video-followup-perceptual: END ---
         followup_cues = (
             "what color", "what colour", "wearing", "shirt", "pants",
             "clothes", "clothing", "hair", "hat", "glasses", "beard",
@@ -4515,6 +4521,15 @@ class ChatTab(QWidget):
             "background", "setting", "objects", "on the wall",
             "on the table", "how did they look", "what do they look",
             "describe", "look like",
+            # perceptual / POV follow-ups
+            "looking at", "look at", "am i looking", "was i looking",
+            "am i seeing", "was i seeing", "do you see", "did you see",
+            "can you see", "what am i", "what was i",
+            "in front of me", "in front of", "in the scene", "in the frame",
+            "what device", "which device", "what is this", "what's this",
+            "whats this", "what is that", "what's that", "whats that",
+            "where am i", "where was i", "where are we",
+            "surroundings", "environment", "room",
         )
         if any(c in low for c in followup_cues):
             return True
@@ -4540,12 +4555,31 @@ class ChatTab(QWidget):
             "last video", "last clip", "most recent video",
             "most recent clip", "newest video", "newest clip"))
 
+    # --- IRIS video-perceptual-cues: ADD ---
+    # Expanded to include perceptual/visual questions that lack an explicit
+    # "video"/"clip"/"footage" noun but clearly want a visual description
+    # of what the camera captured. Fixes cases like "what device was I
+    # looking at", "what am I seeing", "where am I", "what's in front of
+    # me" — these should ALWAYS route to LLaVA scene description when an
+    # active_video is set, instead of degrading to filename-only metadata
+    # that makes the LLM hallucinate from the filename.
     _SCENE_FAST_CUES = (
         "describe", "wearing", "happened", "happening", "doing",
         "activity", "clothing", "objects", "what do you see",
         "what did you see", "what's in", "whats in", "what was in",
         "what were in", "tell me about", "look like",
+        # perceptual / point-of-view cues
+        "looking at", "look at", "am i looking", "was i looking",
+        "am i seeing", "was i seeing", "do you see", "did you see",
+        "can you see", "what am i", "what was i", "what were you",
+        "in front of me", "in front of", "in the scene", "in the frame",
+        "on screen", "on the screen", "what device", "which device",
+        "what is this", "what's this", "whats this", "what is that",
+        "what's that", "whats that", "where am i", "where was i",
+        "where are we", "surroundings", "environment", "room",
+        "background", "setting",
     )
+    # --- IRIS video-perceptual-cues: END ---
     _SCENE_CLASSIFY_MODEL = "llama3.2:1b"
     _SCENE_CLASSIFY_PROMPT = (
         "You classify a single chat message about saved video clips from a "
@@ -5145,7 +5179,7 @@ class ChatTab(QWidget):
         return True
         # --- IRIS llm-first-routing: END ---
     # --- IRIS router-guard: END ---
-   
+
     def _llm_route_intent(self, text: str):
         """Ollama-backed, semantics-first intent router. This is now the
         PRIMARY way _route_command decides which domain (video / audio
@@ -5595,6 +5629,23 @@ class ChatTab(QWidget):
                 vctx = self._videos.describe_recent(limit=8)
             except Exception as e:
                 print(f"[video] describe_recent failed: {e}")
+        # --- IRIS video-default-active-clip: ADD ---
+        # When the fall-through branch (list of clips) is used, remember the
+        # most recent clip as the active reference so perceptual follow-ups
+        # like "what device was I looking at" / "what am I seeing" still
+        # route back into the video handler (which requires _active_video
+        # to be set when the message lacks a video noun). Without this,
+        # after any generic "list my videos" the follow-up perceptual
+        # question lost its anchor and fell through to the audio-recording
+        # classifier — exactly the intermittent behaviour the user hit.
+        if self._videos is not None and self._active_video is None:
+            try:
+                latest = self._videos.latest()
+                if latest is not None:
+                    self._active_video = latest
+            except Exception:
+                pass
+        # --- IRIS video-default-active-clip: END ---
         messages = [{"role": "system", "content": self._system_prompt}]
         if vctx:
             messages.append({"role": "system", "content": vctx})

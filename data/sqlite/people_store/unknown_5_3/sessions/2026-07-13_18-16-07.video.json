@@ -1,0 +1,42 @@
+{
+  "received_at": 1783991767.0,
+  "source": "esp32",
+  "people_count": 1,
+  "people_names": [
+    "Unknown 1"
+  ],
+  "duration_sec": 35.96551724137931,
+  "frames_sampled": 36,
+  "method": "fusion",
+  "note": "36 keyframes over 1043 frames via face recognition",
+  "analyzed_at": 1783991969.455993,
+  "scene_description": "The image shows a person sitting at a desk with a laptop in front of them. The laptop screen displays an open software application with code written on it. There is a cup placed on the side of the desk. Above the laptop, there's a computer monitor showing what appears to be another screen displaying a spreadsheet or some structured data. The room has unfinished wood floor panels and an exposed wooden roof, indicating that the space might be undergoing construction or renovation.",
+  "scene_described_at": 1783997598.5196068,
+  "scene_attributes": {
+    "people": [
+      {
+        "who": "young man",
+        "clothing_top": "white t-shirt",
+        "clothing_bottom": "black jeans",
+        "hair": "short brown",
+        "accessories": [
+          "glasses",
+          "watch"
+        ],
+        "activity": "sitting"
+      }
+    ],
+    "setting": "The room has unfinished wood floor panels and an exposed wooden roof, indicating that the space might be undergoing construction or renovation.",
+    "objects": [
+      "laptop",
+      "cup",
+      "computer monitor"
+    ],
+    "readable_text": [
+      "code",
+      "spreadsheet"
+    ],
+    "notable_colors": []
+  },
+  "scene_attributes_extracted_at": 1783997610.5587273
+}
