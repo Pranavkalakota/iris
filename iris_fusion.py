@@ -238,6 +238,17 @@ _SCENE_PROMPT = (
     "no headers, no bullet points, plain prose only."
 )
 
+# --- IRIS video-relook: ADD ---
+_SCENE_FOLLOWUP_PROMPT_TEMPLATE = (
+    "These images are frames sampled from a short video clip from a "
+    "wearable camera, in time order. Look carefully and answer this "
+    "specific question in 1-3 plain sentences: {question}\n"
+    "Only describe what is actually visible in these frames — if the "
+    "answer isn't visible or you're not sure, say so honestly instead "
+    "of guessing. No preamble, no headers, plain prose only."
+)
+# --- IRIS video-relook: END ---
+
 # ── M6 §6.5: OCR prompt for location inference ───────────────────────────
 # Reads signage / storefront / menu text from a few frames and returns the
 # single most likely VENUE / PLACE name, which location_phase8.resolve_location
@@ -367,6 +378,53 @@ class _LlavaInference:
             return str(text).strip()
         except Exception:
             return ""
+
+    # --- IRIS video-relook: ADD ---
+    def describe_frames_targeted(self, images_bgr: list, question: str) -> str:
+        """Like describe_frames(), but asks LLaVA to answer ONE specific
+        follow-up question about the frames instead of a generic overview."""
+        client = self._ensure_client()
+        if client is None or not images_bgr or not question:
+            return ""
+        try:
+            import cv2, base64
+            imgs_b64 = []
+            for img in images_bgr:
+                ok, buf = cv2.imencode(
+                    ".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                if ok:
+                    imgs_b64.append(base64.b64encode(buf.tobytes())
+                                    .decode("ascii"))
+            if not imgs_b64:
+                return ""
+        except Exception as e:
+            print(f"[llava] targeted image encode failed: {e}")
+            return ""
+        prompt = _SCENE_FOLLOWUP_PROMPT_TEMPLATE.format(question=question)
+        with self._lock:
+            try:
+                resp = client.chat(
+                    model=self.model,
+                    messages=[{
+                        "role": "user",
+                        "content": prompt,
+                        "images": imgs_b64,
+                    }],
+                )
+            except Exception as e:
+                print(f"[llava] targeted inference failed: {e}")
+                return ""
+        try:
+            msg = resp["message"] if isinstance(resp, dict) \
+                else getattr(resp, "message", None)
+            if isinstance(msg, dict):
+                text = msg.get("content", "") or ""
+            else:
+                text = getattr(msg, "content", "") or ""
+            return str(text).strip()
+        except Exception:
+            return ""
+    # --- IRIS video-relook: END ---
 
     def read_signage(self, images_bgr: list) -> str:
         """OCR helper for location inference (§6.5). Send several frames and
@@ -1129,6 +1187,16 @@ class PeopleFusion:
         except Exception as e:
             print(f"[llava] describe_scene failed: {e}")
             return ""
+
+    # --- IRIS video-relook: ADD ---
+    def describe_scene_question(self, frames: list, question: str) -> str:
+        """Re-look at frames and answer ONE specific follow-up question."""
+        try:
+            return self.llava.describe_frames_targeted(frames, question)
+        except Exception as e:
+            print(f"[llava] describe_scene_question failed: {e}")
+            return ""
+    # --- IRIS video-relook: END ---
 
     # ── M6 §6.5: OCR signage → location name (used by location_phase8) ───
     def read_signage(self, frames: list) -> str:

@@ -1,0 +1,337 @@
+{
+  "audio_file": "live_2026-07-14_12-36-17.wav",
+  "model": "medium.en",
+  "duration_seconds": 1409.88725,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 179.57917523384094,
+  "realtime_factor": 0.12737130237459834,
+  "segments": [
+    {
+      "start": 5.71,
+      "end": 33.09,
+      "text": "I think I got an email from Hamza in regards to a grocery list open email",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.648,
+      "speaker_kind": "weak",
+      "_cluster": 3
+    },
+    {
+      "start": 33.09,
+      "end": 82.23,
+      "text": "could you see if Hamza emailed me about Netflix could you also see if",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.648,
+      "speaker_kind": "weak",
+      "_cluster": 3
+    },
+    {
+      "start": 82.23,
+      "end": 198.44,
+      "text": "there is a email from Hamza in regards to family reunion is there",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 198.44,
+      "end": 1184.34,
+      "text": "either email from Hamza in regards to a family reunion oh how's young now",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 1184.34,
+      "end": 1188.18,
+      "text": "you're fine bro I don't I don't care what way of communication that we use",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1188.18,
+      "end": 1194.3,
+      "text": "communications communication at the end of the day yeah doesn't look too bad I",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1194.3,
+      "end": 1198.26,
+      "text": "kind of just want to and this is what we'll start doing at 4 p.m. is",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1198.26,
+      "end": 1204.32,
+      "text": "what kind of I probably need it I don't even know how we manage like",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1204.32,
+      "end": 1208.48,
+      "text": "whatever but I don't understand any of this",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1216.56,
+      "end": 1222.4,
+      "text": "time request per like minute right but then it goes up the error 429 like",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1222.4,
+      "end": 1225.04,
+      "text": "whenever we you know exceed that limit like if we try to exceed the time",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 1225.04,
+      "end": 1228.52,
+      "text": "request per minute or stuff like that right so like let's say I'm like",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1228.52,
+      "end": 1232.0,
+      "text": "recording the stuff right it automatically go to a local ollama stuff",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1232.0,
+      "end": 1235.42,
+      "text": "but then like if you ask me like what's in my email can you list all the",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1235.42,
+      "end": 1239.88,
+      "text": "emails that would consume what is it like two requests because they have",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1239.88,
+      "end": 1256.82,
+      "text": "one can't solve it yeah so we have a lot of too many requests and services",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 1264.26,
+      "end": 1268.14,
+      "text": "well if for the demo I want the demo to go as smooth as possible kind of what I",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1268.14,
+      "end": 1272.78,
+      "text": "want to do here is I want to have because if you look in there if you",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1272.78,
+      "end": 1276.78,
+      "text": "look in the inbox here we've got these are a demo like this okay how",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1276.78,
+      "end": 1282.9,
+      "text": "would I ask a question if I were a human sitting with my AI bot and it's",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1282.9,
+      "end": 1285.82,
+      "text": "like going through like how would I want it to respond like how would I",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1286.82,
+      "end": 1292.66,
+      "text": "I just tested it and I was able to answer it fine but like I'm not sure like when I change the",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1292.66,
+      "end": 1295.82,
+      "text": "card provider to like auto like it should like go to like the first one",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1295.82,
+      "end": 1299.1,
+      "text": "that's available but I think there's like a you know a small bug in that",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 1299.1,
+      "end": 1301.62,
+      "text": "button like it's not automatically switching to like the most you know",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 1301.62,
+      "end": 1306.46,
+      "text": "open one so we have to like manually change it's like Google like Azure or",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 1306.46,
+      "end": 1309.88,
+      "text": "something I haven't tested with multiple cloud providers like let's say the",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 1310.88,
+      "end": 1329.49,
+      "text": "yeah I don't think it would matter let's just try to make like these scripted",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 1329.49,
+      "end": 1335.37,
+      "text": "sessions where we have one two three four four scripted like this right did",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1335.37,
+      "end": 1340.69,
+      "text": "we fix the video by chance like if I take a video and I able to ask",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1340.69,
+      "end": 1344.93,
+      "text": "questions about it like my environment",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 1370.69,
+      "end": 1374.93,
+      "text": "it's stored locally right onto the computer so we can just select it oh",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 1374.93,
+      "end": 1382.65,
+      "text": "yeah yeah that's how I should I mean in terms of audio files and you know",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 1382.65,
+      "end": 1386.13,
+      "text": "like asking questions like with any email that should work fine now it's",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 1386.13,
+      "end": 1394.41,
+      "text": "recording yeah so we got me a photo we'll get a flag in the photo the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.648,
+      "speaker_kind": "weak",
+      "_cluster": 3
+    },
+    {
+      "start": 1394.41,
+      "end": 1411.56,
+      "text": "screen yeah like it's like oh you're wearing a white shirt exactly",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,36 @@
+[00:05.71 -> 00:33.09]  I think I got an email from Hamza in regards to a grocery list open email
+[00:33.09 -> 01:22.23]  could you see if Hamza emailed me about Netflix could you also see if
+[01:22.23 -> 03:18.44]  there is a email from Hamza in regards to family reunion is there
+[03:18.44 -> 19:44.34]  either email from Hamza in regards to a family reunion oh how's young now
+[19:44.34 -> 19:48.18]  you're fine bro I don't I don't care what way of communication that we use
+[19:48.18 -> 19:54.30]  communications communication at the end of the day yeah doesn't look too bad I
+[19:54.30 -> 19:58.26]  kind of just want to and this is what we'll start doing at 4 p.m. is
+[19:58.26 -> 20:04.32]  what kind of I probably need it I don't even know how we manage like
+[20:04.32 -> 20:08.48]  whatever but I don't understand any of this
+[20:16.56 -> 20:22.40]  time request per like minute right but then it goes up the error 429 like
+[20:22.40 -> 20:25.04]  whenever we you know exceed that limit like if we try to exceed the time
+[20:25.04 -> 20:28.52]  request per minute or stuff like that right so like let's say I'm like
+[20:28.52 -> 20:32.00]  recording the stuff right it automatically go to a local ollama stuff
+[20:32.00 -> 20:35.42]  but then like if you ask me like what's in my email can you list all the
+[20:35.42 -> 20:39.88]  emails that would consume what is it like two requests because they have
+[20:39.88 -> 20:56.82]  one can't solve it yeah so we have a lot of too many requests and services
+[21:04.26 -> 21:08.14]  well if for the demo I want the demo to go as smooth as possible kind of what I
+[21:08.14 -> 21:12.78]  want to do here is I want to have because if you look in there if you
+[21:12.78 -> 21:16.78]  look in the inbox here we've got these are a demo like this okay how
+[21:16.78 -> 21:22.90]  would I ask a question if I were a human sitting with my AI bot and it's
+[21:22.90 -> 21:25.82]  like going through like how would I want it to respond like how would I
+[21:26.82 -> 21:32.66]  I just tested it and I was able to answer it fine but like I'm not sure like when I change the
+[21:32.66 -> 21:35.82]  card provider to like auto like it should like go to like the first one
+[21:35.82 -> 21:39.10]  that's available but I think there's like a you know a small bug in that
+[21:39.10 -> 21:41.62]  button like it's not automatically switching to like the most you know
+[21:41.62 -> 21:46.46]  open one so we have to like manually change it's like Google like Azure or
+[21:46.46 -> 21:49.88]  something I haven't tested with multiple cloud providers like let's say the
+[21:50.88 -> 22:09.49]  yeah I don't think it would matter let's just try to make like these scripted
+[22:09.49 -> 22:15.37]  sessions where we have one two three four four scripted like this right did
+[22:15.37 -> 22:20.69]  we fix the video by chance like if I take a video and I able to ask
+[22:20.69 -> 22:24.93]  questions about it like my environment
+[22:50.69 -> 22:54.93]  it's stored locally right onto the computer so we can just select it oh
+[22:54.93 -> 23:02.65]  yeah yeah that's how I should I mean in terms of audio files and you know
+[23:02.65 -> 23:06.13]  like asking questions like with any email that should work fine now it's
+[23:06.13 -> 23:14.41]  recording yeah so we got me a photo we'll get a flag in the photo the
+[23:14.41 -> 23:31.56]  screen yeah like it's like oh you're wearing a white shirt exactly

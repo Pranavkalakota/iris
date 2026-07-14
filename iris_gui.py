@@ -1863,6 +1863,9 @@ class ChatTab(QWidget):
         # "what color shirt was he wearing" work without re-saying "video".
         # Mirrors the _active (audio recording) and _active_photo patterns.
         self._active_video: Optional[object] = None
+        # --- IRIS video-relook: ADD ---
+        self._video_scene_answered_for: Optional[str] = None
+        # --- IRIS video-relook: END ---
         # The currently-selected photo (clicked in the Photos tab, or
         # resolved by a chat query) — lets follow-ups reference "this photo".
         self._active_photo: Optional[object] = None
@@ -3047,6 +3050,29 @@ class ChatTab(QWidget):
             self._handle_action_intent(act_intent)
             return
 
+        # --- IRIS video-followup-priority: ADD ---
+        # A question ABOUT a saved video clip ("how many people were in the
+        # video?", "who was in that clip?"), OR a follow-up that omits the
+        # word 'video'/'clip'/'footage' but a video clip is already the
+        # active reference ("what color shirt was he wearing", "what was
+        # he holding"). This MUST run before the LLM router below: the
+        # router classifies each message in isolation with no idea an
+        # _active_video conversation is underway, so a bare follow-up like
+        # "what was he holding" gets guessed into 'memory' or 'chat' and
+        # dispatched (router returns True/False -> early return) before
+        # this check ever ran. That produced the exact bug where follow-up
+        # video questions got a generic "no memory records" reply instead
+        # of continuing the video conversation.
+        if self._videos is not None and self._is_video_question(low):
+            self._start_bg(lambda: self._answer_video_question(text))
+            return
+        if (self._videos is not None
+                and self._active_video is not None
+                and self._is_video_followup(low)):
+            self._start_bg(lambda: self._answer_video_question(text))
+            return
+        # --- IRIS video-followup-priority: END ---
+
         # --- IRIS llm-first-routing: ADD ---
         # Everything past this point is a LOOKUP question, not an
         # action — let the LLM router (llama3.2:3b) decide the domain
@@ -3086,25 +3112,6 @@ class ChatTab(QWidget):
         # through to the memory-recall classifier below.
         if self._is_location_question(low):
             self._start_bg(lambda: self._answer_location_question(text))
-            return
-        # A question ABOUT a saved video clip ("how many people were in the
-        # video?", "who was in that clip?"). Intercept it here so it always
-        # gets the real clip data — otherwise phrasings like "who was in the
-        # video" get swallowed by the memory recall classifier below and the
-        # video data is never consulted.
-        if self._videos is not None and self._is_video_question(low):
-            self._start_bg(lambda: self._answer_video_question(text))
-            return
-        # Follow-up path: if a video clip is already the active reference
-        # (the user just asked about it) and this message is a question
-        # that doesn't clearly belong to another domain, keep it in the
-        # video handler. Fixes "what color shirt was he wearing" landing
-        # on the audio-recording flow just because it lacks the word
-        # 'video'.
-        if (self._videos is not None
-                and self._active_video is not None
-                and self._is_video_followup(low)):
-            self._start_bg(lambda: self._answer_video_question(text))
             return
         # M7: memory recall takes priority. "Conversations with Pranav"
         # should route to ChromaDB, not to a fuzzy WAV-name match.
@@ -4539,6 +4546,31 @@ class ChatTab(QWidget):
                 return True
         return False
 
+    # --- IRIS video-relook: ADD ---
+    @staticmethod
+    def _is_video_relook_request(low: str) -> bool:
+        cues = (
+            "look again", "check again", "look closer", "closer look",
+            "another look", "look more closely", "re-check", "recheck",
+            "look once more", "one more time", "zoom in", "take another look",
+            "look one more time",
+        )
+        return any(c in low for c in cues)
+
+    @staticmethod
+    def _video_segment_frac_range(low: str) -> tuple:
+        if any(w in low for w in ("beginning", "start of", "very start",
+                                  "opening")):
+            return (0.0, 0.35)
+        if any(w in low for w in ("middle", "midway", "halfway",
+                                  "mid-video", "mid video")):
+            return (0.35, 0.65)
+        if any(w in low for w in ("end of", "ending", "near the end",
+                                  "later in", "last part", "final part")):
+            return (0.65, 1.0)
+        return (0.0, 1.0)
+    # --- IRIS video-relook: END ---
+
     @staticmethod
     def _is_latest_video_question(low: str) -> bool:
         """True when the user wants specifically the single most recent clip
@@ -5565,20 +5597,50 @@ class ChatTab(QWidget):
                             "people, but keep the narrative detail from the "
                             "description when summarizing):\n" + attr_block
                             ) if attr_block else ""
+            # --- IRIS video-relook: ADD ---
+            # Follow-up on the SAME clip, or an explicit "look again" /
+            # segment request -> the cached paragraph is a fixed snapshot
+            # that won't grow new detail no matter how it's reworded.
+            # Run one fresh, targeted LLaVA pass answering THIS question.
+            is_followup_relook = (
+                self._video_scene_answered_for == clip.path
+                or self._is_video_relook_request(low))
+            relook_section = ""
+            if is_followup_relook:
+                frac_range = self._video_segment_frac_range(low)
+                try:
+                    relook = self._videos.answer_visual_question(
+                        clip.path, text, frame_count=6,
+                        frac_range=frac_range)
+                except Exception as e:
+                    print(f"[video] answer_visual_question failed: {e}")
+                    relook = ""
+                if relook:
+                    relook_section = (
+                        "\n\nFRESH RE-LOOK at the clip for THIS specific "
+                        f"question ({text!r}): {relook}\nThis fresh "
+                        "re-look is your primary source for this "
+                        "question — prefer it over the general "
+                        "description above if they conflict, since it "
+                        "was generated specifically to answer this "
+                        "follow-up.")
+            self._video_scene_answered_for = clip.path
+            # --- IRIS video-relook: END ---
             vctx = (
                 f"Visual description of the video clip {clip.name} "
                 f"(recorded {clip.when()}, length {clip.length()}), "
                 f"generated by looking at several frames spread across "
                 f"the clip:\n{description}"
-                f"{attr_section}\n\n"
+                f"{attr_section}"
+                f"{relook_section}\n\n"
                 "The description above is your primary source — preserve "
                 "its full detail when summarizing what's in the video. "
                 "The quick-reference facts (if any) are a shortcut for "
                 "specific questions like 'what color shirt' or 'who was "
-                "there'. Answer only from what these two sources say; do "
-                "not invent details. If the user asks about something "
-                "neither mentions, say so honestly rather than retracting "
-                "or contradicting any earlier answer.")
+                "there'. Answer only from what these sources say; do "
+                "not invent details. If none of them mention what's "
+                "asked, say so honestly rather than retracting or "
+                "contradicting any earlier answer.")
             messages = [{"role": "system", "content": self._system_prompt},
                         {"role": "system", "content": vctx}]
             messages.extend(self.history)

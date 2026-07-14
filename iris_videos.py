@@ -297,6 +297,37 @@ class VideoStore:
             record_scene_description(path, description)
         return description
 
+    # --- IRIS video-relook: ADD ---
+    def answer_visual_question(self, path: str, question: str,
+                               frame_count: int = 4,
+                               frac_range: tuple = (0.0, 1.0)) -> str:
+        """Fresh, uncached, targeted re-look for one specific follow-up
+        question — e.g. 'what was he holding', or a specific segment of
+        the clip via frac_range. Returns '' if unavailable; callers should
+        fall back to the cached description rather than treat that as
+        'nothing visible'."""
+        fusion = None
+        if self._fusion_getter is not None:
+            try:
+                fusion = self._fusion_getter()
+            except Exception:
+                fusion = None
+        if fusion is None or not hasattr(fusion, "describe_scene_question"):
+            print(f"[video] answer_visual_question(): fusion/LLaVA not "
+                  f"available for {os.path.basename(path)}")
+            return ""
+        frames = _sample_frames_spread(path, frame_count, frac_range)
+        if not frames:
+            print(f"[video] answer_visual_question(): no readable frames "
+                  f"sampled from {os.path.basename(path)}")
+            return ""
+        try:
+            return fusion.describe_scene_question(frames, question)
+        except Exception as e:
+            print(f"[video] describe_scene_question call failed: {e}")
+            return ""
+    # --- IRIS video-relook: END ---
+
     # ── context for the chat LLM ────────────────────────────────────────
     def describe_recent(self, limit: int = 5, analyze_missing: bool = True,
                         analyze_budget: int = 2) -> str:
@@ -435,7 +466,8 @@ def _open_capture(path):
     frame_step = max(1, int(fps))              # ~1 keyframe / second
     return cap, fps, frame_step
 
-def _sample_frames_spread(path: str, count: int = 4) -> list:
+def _sample_frames_spread(path: str, count: int = 4,
+                           frac_range: tuple = (0.0, 1.0)) -> list:
     """Grab `count` frames evenly spread across the clip (e.g. at ~12%,
     37%, 62%, 87% of total length) rather than bunched at the start.
 
@@ -468,8 +500,15 @@ def _sample_frames_spread(path: str, count: int = 4) -> list:
         return []
 
     n = len(all_frames)
-    count = max(1, min(count, n))
-    targets = [int(n * (i + 1) / (count + 1)) for i in range(count)]
+    lo_frac, hi_frac = frac_range
+    lo = max(0, int(n * lo_frac))
+    hi = min(n - 1, max(lo, int(n * hi_frac)))
+    span = hi - lo
+    count = max(1, min(count, span + 1))
+    if count == 1:
+        targets = [lo + span // 2]
+    else:
+        targets = [lo + int(span * (i + 1) / (count + 1)) for i in range(count)]
     return [all_frames[min(t, n - 1)] for t in targets]
 def _analyze_with_fusion(path: str, fusion, received_at: float) -> VideoClip:
     import cv2
