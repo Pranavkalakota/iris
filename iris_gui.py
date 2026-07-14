@@ -1904,6 +1904,24 @@ class ChatTab(QWidget):
         wl.addWidget(self._sidebar_handle)
         return wrap
 
+    def _layout_sidebar_top_row(self, opening: bool) -> None:
+        """Rearranges the gear + hamburger row rather than just toggling
+        stretch factors — open state pins gear to the far left and the
+        hamburger to the far right (like Claude); collapsed state groups
+        them as a tight, centered pair that fits the slim rail."""
+        row = self._sidebar_top_row
+        while row.count():
+            row.takeAt(0)   # detach items only — widgets aren't deleted
+        if opening:
+            row.addWidget(self._settings_btn)
+            row.addStretch(1)
+            row.addWidget(self._sidebar_toggle_btn)
+        else:
+            row.addStretch(1)
+            row.addWidget(self._settings_btn)
+            row.addWidget(self._sidebar_toggle_btn)
+            row.addStretch(1)
+
     def _toggle_sidebar(self) -> None:
         """Slide the session drawer between full width and a slim icon
         rail — toggle button + avatar only stay visible, like Claude's
@@ -1918,12 +1936,20 @@ class ChatTab(QWidget):
         target_w = getattr(self, "_sidebar_width", 236) if opening else collapsed_w
 
         sb.setMinimumWidth(0)          # unlock so the animation can move it
+        panel_lay = sb.layout()
+        if panel_lay is not None:
+            panel_lay.setContentsMargins(14 if opening else 5, 16,
+                                         14 if opening else 5, 16)
+        self._layout_sidebar_top_row(opening)
         handle = getattr(self, "_sidebar_handle", None)
         if handle is not None:
             handle.setVisible(opening)
         for w in (self._sidebar_new_btn, self._sidebar_search,
-                  self._sidebar_scroll):
+                  self._sidebar_holder):
             w.setVisible(opening)
+        self._sidebar_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded if opening
+            else Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._profile_name_lbl.setVisible(opening)
         self._profile_sub_lbl.setVisible(opening)
         anim = QPropertyAnimation(sb, b"maximumWidth", self)
@@ -1996,31 +2022,32 @@ class ChatTab(QWidget):
         lay.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         top_row = QHBoxLayout()
         top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(4)
         self._settings_btn = QPushButton("\u2699")
         self._settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._settings_btn.setFixedSize(28, 26)
+        self._settings_btn.setFixedSize(24, 24)
         self._settings_btn.setToolTip("Settings")
         self._settings_btn.setStyleSheet(
             "QPushButton {"
             f"color:{TEXT_MUTED}; background: transparent;"
-            "border:none; border-radius:7px; font-size:13px; }"
+            "border:none; border-radius:6px; font-size:12px; }"
             "QPushButton:hover { background: rgba(255,255,255,0.10);"
             f" color:{TEXT_PRIMARY}; }}")
         self._settings_btn.clicked.connect(self._open_settings)
         top_row.addWidget(self._settings_btn)
-        top_row.addStretch(1)
         self._sidebar_toggle_btn = QPushButton("\u2630")
         self._sidebar_toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._sidebar_toggle_btn.setFixedSize(28, 26)
+        self._sidebar_toggle_btn.setFixedSize(24, 24)
         self._sidebar_toggle_btn.setToolTip("Hide sessions")
         self._sidebar_toggle_btn.setStyleSheet(
             "QPushButton {"
             f"color:{TEXT_MUTED}; background: transparent;"
-            "border:none; border-radius:7px; font-size:13px; }"
+            "border:none; border-radius:6px; font-size:12px; }"
             "QPushButton:hover { background: rgba(255,255,255,0.10);"
             f" color:{TEXT_PRIMARY}; }}")
         self._sidebar_toggle_btn.clicked.connect(self._toggle_sidebar)
-        top_row.addWidget(self._sidebar_toggle_btn)
+        self._sidebar_top_row = top_row
+        self._layout_sidebar_top_row(opening=True)   # starts open
         lay.addLayout(top_row)
         lay.addSpacing(6)
         new_btn = QPushButton("+  New Session")
@@ -2069,6 +2096,8 @@ class ChatTab(QWidget):
         self._sidebar_lay.setSpacing(0)
         self._sidebar_lay.addStretch(1)
         scroll.setWidget(self._sidebar_holder)
+        scroll.setSizePolicy(QSizePolicy.Policy.Expanding,
+                            QSizePolicy.Policy.Expanding)
         self._sidebar_scroll = scroll
         lay.addWidget(scroll, 1)
         lay.addWidget(self._build_profile_bar())
@@ -2081,16 +2110,21 @@ class ChatTab(QWidget):
         the People-DB self-profile used for face/voice recognition."""
         self._app_profile = _load_app_profile()
         row = _SessionRow(on_click=self._open_app_profile)
+        row.setFixedHeight(48)   # its own content height, so leftover space
+                                # goes to the scroll area above it instead
         row.setStyleSheet(
             "QFrame#srow { background: transparent;"
             f" border-top: 1px solid {GLASS_BORDER_SOFT}; }}"
             "QFrame#srow:hover { background: rgba(255,255,255,0.06); }")
         rlay = QHBoxLayout(row)
-        rlay.setContentsMargins(6, 10, 6, 2)
+        rlay.setContentsMargins(6, 8, 6, 8)
         rlay.setSpacing(10)
         self._profile_avatar_slot = QHBoxLayout()
         self._profile_avatar_slot.setContentsMargins(0, 0, 0, 0)
         rlay.addLayout(self._profile_avatar_slot)
+        rlay.setAlignment(self._profile_avatar_slot,
+                          Qt.AlignmentFlag.AlignLeft
+                          | Qt.AlignmentFlag.AlignVCenter)
         col = QVBoxLayout()
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(1)
@@ -11073,12 +11107,41 @@ class IrisApp(QWidget):
             return
         is_chat = (idx == 0)
         bl.setContentsMargins(4 if is_chat else 14, 0, 14, 14)
-        try:
-            sc = getattr(getattr(self, "chat", None), "sidebar_container", None)
-            if sc is not None:
-                sc.setVisible(is_chat)
-        except Exception:
-            pass
+        chat = getattr(self, "chat", None)
+        sc = getattr(chat, "sidebar_container", None)
+        if sc is not None:
+            sc.setVisible(is_chat)
+        # The left rail always keeps its window-control dots (close/min/
+        # max live only here now, not in the titlebar). On the Chat tab it
+        # has NO width constraint of its own — it just naturally follows
+        # whatever width sidebar_container currently is, which is already
+        # correctly driven by ChatTab._toggle_sidebar's own open/collapse
+        # animation. Locking the rail to a *separate* fixed width here (as
+        # before) fought that animation and caused the "collapses in the
+        # middle, box stays put" bug. Only on non-chat tabs do we force it
+        # down to a slim width, since sidebar_container is fully hidden
+        # there and nothing else would shrink the rail on its own.
+        rail = getattr(self, "_left_rail", None)
+        dots = getattr(self, "_dots_overlay", None)
+        if rail is not None:
+            if is_chat:
+                rail.setMinimumWidth(0)
+                rail.setMaximumWidth(16777215)  # Qt's "no cap" sentinel
+                rail.setStyleSheet(
+                    "QWidget#leftRail { background:#000000;"
+                    " border-top-left-radius:18px;"
+                    " border-bottom-left-radius:18px; }")
+                if dots is not None:
+                    dots.setVisible(False)
+            else:
+                # Zero width — the rail reserves no layout space at all
+                # here; the floating overlay dots take over instead, sitting
+                # on top of the tab content rather than pushing it over.
+                rail.setMinimumWidth(0)
+                rail.setMaximumWidth(0)
+                if dots is not None:
+                    dots.setVisible(True)
+                    dots.raise_()
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
@@ -11110,8 +11173,25 @@ class IrisApp(QWidget):
         _tll.addWidget(self._win_dot("#28c840", self._toggle_max))
         _tll.addStretch(1)
         _leftlay.addWidget(_tlrow)
+        _leftlay.setAlignment(_tlrow, Qt.AlignmentFlag.AlignTop)
         self._left_rail_slot = _leftlay
         outer.addWidget(self._left_rail)
+        # Floating window-control dots for every non-Chat tab. These live
+        # directly on `self` — NOT inside any layout — so they float on
+        # top of the tab content with zero reserved width/padding, always
+        # pinned to the window's true top-left corner. _on_tab_changed
+        # swaps between this and the rail's own dots (never both at once).
+        self._dots_overlay = QWidget(self)
+        self._dots_overlay.setStyleSheet("background: transparent;")
+        _ol = QHBoxLayout(self._dots_overlay)
+        _ol.setContentsMargins(16, 12, 0, 0)
+        _ol.setSpacing(8)
+        _ol.addWidget(self._win_dot("#ff5f57", self.close))
+        _ol.addWidget(self._win_dot("#febc2e", self.showMinimized))
+        _ol.addWidget(self._win_dot("#28c840", self._toggle_max))
+        self._dots_overlay.adjustSize()
+        self._dots_overlay.move(0, 0)
+        self._dots_overlay.setVisible(False)   # chat tab uses the rail's own
         # Right column: title strip + tabs + tab content.
         _rightw = QWidget(self)
         _rightw.setStyleSheet("background: transparent;")
@@ -11232,6 +11312,7 @@ class IrisApp(QWidget):
         self.tabbar.changed.connect(self.stack.setCurrentIndex)
         self.tabbar.changed.connect(self._on_tab_changed)
         self.stack.setCurrentIndex(0)
+        self._on_tab_changed(0)   # chat is the default tab — lock rail width now
         # Bottom-right resize grip (frameless windows lose native resizing)
         self._grip = QSizeGrip(self)
         self._grip.setFixedSize(18, 18)
