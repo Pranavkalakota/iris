@@ -4706,64 +4706,31 @@ class ChatTab(QWidget):
     @staticmethod
     def _is_video_followup(low: str) -> bool:
         """True for a follow-up question about a video that omits the
-        word 'video'/'clip'/'footage'. Only used when self._active_video
-        is already set. Deliberately rejects messages that clearly belong
-        to another domain (audio recording, photo, memory recall) so a
-        stale active_video reference never hijacks unrelated chat.
+        word 'video'/'clip'/'footage'. Only called when self._active_video
+        is already set (an active video conversation is underway).
 
-        Positive cues: question-shaped or descriptive phrasing about
-        content — 'what color X', 'who was that', 'what was he doing',
-        'what did they look like', short pronoun questions.
+        Deliberately NOT a cue-phrase whitelist anymore: real phrasings
+        ('what was he holding', 'can you tell me the color of the canned
+        beverage') kept slipping past a hardcoded list because they didn't
+        contain one of the exact phrases on it, silently handing the
+        message to the context-blind LLM router instead. A fixed phrase
+        list can't keep up with natural language, so this now defaults to
+        YES whenever a video is the active topic, and only says NO when
+        the message clearly names a different domain.
         """
         low = low.strip()
         if not low:
             return False
-        # Reject if the message clearly belongs to another domain.
         other_domain = (
             "recording", "transcript", "audio", "conversation",
             "photo", "picture", "screenshot", "pic ",
-            "song", "playlist",
+            "song", "playlist", "email", "inbox", "message",
+            "calendar", "reminder", "appointment",
+            "weather", "location", "where am i currently",
         )
         if any(w in low for w in other_domain):
             return False
-        # Positive follow-up shapes — anything that plausibly asks about
-        # the content of the last-referenced clip.
-        # --- IRIS video-followup-perceptual: ADD ---
-        # Added perceptual/POV shapes ("what device was I looking at",
-        # "where am I", "what am I seeing", "what's in front of me")
-        # so follow-ups about what the camera captured stay in the video
-        # handler instead of falling through to audio-recording lookup.
-        # --- IRIS video-followup-perceptual: END ---
-        followup_cues = (
-            "what color", "what colour", "wearing", "shirt", "pants",
-            "clothes", "clothing", "hair", "hat", "glasses", "beard",
-            "what were they", "what was he", "what was she", "what were",
-            "who was", "who is that", "who's that", "whos that",
-            "what did", "what happened", "what's happening",
-            "whats happening", "what is happening",
-            "what's going on", "whats going on",
-            "background", "setting", "objects", "on the wall",
-            "on the table", "how did they look", "what do they look",
-            "describe", "look like",
-            # perceptual / POV follow-ups
-            "looking at", "look at", "am i looking", "was i looking",
-            "am i seeing", "was i seeing", "do you see", "did you see",
-            "can you see", "what am i", "what was i",
-            "in front of me", "in front of", "in the scene", "in the frame",
-            "what device", "which device", "what is this", "what's this",
-            "whats this", "what is that", "what's that", "whats that",
-            "where am i", "where was i", "where are we",
-            "surroundings", "environment", "room",
-        )
-        if any(c in low for c in followup_cues):
-            return True
-        # Short pronoun-shaped follow-ups: "what about him?", "and her?".
-        if low.endswith("?") and len(low.split()) <= 6:
-            pronouns = (" he ", " him ", " his ", " she ", " her ",
-                        " they ", " them ", " it ")
-            if any(p in f" {low} " for p in pronouns):
-                return True
-        return False
+        return True
 
     # --- IRIS video-relook: ADD ---
     @staticmethod
@@ -5888,6 +5855,10 @@ class ChatTab(QWidget):
             is_followup_relook = (
                 self._video_scene_answered_for == clip.path
                 or self._is_video_relook_request(low))
+            print(f"[video-relook-debug] question={text!r} "
+                  f"clip={clip.path!r} "
+                  f"video_scene_answered_for={self._video_scene_answered_for!r} "
+                  f"is_followup_relook={is_followup_relook}")
             relook_section = ""
             if is_followup_relook:
                 frac_range = self._video_segment_frac_range(low)
@@ -5899,6 +5870,7 @@ class ChatTab(QWidget):
                 except Exception as e:
                     print(f"[video] answer_visual_question failed: {e}")
                     relook = ""
+                print(f"[video-relook-debug] relook_result={relook!r}")
                 if relook:
                     relook_section = (
                         "\n\nFRESH RE-LOOK at the clip for THIS specific "
