@@ -1,0 +1,18 @@
+{
+  "ingested_at": 1784943827.5139573,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\live_2026-07-24_18-42-20.wav",
+  "clusters_total": 1,
+  "clusters_matched": 1,
+  "clusters_enrolled": 0,
+  "people": [
+    {
+      "person_id": 71,
+      "name": "Humza",
+      "similarity": 0.791,
+      "cluster_id": 2,
+      "diarizer_kind": "weak",
+      "new": false,
+      "reinforced": true
+    }
+  ]
+}

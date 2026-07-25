@@ -4377,7 +4377,10 @@ class ChatTab(QWidget):
             self._do_action_start_audio(app)
             return
         if kind == "action_open_email":
-            self._do_action_open_email()
+            low_ct = (getattr(intent, "corrected_text", "") or "").lower()
+            force_new = "new" in low_ct and any(
+                w in low_ct for w in ("gmail", "email", "inbox", "tab"))
+            self._do_action_open_email(force_new=force_new)
             return
         # Unknown action — fall back to a generic note.
         self._append_iris("I'm not sure what action you wanted me to take.")
@@ -4393,16 +4396,90 @@ class ChatTab(QWidget):
             w = w.parent()
         return None
 
-    def _do_action_open_email(self) -> None:
-        """Launch the default webmail in the system browser. No tab
-        switch needed — this doesn't live inside IRIS's own UI."""
-        import webbrowser
-        try:
+    def _do_action_open_email(self, force_new: bool = False) -> None:
+        """Open Gmail, reusing an existing tab if IRIS already has one
+        open (idempotent open, v3 §7) instead of spawning a new one every
+        time. Uses Chrome's own remote-debugging JSON API to check/focus
+        tabs by URL -- window-title matching can't see a background tab,
+        and there's no way to ask an OS-default browser to reuse a tab at
+        all. IRIS keeps its own dedicated Chrome profile (separate from
+        your everyday Chrome) so the debug port is always available and
+        this never touches your regular browsing session."""
+        import json, urllib.request, webbrowser 
+        DEBUG_PORT = 9222
+
+        # Bypass any system proxy for this call -- urllib respects
+        # HTTP_PROXY/HTTPS_PROXY env vars by default even for 127.0.0.1,
+        # which is a common reason "works in the browser, fails from
+        # Python" for localhost debug ports like this one.
+        _no_proxy_opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}))
+
+        def _debug_json(path: str, method: str = "GET",
+                        timeout: float = 1.5):
+            try:
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{DEBUG_PORT}{path}", method=method)
+                with _no_proxy_opener.open(req, timeout=timeout) as r:
+                    body = r.read()
+                return json.loads(body) if body else True
+            except Exception as e:
+                print(f"[gmail-open] debug port call failed ({path!r}): {e}")
+                return None
+
+        tabs = _debug_json("/json")
+        if tabs is None:
+            # Debug port not reachable -- Chrome either isn't running yet
+            # or wasn't launched via the "firm" shortcut with the debug
+            # flag. No reuse possible this time; just open a plain tab.
+            try:
+                webbrowser.open("https://mail.google.com")
+                self._append_iris(
+                    "Opening your email. (Tab reuse needs Chrome started "
+                    "from the shortcut with the debug flag on.)")
+            except Exception:
+                self._append_iris(
+                    "I couldn't open email — try launching it manually.")
+            return
+
+        # Diagnostic: show exactly what Chrome reports so a match miss is
+        # visible in the console instead of a silent guess.
+        print(f"[gmail-open] {len(tabs)} tab(s) reported:")
+        for t in tabs:
+            if t.get("type") == "page":
+                print(f"[gmail-open]   url={t.get('url')!r} "
+                      f"title={t.get('title')!r}")
+
+        # Reuse: your own signed-in Chrome already has a Gmail tab open
+        # -> focus it instead of opening a new one. Matches on URL OR
+        # title, since Gmail's redirect chain (accounts.google.com ->
+        # mail.google.com/mail/u/0/#inbox) can leave the reported URL
+        # momentarily inconsistent right after the tab first opens. A
+        # closed tab (stale handle) just won't be in this list, so it
+        # falls through below.
+        if not force_new:
+            target = next((t for t in tabs
+                           if t.get("type") == "page"
+                           and ("mail.google.com" in t.get("url", "")
+                                or "gmail" in t.get("title", "").lower())),
+                          None)
+            if target is not None:
+                print(f"[gmail-open] reusing tab id={target.get('id')}")
+                _debug_json(f"/json/activate/{target['id']}")
+                self._append_iris("Back to your Gmail tab.")
+                return
+            else:
+                print("[gmail-open] no existing Gmail tab found, opening new")
+
+        # No existing tab (or an explicit "open a new" was asked for) --
+        # open one directly inside your already-running, already-signed
+        # -in Chrome via the debug port. No new window, no new process.
+        if _debug_json("/json/new?https://mail.google.com",
+                       method="PUT") is not None:
+            self._append_iris("Opening your email.")
+        else:
             webbrowser.open("https://mail.google.com")
             self._append_iris("Opening your email.")
-        except Exception as e:
-            print(f"[chat-action] email launch failed: {e}")
-            self._append_iris("I couldn't open email — try launching it manually.")
 
     def _do_action_start_video(self, app) -> None:
         stream = getattr(app, "stream", None)
@@ -9341,6 +9418,16 @@ class AudioTab(QWidget):
                     self.location_tab.set_location(loc)
             else:
                 self.dot_location.set(on=False, text="Location: unavailable")
+        elif et == "wake_phrase":
+            # Posted from Controller.start_wake_listener()'s background
+            # thread via event_queue.put_nowait — never call GUI code
+            # directly from that thread. Reuses the SAME callback the
+            # manual "Start Live Transcription" button already wires up,
+            # so both wake paths land in one place (IrisApp's
+            # _on_wake_trigger -> handle_voice_trigger -> _route_command).
+            cb = getattr(self, "_wake_callback", None)
+            if cb is not None:
+                cb(evt.get("phrase", ""))
     # ---- button handlers (same Controller calls as gui_phase9) ----
     def _on_record_clicked(self):
         try: self.controller.toggle_recording()
@@ -11712,6 +11799,26 @@ class IrisApp(QWidget):
             self.chat.handle_voice_trigger(phrase)
             self.tabbar.select_name("chat")
         self.audio.set_wake_callback(_on_wake_trigger)
+        # Start the real always-on wake listener (openwakeword + Google
+        # backup, built in main_phase9.py but never invoked until now).
+        # The callback must not touch Qt directly — it's called from the
+        # listener's own thread — so it only pushes onto the thread-safe
+        # event_queue; AudioTab._handle_event's "wake_phrase" branch picks
+        # it up on the Qt main thread and hands it to the same
+        # _on_wake_trigger this button-based system already uses.
+        if self.controller is not None \
+                and hasattr(self.controller, "start_wake_listener"):
+            def _on_wake_word(phrase):
+                try:
+                    self.controller.event_queue.put_nowait(
+                        {"type": "wake_phrase", "phrase": phrase})
+                except Exception:
+                    pass
+            try:
+                ok = self.controller.start_wake_listener(_on_wake_word)
+                print(f"[iris] real wake listener start -> {ok}")
+            except Exception as e:
+                print(f"[iris] real wake listener failed to start: {e}")
         self.people = PeopleTab(self, controller)
         def _select_photo_from_gallery(photo):
             self.chat.select_photo(photo)

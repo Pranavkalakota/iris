@@ -1,0 +1,49 @@
+{
+  "audio_file": "live_2026-07-24_18-50-40.wav",
+  "model": "medium.en",
+  "duration_seconds": 37.7701875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 9.020309686660767,
+  "realtime_factor": 0.23882088715235442,
+  "segments": [
+    {
+      "start": 0.3,
+      "end": 25.6,
+      "text": "anyway hey Jarvis open up Gmail that's we're supposed to do nah but it opened",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 25.6,
+      "end": 30.42,
+      "text": "up like I don't want to open up another tab that's the fallback system",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 30.42,
+      "end": 34.64,
+      "text": "they guys have to create that hasn't been built yeah I was seeing if this",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 34.64,
+      "end": 40.2,
+      "text": "fix it tab reuse needs chrome started from the short",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

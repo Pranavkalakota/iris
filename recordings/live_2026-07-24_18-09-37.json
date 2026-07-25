@@ -1,0 +1,40 @@
+{
+  "audio_file": "live_2026-07-24_18-09-37.wav",
+  "model": "medium.en",
+  "duration_seconds": 152.096625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 7.05143928527832,
+  "realtime_factor": 0.04636157630242171,
+  "segments": [
+    {
+      "start": 74.13,
+      "end": 97.62,
+      "text": "Jarvis open up Gmail not. Oh, that's around finding. That's the wrong chrome",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 98.86,
+      "end": 116.74,
+      "text": "Interesting. I feel like API keys",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 120.3,
+      "end": 129.82,
+      "text": "Can you open up my Gmail",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

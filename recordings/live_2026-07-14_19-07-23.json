@@ -1,0 +1,652 @@
+{
+  "audio_file": "live_2026-07-14_19-07-23.wav",
+  "model": "medium.en",
+  "duration_seconds": 426.1348125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 274.574609041214,
+  "realtime_factor": 0.6443374279382865,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.82,
+      "text": "that was like our one main point of the show for this kind of demo is like right",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 6.82,
+      "end": 9.62,
+      "text": "now we have a live transcription so everything I'm saying will be",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 9.62,
+      "end": 13.34,
+      "text": "transcribed it's gonna appear right here there's a latency just because",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 13.34,
+      "end": 21.22,
+      "text": "we're not using paid API's right now for this this is all run locally",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 21.22,
+      "end": 28.22,
+      "text": "through the cloud of Ollama so you're able to basically say whatever",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 28.24,
+      "end": 32.12,
+      "text": "you want it gets us transcribed into a transcript you can go back here to your",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 32.12,
+      "end": 38.16,
+      "text": "chat you can ask questions about hey what conversations did I have you can",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 38.16,
+      "end": 42.98,
+      "text": "even as I said before you can say hey Jarvis could you open up my email and",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 42.98,
+      "end": 48.6,
+      "text": "then it will open up your email there's a little bit of a latency but it will",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 48.6,
+      "end": 57.02,
+      "text": "go ahead and should open up your email just like that and again you can",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 57.02,
+      "end": 61.16,
+      "text": "go into here it will also make a distinction of that in the chat saying",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 61.16,
+      "end": 66.52,
+      "text": "like okay these are heard commands so we heard you say you want to dream open",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 66.52,
+      "end": 82.92,
+      "text": "and you will get open up the email as I said it this is hardware this is",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 82.92,
+      "end": 88.16,
+      "text": "no this is off the actual mic of the hardware it's not in a shell right now",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 88.16,
+      "end": 92.78,
+      "text": "because we're running into printing problems but this is off the microphone",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 92.78,
+      "end": 100.88,
+      "text": "so I can say hey for example I think humza Oktar emailed me about Netflix",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 100.88,
+      "end": 111.28,
+      "text": "subscript and it's gonna pick up on that and even in here for example I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 111.28,
+      "end": 126.38,
+      "text": "think humza emailed me to pull it up the API is not running looks like but",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 126.38,
+      "end": 130.4,
+      "text": "what it would do if this was a Gemini it would just automatically pull this up",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 130.4,
+      "end": 136.96,
+      "text": "right here which is right in the email so for example when you're saying hey I",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 136.96,
+      "end": 142.68,
+      "text": "want to understand like the users or I think for the software you said the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 142.68,
+      "end": 149.64,
+      "text": "email is the main thing right um I mean I have a lot of comments cuz I've",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 149.64,
+      "end": 153.9,
+      "text": "I'm gonna let you like say everything and then I'm gonna give you the",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 153.9,
+      "end": 159.84,
+      "text": "comments because there's a lot of questions on the back end I've been",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 159.84,
+      "end": 166.76,
+      "text": "working pretty close with Abdul on our front so there's a lot of like I guess",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 166.76,
+      "end": 171.68,
+      "text": "if you were to give this to 7,000 people right there's a lot of",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 171.68,
+      "end": 175.52,
+      "text": "combinations that are like we're cracking down on them but for",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 175.52,
+      "end": 182.84,
+      "text": "example let's say I have 30 oh 100% yeah that's slightly how does this",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 183.34,
+      "end": 192.3,
+      "text": "we haven't fully developed that this is kind of very basic demo shows like okay",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 192.3,
+      "end": 196.86,
+      "text": "this is what the hardware would integrate into the software type vibe",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 196.86,
+      "end": 202.02,
+      "text": "all the firmware stuff here is already programmed in you can't really",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 202.02,
+      "end": 208.16,
+      "text": "see it but for example it already is compressing audio it's cleaning up the",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 208.16,
+      "end": 212.42,
+      "text": "audio it's getting it so that deep gram does not have you don't waste tokens",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 212.42,
+      "end": 216.52,
+      "text": "on deep gram or whatever transcription service you're using you could ease in",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 216.52,
+      "end": 220.88,
+      "text": "even in this case run the transcription on a USB 32 right now which we were",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 220.88,
+      "end": 227.3,
+      "text": "using but let's say in the future we go higher up in those higher chips",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 227.3,
+      "end": 231.76,
+      "text": "right it's not gonna even kill the chip we can run all this that you see",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 231.76,
+      "end": 240.44,
+      "text": "in the audio tab the location tab it's gonna take a second here yeah this is",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 240.44,
+      "end": 244.4,
+      "text": "on the entire time I can turn this on yours I could take a photo prompt I can",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 244.4,
+      "end": 256.82,
+      "text": "also API cost nothing yes right now nothing literally total cost for this",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 256.82,
+      "end": 266.98,
+      "text": "we just for today we added ten dollars in it's right here so every",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 266.98,
+      "end": 273.22,
+      "text": "question my question is I mean that could be potentially implemented in the",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 273.22,
+      "end": 278.08,
+      "text": "software but again there's there's like privacy concerns yeah but imagine",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 278.08,
+      "end": 283.12,
+      "text": "theory imagine in theory your laptop could just hear everything and instead",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 283.12,
+      "end": 286.8,
+      "text": "of holding a function key you just tell it what to do and it happens",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 286.8,
+      "end": 291.52,
+      "text": "yeah like could be a future direction but again there's privacy there's",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 291.52,
+      "end": 298.02,
+      "text": "privately there's always gonna be privacy yeah I think it's we obviously",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 298.02,
+      "end": 302.68,
+      "text": "want to collect the data not that we're gonna do anything bad with it we want",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 302.68,
+      "end": 309.34,
+      "text": "to like have a deep persona correct yeah but if you tell people that like",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 309.34,
+      "end": 313.1,
+      "text": "hey the mic will be on well I'm just thinking from this offer perfect",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 313.1,
+      "end": 318.06,
+      "text": "yeah if it's like hey the mic will be on indefinitely it's like you can",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 318.06,
+      "end": 324.32,
+      "text": "actually turn ours on and off so this is not right live live is like okay that's",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 324.32,
+      "end": 327.6,
+      "text": "simulating you're wearing the device right now if you just want to",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 327.6,
+      "end": 344.32,
+      "text": "incorporate this into a chat for audio yes purely a navigator you could have",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 344.32,
+      "end": 349.08,
+      "text": "a tiny wearable like and when you're away from your computer you can now",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 349.08,
+      "end": 354.78,
+      "text": "give it tasks to run and it just connects to yeah whatever but I know",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 354.78,
+      "end": 361.42,
+      "text": "Claude covert fiery I looked through it what they do is you can I forgot what",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 361.42,
+      "end": 366.9,
+      "text": "it's called but you can essentially command act is on your computer through",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 366.9,
+      "end": 371.1,
+      "text": "your phone so the other question is why can't we just use a phone have a",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 371.1,
+      "end": 376.66,
+      "text": "mobile app this will if you have a wearable for example let's say let's",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 376.66,
+      "end": 381.6,
+      "text": "take a ring right and it's just audio because if you just want audio this is",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 381.6,
+      "end": 386.48,
+      "text": "this would be easy you can get this out the door ASAP audio is the quickest",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 386.48,
+      "end": 392.2,
+      "text": "to produce and the most efficient there's not that much hectic but let's",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 392.2,
+      "end": 396.64,
+      "text": "say it's audio for example you say hey could you open up our my email it",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 396.64,
+      "end": 400.68,
+      "text": "automatically hears it right and right now I said it so it's gonna go ahead",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 400.68,
+      "end": 404.92,
+      "text": "and it's gonna open up my email at a certain point in time because we're",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    },
+    {
+      "start": 404.92,
+      "end": 409.28,
+      "text": "not using a paid API latency don't worry about yeah I just want to see",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 409.28,
+      "end": 415.6,
+      "text": "like like there you go and then on the back end what is it doing like how",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 415.6,
+      "end": 419.84,
+      "text": "is it able to and again there's some questions here if you say open my",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 419.84,
+      "end": 424.84,
+      "text": "email why does it go to Gmail why doesn't it go to Outlook or others is",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 424.84,
+      "end": 427.8,
+      "text": "there yeah",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

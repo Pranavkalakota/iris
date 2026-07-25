@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-07-25_10-10-15.wav",
+  "model": "medium.en",
+  "duration_seconds": 5.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.352274179458618,
+  "realtime_factor": 1.0704548358917236,
+  "segments": [
+    {
+      "start": 1.1,
+      "end": 3.1,
+      "text": "I don't think it does.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

@@ -1,0 +1,49 @@
+{
+  "audio_file": "live_2026-07-24_18-01-43.wav",
+  "model": "medium.en",
+  "duration_seconds": 43.6075,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 6.650987148284912,
+  "realtime_factor": 0.15251934067041018,
+  "segments": [
+    {
+      "start": 0.18,
+      "end": 5.18,
+      "text": "Uh, I don't think the edit changed anything.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 5.18,
+      "end": 8.18,
+      "text": "If you can test it, I'm currently texting.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 8.18,
+      "end": 12.32,
+      "text": "Hey, Jarvis, open Gmail.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 12.32,
+      "end": 30.4,
+      "text": "It was not the edit.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

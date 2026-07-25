@@ -1,0 +1,54 @@
+{
+  "ingested_at": 1784081994.3046942,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\live_2026-07-14_19-07-23.wav",
+  "clusters_total": 5,
+  "clusters_matched": 4,
+  "clusters_enrolled": 1,
+  "people": [
+    {
+      "person_id": 71,
+      "name": "Humza",
+      "similarity": 0.851,
+      "cluster_id": 1,
+      "diarizer_kind": "weak",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 71,
+      "name": "Humza",
+      "similarity": 0.642,
+      "cluster_id": 6,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 140,
+      "name": "Unknown 9",
+      "similarity": 0.0,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": true,
+      "reinforced": false
+    },
+    {
+      "person_id": 140,
+      "name": "Unknown 9",
+      "similarity": 0.677,
+      "cluster_id": 3,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 140,
+      "name": "Unknown 9",
+      "similarity": 0.665,
+      "cluster_id": 5,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    }
+  ]
+}

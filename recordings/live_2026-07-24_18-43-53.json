@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-07-24_18-43-53.wav",
+  "model": "medium.en",
+  "duration_seconds": 5.0,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.58143949508667,
+  "realtime_factor": 1.116287899017334,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.8,
+      "text": "to do hey open up Gmail let's see if it opens a tab",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

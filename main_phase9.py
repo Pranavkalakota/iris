@@ -683,6 +683,8 @@ class _WakeWordListener(threading.Thread):
         self._stop_event = threading.Event()
         self._ring = ring
         self._ring_sr = int(ring_sample_rate) if ring_sample_rate else 16000
+        self._wake_armed_low = True  # score must dip below threshold once
+                                      # before we're allowed to fire again
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -793,14 +795,26 @@ class _WakeWordListener(threading.Thread):
                 except Exception:
                     continue
                 scores = oww.prediction_buffer.get("hey_jarvis", [])
-                if scores and float(scores[-1]) >= self.THRESHOLD:
-                    print(f"[wake] 'hey jarvis' detected "
-                          f"(score={float(scores[-1]):.2f})")
-                    try:
-                        self._on_wake("hey jarvis")
-                    except Exception:
-                        pass
-                    self._stop_event.wait(timeout=2.0)
+                # Edge-triggered: only fire the moment the score crosses
+                # UP through threshold, and don't allow another fire until
+                # it's dropped back down first. A flat time-based cooldown
+                # alone isn't enough -- openwakeword's score can stay above
+                # threshold for several seconds after you stop talking
+                # (a decaying tail in its own scoring window), which was
+                # causing repeated re-fires off a single utterance.
+                if scores:
+                    score = float(scores[-1])
+                    if score >= self.THRESHOLD and not self._wake_armed_low:
+                        pass  # already fired for this rise, waiting for drop
+                    elif score >= self.THRESHOLD:
+                        print(f"[wake] 'hey jarvis' detected (score={score:.2f})")
+                        self._wake_armed_low = False
+                        try:
+                            self._on_wake("hey jarvis")
+                        except Exception:
+                            pass
+                    else:
+                        self._wake_armed_low = True
         finally:
             try:
                 stream.stop_stream()
@@ -849,17 +863,19 @@ class _WakeWordListener(threading.Thread):
                 continue
 
             scores = oww.prediction_buffer.get("hey_jarvis", [])
-            if scores and float(scores[-1]) >= self.THRESHOLD:
-                print(f"[wake] 'hey jarvis' detected "
-                      f"(score={float(scores[-1]):.2f})")
-                try:
-                    self._on_wake("hey jarvis")
-                except Exception:
-                    pass
-                self._stop_event.wait(timeout=2.0)
-            else:
-                self._stop_event.wait(
-                    timeout=self.CHUNK_SAMPLES / self.SAMPLE_RATE * 0.5)
+            if scores:
+                score = float(scores[-1])
+                if score >= self.THRESHOLD and self._wake_armed_low:
+                    print(f"[wake] 'hey jarvis' detected (score={score:.2f})")
+                    self._wake_armed_low = False
+                    try:
+                        self._on_wake("hey jarvis")
+                    except Exception:
+                        pass
+                elif score < self.THRESHOLD:
+                    self._wake_armed_low = True
+            self._stop_event.wait(
+                timeout=self.CHUNK_SAMPLES / self.SAMPLE_RATE * 0.5)
 
         print("[wake] ring listener stopped")
 

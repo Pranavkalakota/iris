@@ -1,0 +1,85 @@
+{
+  "audio_file": "live_2026-07-24_18-51-37.wav",
+  "model": "medium.en",
+  "duration_seconds": 34.414625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 17.64018177986145,
+  "realtime_factor": 0.5125780617938289,
+  "segments": [
+    {
+      "start": 0.08,
+      "end": 2.08,
+      "text": "Oh",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 3.6,
+      "end": 6.36,
+      "text": "You guys got some nice drives",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 8.48,
+      "end": 12.92,
+      "text": "Insane car me car meets up here. Oh, yeah, that is a hundred percent true",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 13.44,
+      "end": 18.34,
+      "text": "Dude, I mean you my brother go all the time. He loves bring his car. Who's also from Jersey",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 18.34,
+      "end": 23.88,
+      "text": "Do you know Chris she can't probably didn't have a chance to meet him, but he's on our team",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 23.88,
+      "end": 25.88,
+      "text": "He's an engineer, but he's also from Jersey",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.643,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 26.96,
+      "end": 28.96,
+      "text": "central duh",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 28.96,
+      "end": 31.36,
+      "text": "Rich part",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

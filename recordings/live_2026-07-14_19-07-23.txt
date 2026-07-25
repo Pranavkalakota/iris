@@ -1,0 +1,71 @@
+[00:00.00 -> 00:06.82]  that was like our one main point of the show for this kind of demo is like right
+[00:06.82 -> 00:09.62]  now we have a live transcription so everything I'm saying will be
+[00:09.62 -> 00:13.34]  transcribed it's gonna appear right here there's a latency just because
+[00:13.34 -> 00:21.22]  we're not using paid API's right now for this this is all run locally
+[00:21.22 -> 00:28.22]  through the cloud of Ollama so you're able to basically say whatever
+[00:28.24 -> 00:32.12]  you want it gets us transcribed into a transcript you can go back here to your
+[00:32.12 -> 00:38.16]  chat you can ask questions about hey what conversations did I have you can
+[00:38.16 -> 00:42.98]  even as I said before you can say hey Jarvis could you open up my email and
+[00:42.98 -> 00:48.60]  then it will open up your email there's a little bit of a latency but it will
+[00:48.60 -> 00:57.02]  go ahead and should open up your email just like that and again you can
+[00:57.02 -> 01:01.16]  go into here it will also make a distinction of that in the chat saying
+[01:01.16 -> 01:06.52]  like okay these are heard commands so we heard you say you want to dream open
+[01:06.52 -> 01:22.92]  and you will get open up the email as I said it this is hardware this is
+[01:22.92 -> 01:28.16]  no this is off the actual mic of the hardware it's not in a shell right now
+[01:28.16 -> 01:32.78]  because we're running into printing problems but this is off the microphone
+[01:32.78 -> 01:40.88]  so I can say hey for example I think humza Oktar emailed me about Netflix
+[01:40.88 -> 01:51.28]  subscript and it's gonna pick up on that and even in here for example I
+[01:51.28 -> 02:06.38]  think humza emailed me to pull it up the API is not running looks like but
+[02:06.38 -> 02:10.40]  what it would do if this was a Gemini it would just automatically pull this up
+[02:10.40 -> 02:16.96]  right here which is right in the email so for example when you're saying hey I
+[02:16.96 -> 02:22.68]  want to understand like the users or I think for the software you said the
+[02:22.68 -> 02:29.64]  email is the main thing right um I mean I have a lot of comments cuz I've
+[02:29.64 -> 02:33.90]  I'm gonna let you like say everything and then I'm gonna give you the
+[02:33.90 -> 02:39.84]  comments because there's a lot of questions on the back end I've been
+[02:39.84 -> 02:46.76]  working pretty close with Abdul on our front so there's a lot of like I guess
+[02:46.76 -> 02:51.68]  if you were to give this to 7,000 people right there's a lot of
+[02:51.68 -> 02:55.52]  combinations that are like we're cracking down on them but for
+[02:55.52 -> 03:02.84]  example let's say I have 30 oh 100% yeah that's slightly how does this
+[03:03.34 -> 03:12.30]  we haven't fully developed that this is kind of very basic demo shows like okay
+[03:12.30 -> 03:16.86]  this is what the hardware would integrate into the software type vibe
+[03:16.86 -> 03:22.02]  all the firmware stuff here is already programmed in you can't really
+[03:22.02 -> 03:28.16]  see it but for example it already is compressing audio it's cleaning up the
+[03:28.16 -> 03:32.42]  audio it's getting it so that deep gram does not have you don't waste tokens
+[03:32.42 -> 03:36.52]  on deep gram or whatever transcription service you're using you could ease in
+[03:36.52 -> 03:40.88]  even in this case run the transcription on a USB 32 right now which we were
+[03:40.88 -> 03:47.30]  using but let's say in the future we go higher up in those higher chips
+[03:47.30 -> 03:51.76]  right it's not gonna even kill the chip we can run all this that you see
+[03:51.76 -> 04:00.44]  in the audio tab the location tab it's gonna take a second here yeah this is
+[04:00.44 -> 04:04.40]  on the entire time I can turn this on yours I could take a photo prompt I can
+[04:04.40 -> 04:16.82]  also API cost nothing yes right now nothing literally total cost for this
+[04:16.82 -> 04:26.98]  we just for today we added ten dollars in it's right here so every
+[04:26.98 -> 04:33.22]  question my question is I mean that could be potentially implemented in the
+[04:33.22 -> 04:38.08]  software but again there's there's like privacy concerns yeah but imagine
+[04:38.08 -> 04:43.12]  theory imagine in theory your laptop could just hear everything and instead
+[04:43.12 -> 04:46.80]  of holding a function key you just tell it what to do and it happens
+[04:46.80 -> 04:51.52]  yeah like could be a future direction but again there's privacy there's
+[04:51.52 -> 04:58.02]  privately there's always gonna be privacy yeah I think it's we obviously
+[04:58.02 -> 05:02.68]  want to collect the data not that we're gonna do anything bad with it we want
+[05:02.68 -> 05:09.34]  to like have a deep persona correct yeah but if you tell people that like
+[05:09.34 -> 05:13.10]  hey the mic will be on well I'm just thinking from this offer perfect
+[05:13.10 -> 05:18.06]  yeah if it's like hey the mic will be on indefinitely it's like you can
+[05:18.06 -> 05:24.32]  actually turn ours on and off so this is not right live live is like okay that's
+[05:24.32 -> 05:27.60]  simulating you're wearing the device right now if you just want to
+[05:27.60 -> 05:44.32]  incorporate this into a chat for audio yes purely a navigator you could have
+[05:44.32 -> 05:49.08]  a tiny wearable like and when you're away from your computer you can now
+[05:49.08 -> 05:54.78]  give it tasks to run and it just connects to yeah whatever but I know
+[05:54.78 -> 06:01.42]  Claude covert fiery I looked through it what they do is you can I forgot what
+[06:01.42 -> 06:06.90]  it's called but you can essentially command act is on your computer through
+[06:06.90 -> 06:11.10]  your phone so the other question is why can't we just use a phone have a
+[06:11.10 -> 06:16.66]  mobile app this will if you have a wearable for example let's say let's
+[06:16.66 -> 06:21.60]  take a ring right and it's just audio because if you just want audio this is
+[06:21.60 -> 06:26.48]  this would be easy you can get this out the door ASAP audio is the quickest
+[06:26.48 -> 06:32.20]  to produce and the most efficient there's not that much hectic but let's
+[06:32.20 -> 06:36.64]  say it's audio for example you say hey could you open up our my email it
+[06:36.64 -> 06:40.68]  automatically hears it right and right now I said it so it's gonna go ahead
+[06:40.68 -> 06:44.92]  and it's gonna open up my email at a certain point in time because we're
+[06:44.92 -> 06:49.28]  not using a paid API latency don't worry about yeah I just want to see
+[06:49.28 -> 06:55.60]  like like there you go and then on the back end what is it doing like how
+[06:55.60 -> 06:59.84]  is it able to and again there's some questions here if you say open my
+[06:59.84 -> 07:04.84]  email why does it go to Gmail why doesn't it go to Outlook or others is
+[07:04.84 -> 07:07.80]  there yeah

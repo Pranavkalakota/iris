@@ -1208,14 +1208,17 @@ class PeopleFusion:
             return ""
 
     # --- IRIS video-relook: ADD ---
-    def describe_scene_question(self, frames: list, question: str) -> str:
-        """Re-look at frames and answer ONE specific follow-up question."""
+    def describe_scene_question(self, frames: list, question: str,
+                                prior_description: str = "") -> str:
+        """Public entry point for iris_videos.py: re-look at frames sampled
+        from a saved clip and answer ONE specific follow-up question.
+        Blocking — caller runs this on a background thread."""
         try:
-            return self.llava.describe_frames_targeted(frames, question)
+            return self.llava.describe_frames_targeted(
+                frames, question, prior_description=prior_description)
         except Exception as e:
             print(f"[llava] describe_scene_question failed: {e}")
             return ""
-    # --- IRIS video-relook: END ---
 
     # ── M6 §6.5: OCR signage → location name (used by location_phase8) ───
     def read_signage(self, frames: list) -> str:

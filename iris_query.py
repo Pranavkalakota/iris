@@ -1671,6 +1671,17 @@ _ACTION_EMAIL_CUES = (
     "go to gmail", "go to my email", "go to my inbox",
     "load my email", "load gmail", "load my inbox",
     "email tab", "gmail tab", "inbox tab",
+    # --- IRIS force-new-tab: ADD ---
+    # "new tab" phrasings don't share wording with the cues above (no
+    # "open"/"go to"/"check" verb), so they need their own entries or
+    # they silently fall through to general chat instead of ever
+    # reaching action_open_email. force_new detection downstream still
+    # needs "new" + a gmail/email/tab word in the raw text to trigger.
+    "new tab for gmail", "new tab for email", "new gmail tab",
+    "new email tab", "another gmail tab", "another email tab",
+    "a new tab of gmail", "a new tab of email", "open a new tab",
+    "open another tab", "new tab gmail",
+    # --- IRIS force-new-tab: END ---
     # --- IRIS email-wake-word: END ---
 )
 

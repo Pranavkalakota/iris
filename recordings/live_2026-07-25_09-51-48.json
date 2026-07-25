@@ -1,0 +1,130 @@
+{
+  "audio_file": "live_2026-07-25_09-51-48.wav",
+  "model": "medium.en",
+  "duration_seconds": 160.1306875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 15.867174625396729,
+  "realtime_factor": 0.09908890590004324,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.04,
+      "text": "yeah",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 6.04,
+      "end": 33.36,
+      "text": "and jarvis open up gmail",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 33.36,
+      "end": 35.78,
+      "text": "procedures story",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 35.78,
+      "end": 37.0,
+      "text": "open up gmail",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 10
+    },
+    {
+      "start": 37.0,
+      "end": 45.4,
+      "text": "brown destroying my food right now",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 45.4,
+      "end": 49.68,
+      "text": "walking talkings",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 49.68,
+      "end": 51.44,
+      "text": "back to you",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 8
+    },
+    {
+      "start": 51.44,
+      "end": 53.66,
+      "text": "was it pushed me back to michigan",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 7
+    },
+    {
+      "start": 53.66,
+      "end": 57.36,
+      "text": "open a new challenging others up with the cat",
+      "speaker": "Unknown 8",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 57.36,
+      "end": 97.22,
+      "text": "specify",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 97.22,
+      "end": 98.3,
+      "text": "yes",
+      "speaker": "Unknown 9",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 9
+    },
+    {
+      "start": 98.3,
+      "end": 105.47,
+      "text": "navigate",
+      "speaker": "Unknown 10",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 105.47,
+      "end": 107.15,
+      "text": "open a new tab for gmail",
+      "speaker": "Unknown 11",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

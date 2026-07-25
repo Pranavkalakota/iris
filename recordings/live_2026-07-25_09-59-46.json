@@ -1,0 +1,58 @@
+{
+  "audio_file": "live_2026-07-25_09-59-46.wav",
+  "model": "medium.en",
+  "duration_seconds": 63.220875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 15.136592388153076,
+  "realtime_factor": 0.23942396223008738,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.32,
+      "text": "each artist but if you do start like transcription better word alright so",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 4.32,
+      "end": 35.19,
+      "text": "try again open a new tab for Gmail there you go okay why didn't that take us to",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 35.19,
+      "end": 43.35,
+      "text": "it though I remember how it last time when you yeah automatically would take",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 43.35,
+      "end": 55.99,
+      "text": "you away from the chatbot to where you wanted to go okay",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 55.99,
+      "end": 62.71,
+      "text": "open a new tab of Gmail",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

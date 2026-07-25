@@ -1,0 +1,40 @@
+{
+  "audio_file": "live_2026-07-24_18-42-20.wav",
+  "model": "medium.en",
+  "duration_seconds": 65.7454375,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.61195158958435,
+  "realtime_factor": 0.13098934187766795,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 30.7,
+      "text": "like why is it so expensive Jarvis open gmail well let's ask I think I got an",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 30.7,
+      "end": 48.25,
+      "text": "email from deep gram can you pull up any emails from deep gram did I get any",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.687,
+      "speaker_kind": "weak",
+      "_cluster": 2
+    },
+    {
+      "start": 48.25,
+      "end": 50.81,
+      "text": "email",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}
