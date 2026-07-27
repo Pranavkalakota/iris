@@ -2961,6 +2961,34 @@ class ChatTab(QWidget):
         UI-facing callers (_on_submit for typed text, handle_voice_trigger
         for spoken commands) only differ in how they echo the input into
         the chat log before handing off here."""
+        # --- IRIS M2 open-app (runs FIRST, before every other classifier) ---
+        # "open instagram / youtube / maps / spotify" -> actually open the site
+        # (idempotent; repeats do not spawn duplicate tabs). Must run first so
+        # it beats the general-chat short-circuit (which otherwise sends "open
+        # instagram" to the LLM) and the memory/recording classifiers. Gmail is
+        # skipped so the existing handler owns it.
+        try:
+            from iris_intent_router import route as _m2_route
+            _m2i = _m2_route(text, use_llm=False)
+            if (_m2i.intent == "open_app" and _m2i.confidence >= 0.85
+                    and "mail.google.com" not in (_m2i.entities.get("url") or "")):
+                launcher = getattr(self, "_m2_launcher", None)
+                if launcher is None:
+                    from iris_app_launcher import AppLauncher
+                    launcher = AppLauncher()
+                    self._m2_launcher = launcher
+                _res = launcher.open_app(_m2i)
+                _app = _m2i.entities.get("app", "it")
+                if _res is None:
+                    self._append_iris("Opening " + str(_app) + ".")
+                else:
+                    _t, _d = _res
+                    self._append_iris(_t + " - " + _d if _d else _t)
+                print("[m2] opened via _route_command:", _app)
+                return
+        except Exception as _m2e:
+            print("[m2] open-app gate failed:", _m2e)
+        # --- IRIS M2 open-app: END ---
         # --- IRIS meta-question: ADD ---
         if iq is not None and iq.is_meta_question(text):
             provider, model = self._resolve_current_model()
@@ -4405,7 +4433,7 @@ class ChatTab(QWidget):
         all. IRIS keeps its own dedicated Chrome profile (separate from
         your everyday Chrome) so the debug port is always available and
         this never touches your regular browsing session."""
-        import json, urllib.request, webbrowser 
+        import json, urllib.request, webbrowser
         DEBUG_PORT = 9222
 
         # Bypass any system proxy for this call -- urllib respects
@@ -11787,6 +11815,25 @@ class IrisApp(QWidget):
                 print(f"[iris] photo arrival handler failed: {e}")
         self.stream._on_photo_arrived_cb = _on_esp32_photo_arrived
         def _on_wake_trigger(phrase):
+            # ── M1 (voice-in → screen-out) ────────────────────────────────
+            # Show the understood command on the on-screen response surface.
+            # Additive + fully guarded: if the M1 modules aren't present this
+            # just no-ops and the existing dispatch below is untouched. This
+            # runs on the Qt main thread (see the wake_phrase note above), so
+            # creating/updating the ResponseSurface widget here is safe.
+            try:
+                cc = getattr(self, "_m1_cc", None)
+                if cc is None:
+                    from iris_command_center import (CommandCenter,
+                                                     make_gui_surface)
+                    # Display-only card. The actual app open happens in
+                    # _route_command (below), the single command handler for
+                    # BOTH typed and spoken input — so nothing double-opens.
+                    cc = CommandCenter(surface=make_gui_surface())
+                    self._m1_cc = cc
+                cc.handle_utterance(phrase or "")
+            except Exception as _m1_e:
+                print(f"[m1] command center unavailable: {_m1_e}")
             # "Hey Jarvis, take a picture of me" → ESP32 camera in the
             # stream tab. Other wake-word photo requests fall through to
             # the chat (which captures with the webcam).

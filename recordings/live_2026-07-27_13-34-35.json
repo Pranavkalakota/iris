@@ -1,0 +1,31 @@
+{
+  "audio_file": "live_2026-07-27_13-34-35.wav",
+  "model": "medium.en",
+  "duration_seconds": 388.4366875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 6.367428541183472,
+  "realtime_factor": 0.016392448875425732,
+  "segments": [
+    {
+      "start": 14.35,
+      "end": 255.75,
+      "text": "Hey Jarvis, open Gmail. Open Gmail. Close Gmail. Open up Gmail.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 255.75,
+      "end": 359.32,
+      "text": "Hey Jarvis, open Instagram. Open Instagram. Open, open Instagram.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

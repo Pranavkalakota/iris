@@ -1,0 +1,58 @@
+{
+  "audio_file": "live_2026-07-26_12-41-58.wav",
+  "model": "medium.en",
+  "duration_seconds": 46.8816875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 16.40668773651123,
+  "realtime_factor": 0.3499594108362936,
+  "segments": [
+    {
+      "start": 0.24,
+      "end": 6.2,
+      "text": "We're working on this right now where it can do that, but if I start live transcription",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.63,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 6.2,
+      "end": 14.48,
+      "text": "which is this and I say, hey Jarvis open up email and then since there's a latency",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.63,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 14.48,
+      "end": 30.02,
+      "text": "between the microphone and whatnot, it's going to take it a second, open up Gmail.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.63,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 30.02,
+      "end": 33.94,
+      "text": "Since there's already one open, it's going to say back to your Gmail tab, right?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.63,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 33.94,
+      "end": 43.39,
+      "text": "If I say open an email, open a new tab of Gmail.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.63,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

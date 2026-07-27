@@ -1,0 +1,5 @@
+[00:00.24 -> 00:06.20]  We're working on this right now where it can do that, but if I start live transcription
+[00:06.20 -> 00:14.48]  which is this and I say, hey Jarvis open up email and then since there's a latency
+[00:14.48 -> 00:30.02]  between the microphone and whatnot, it's going to take it a second, open up Gmail.
+[00:30.02 -> 00:33.94]  Since there's already one open, it's going to say back to your Gmail tab, right?
+[00:33.94 -> 00:43.39]  If I say open an email, open a new tab of Gmail.
