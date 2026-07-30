@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-07-28_17-12-48.wav",
+  "model": "medium.en",
+  "duration_seconds": 78.1551875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 9.44333004951477,
+  "realtime_factor": 0.12082793671904082,
+  "segments": [
+    {
+      "start": 3.92,
+      "end": 61.8,
+      "text": "Can you open up Gmail? Can you open a new Gmail tab? Can you now close the Gmail tabs?",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

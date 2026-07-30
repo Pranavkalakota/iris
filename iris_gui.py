@@ -2972,20 +2972,23 @@ class ChatTab(QWidget):
             _m2i = _m2_route(text, use_llm=False)
             if (_m2i.intent == "open_app" and _m2i.confidence >= 0.85
                     and "mail.google.com" not in (_m2i.entities.get("url") or "")):
-                launcher = getattr(self, "_m2_launcher", None)
-                if launcher is None:
-                    from iris_app_launcher import AppLauncher
-                    launcher = AppLauncher()
-                    self._m2_launcher = launcher
-                _res = launcher.open_app(_m2i)
+                import iris_app_launcher as _m2l
                 _app = _m2i.entities.get("app", "it")
-                if _res is None:
-                    self._append_iris("Opening " + str(_app) + ".")
-                else:
-                    _t, _d = _res
-                    self._append_iris(_t + " - " + _d if _d else _t)
-                print("[m2] opened via _route_command:", _app)
-                return
+                _msg = None
+                if hasattr(_m2l, "handle"):            # debug-port launcher
+                    _msg = _m2l.handle(_m2i)
+                elif hasattr(_m2l, "AppLauncher"):     # session-registry launcher
+                    launcher = getattr(self, "_m2_launcher", None)
+                    if launcher is None:
+                        launcher = _m2l.AppLauncher()
+                        self._m2_launcher = launcher
+                    _res = launcher.open_app(_m2i)
+                    _msg = ("Opening " + str(_app)) if _res is None \
+                        else (_res[0] + (" - " + _res[1] if _res[1] else ""))
+                if _msg:
+                    self._append_iris(_msg)
+                    print("[m2] opened via _route_command:", _app)
+                    return
         except Exception as _m2e:
             print("[m2] open-app gate failed:", _m2e)
         # --- IRIS M2 open-app: END ---
@@ -9829,6 +9832,16 @@ class AudioTab(QWidget):
         start video / start audio), then a read-email command."""
         if iq is None or not text:
             return False
+        # open/close-app commands ("open instagram", "open youtube", ...) are
+        # commands too — without this, spoken app-opens were dropped here while
+        # typed ones worked (typed input skips this gate). Keyword router, fast.
+        try:
+            from iris_intent_router import route as _wr
+            _wi = _wr(text, use_llm=False)
+            if _wi.intent in ("open_app", "close_app") and _wi.confidence >= 0.85:
+                return True
+        except Exception:
+            pass
         if iq.is_photo_trigger(text):
             return True
         try:

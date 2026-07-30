@@ -1,0 +1,31 @@
+{
+  "audio_file": "live_2026-07-30_09-13-06.wav",
+  "model": "medium.en",
+  "duration_seconds": 48.626875,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.145432472229004,
+  "realtime_factor": 0.16750886155503525,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 7.08,
+      "text": "it will replace the one on my back that is actually kind of hey Jarvis open",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 7.08,
+      "end": 46.35,
+      "text": "Instagram it's thinking open Instagram open Instagram",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}
