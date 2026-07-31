@@ -2976,7 +2976,16 @@ class ChatTab(QWidget):
                 _app = _m2i.entities.get("app", "it")
                 _msg = None
                 if hasattr(_m2l, "handle"):            # debug-port launcher
-                    _msg = _m2l.handle(_m2i)
+                    # handle() may return its final message immediately
+                    # (debug Chrome already up) or return a "starting…"
+                    # placeholder and post the real result later, once a
+                    # backgrounded Chrome launch finishes. `post` marshals
+                    # that later call onto the Qt main thread the same way
+                    # _do_action_open_email's own launcher does.
+                    _msg = _m2l.handle(
+                        _m2i,
+                        post=lambda m: self._call_main(
+                            lambda: self._append_iris(m)))
                 elif hasattr(_m2l, "AppLauncher"):     # session-registry launcher
                     launcher = getattr(self, "_m2_launcher", None)
                     if launcher is None:
@@ -4433,11 +4442,32 @@ class ChatTab(QWidget):
         time. Uses Chrome's own remote-debugging JSON API to check/focus
         tabs by URL -- window-title matching can't see a background tab,
         and there's no way to ask an OS-default browser to reuse a tab at
-        all. IRIS keeps its own dedicated Chrome profile (separate from
-        your everyday Chrome) so the debug port is always available and
-        this never touches your regular browsing session."""
-        import json, urllib.request, webbrowser
+        all.
+
+        IRIS's dedicated debug Chrome profile is:
+            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+            --remote-debugging-port=9222
+            --user-data-dir="C:\\Users\\delete me\\AppData\\Local\\Google\\ChromeDebugData"
+        This used to depend on that profile already being open (started
+        by hand from a desktop shortcut) before IRIS could see or reuse
+        any tabs at all -- if it wasn't running yet, we fell back to a
+        plain webbrowser.open() with no way to detect an already-open
+        tab, so repeating "open gmail" while Chrome was still cold-
+        starting spawned duplicate tabs. Now IRIS launches that exact
+        profile itself (off the UI thread) whenever the debug port isn't
+        already up, then waits for it before opening/reusing a tab. Every
+        open -- cold-start or not -- goes through the same debug-API
+        path, so dedup is idempotent by construction and doesn't depend
+        on a shortcut having been used first."""
+        import json, os, subprocess, threading, time, urllib.request, webbrowser
+
         DEBUG_PORT = 9222
+        CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        CHROME_DEBUG_PROFILE = (
+            r"C:\Users\delete me\AppData\Local\Google\ChromeDebugData")
+        LAUNCH_POLL_TIMEOUT_S = 10.0
+        LAUNCH_POLL_INTERVAL_S = 0.4
+        FALLBACK_COOLDOWN_S = 600.0  # for the "regular Chrome already running" case
 
         # Bypass any system proxy for this call -- urllib respects
         # HTTP_PROXY/HTTPS_PROXY env vars by default even for 127.0.0.1,
@@ -4458,60 +4488,157 @@ class ChatTab(QWidget):
                 print(f"[gmail-open] debug port call failed ({path!r}): {e}")
                 return None
 
-        tabs = _debug_json("/json")
-        if tabs is None:
-            # Debug port not reachable -- Chrome either isn't running yet
-            # or wasn't launched via the "firm" shortcut with the debug
-            # flag. No reuse possible this time; just open a plain tab.
-            try:
+        def _reuse_or_open(tabs) -> None:
+            """Runs once the debug port is confirmed up (whether it was
+            already running or IRIS just launched it). Posts its own
+            chat reply -- callers should not append anything after this."""
+            print(f"[gmail-open] {len(tabs)} tab(s) reported:")
+            for t in tabs:
+                if t.get("type") == "page":
+                    print(f"[gmail-open]   url={t.get('url')!r} "
+                          f"title={t.get('title')!r}")
+            # Reuse: your own signed-in Chrome already has a Gmail tab
+            # open -> focus it instead of opening a new one. Matches on
+            # URL OR title, since Gmail's redirect chain
+            # (accounts.google.com -> mail.google.com/mail/u/0/#inbox)
+            # can leave the reported URL momentarily inconsistent right
+            # after the tab first opens. A closed tab (stale handle)
+            # just won't be in this list, so it falls through below.
+            if not force_new:
+                target = next((t for t in tabs
+                               if t.get("type") == "page"
+                               and ("mail.google.com" in t.get("url", "")
+                                    or "gmail" in t.get("title", "").lower())),
+                              None)
+                if target is not None:
+                    print(f"[gmail-open] reusing tab id={target.get('id')}")
+                    _debug_json(f"/json/activate/{target['id']}")
+                    self._append_iris("Back to your Gmail tab.")
+                    return
+                print("[gmail-open] no existing Gmail tab found, opening new")
+            # No existing tab (or an explicit "open a new" was asked for)
+            # -- open one directly inside the debug Chrome via the debug
+            # port. No new window, no new process.
+            if _debug_json("/json/new?https://mail.google.com",
+                           method="PUT") is not None:
+                self._append_iris("Opening your email.")
+            else:
                 webbrowser.open("https://mail.google.com")
-                self._append_iris(
-                    "Opening your email. (Tab reuse needs Chrome started "
-                    "from the shortcut with the debug flag on.)")
-            except Exception:
-                self._append_iris(
-                    "I couldn't open email — try launching it manually.")
+                self._append_iris("Opening your email.")
+
+        tabs = _debug_json("/json")
+        if tabs is not None:
+            _reuse_or_open(tabs)
             return
 
-        # Diagnostic: show exactly what Chrome reports so a match miss is
-        # visible in the console instead of a silent guess.
-        print(f"[gmail-open] {len(tabs)} tab(s) reported:")
-        for t in tabs:
-            if t.get("type") == "page":
-                print(f"[gmail-open]   url={t.get('url')!r} "
-                      f"title={t.get('title')!r}")
+        # Debug port not reachable -- IRIS's debug Chrome profile isn't
+        # running yet. Launch it ourselves (rather than depending on the
+        # shortcut having been used) and wait for the port off the UI
+        # thread so the chat stays responsive.
+        if getattr(self, "_gmail_chrome_launching", False):
+            print("[gmail-open] launch already in progress, "
+                  "not re-launching")
+            self._append_iris(
+                "Still starting Chrome for your email — one moment.")
+            return
 
-        # Reuse: your own signed-in Chrome already has a Gmail tab open
-        # -> focus it instead of opening a new one. Matches on URL OR
-        # title, since Gmail's redirect chain (accounts.google.com ->
-        # mail.google.com/mail/u/0/#inbox) can leave the reported URL
-        # momentarily inconsistent right after the tab first opens. A
-        # closed tab (stale handle) just won't be in this list, so it
-        # falls through below.
-        if not force_new:
-            target = next((t for t in tabs
-                           if t.get("type") == "page"
-                           and ("mail.google.com" in t.get("url", "")
-                                or "gmail" in t.get("title", "").lower())),
-                          None)
-            if target is not None:
-                print(f"[gmail-open] reusing tab id={target.get('id')}")
-                _debug_json(f"/json/activate/{target['id']}")
-                self._append_iris("Back to your Gmail tab.")
-                return
-            else:
-                print("[gmail-open] no existing Gmail tab found, opening new")
+        self._gmail_chrome_launching = True
+        self._append_iris("Starting Chrome for your email…")
 
-        # No existing tab (or an explicit "open a new" was asked for) --
-        # open one directly inside your already-running, already-signed
-        # -in Chrome via the debug port. No new window, no new process.
-        if _debug_json("/json/new?https://mail.google.com",
-                       method="PUT") is not None:
-            self._append_iris("Opening your email.")
-        else:
-            webbrowser.open("https://mail.google.com")
-            self._append_iris("Opening your email.")
+        def _chrome_already_running() -> bool:
+            """True if any chrome.exe process is running, debug-flagged
+            or not. If a plain (non-debug) Chrome window is already
+            open, launching our own debug profile now would spawn a
+            second, separate Chrome window instead of reusing the one
+            you're looking at -- Chrome has no way to turn on remote
+            debugging for a window after it's already running."""
+            try:
+                out = subprocess.check_output(
+                    ["tasklist", "/FI", "IMAGENAME eq chrome.exe"],
+                    text=True)
+                return "chrome.exe" in out.lower()
+            except Exception as e:
+                print(f"[gmail-open] tasklist check failed: {e}")
+                return False
 
+        def _launch_and_wait():
+            try:
+                if not os.path.exists(CHROME_EXE):
+                    self._call_main(lambda: self._append_iris(
+                        "I couldn't find Chrome at the expected install "
+                        "path — try opening email manually this time."))
+                    return
+
+                if _chrome_already_running():
+                    # A regular (non-debug) Chrome window is already
+                    # open. We can't attach the debug port to it, and
+                    # launching our own profile would just open a second
+                    # window -- so hand the URL to whatever Chrome is
+                    # already running instead. We lose real tab-reuse
+                    # detection here (no debug API into that window), so
+                    # guard repeats with the same kind of cooldown as
+                    # AppLauncher uses for other apps.
+                    last = getattr(
+                        self, "_gmail_regular_chrome_opened_at", None)
+                    now = time.time()
+                    recently_opened = (
+                        last is not None
+                        and (now - last) < FALLBACK_COOLDOWN_S)
+                    if recently_opened and not force_new:
+                        print("[gmail-open] regular-Chrome cooldown "
+                              "active, skipping duplicate open")
+                        self._call_main(lambda: self._append_iris(
+                            "Already opened that in your Chrome window "
+                            "a moment ago — check your tabs."))
+                        return
+
+                    def _open_in_current_window():
+                        webbrowser.open("https://mail.google.com")
+                        self._append_iris(
+                            "Opening your email in your current Chrome "
+                            "window.")
+                    self._gmail_regular_chrome_opened_at = now
+                    self._call_main(_open_in_current_window)
+                    return
+
+                try:
+                    subprocess.Popen([
+                        CHROME_EXE,
+                        f"--remote-debugging-port={DEBUG_PORT}",
+                        f"--user-data-dir={CHROME_DEBUG_PROFILE}",
+                    ])
+                except Exception as e:
+                    print(f"[gmail-open] Chrome launch failed: {e}")
+                    self._call_main(lambda: self._append_iris(
+                        "I couldn't start Chrome — try opening email "
+                        "manually this time."))
+                    return
+
+                deadline = time.time() + LAUNCH_POLL_TIMEOUT_S
+                got_tabs = None
+                while time.time() < deadline:
+                    got_tabs = _debug_json("/json")
+                    if got_tabs is not None:
+                        break
+                    time.sleep(LAUNCH_POLL_INTERVAL_S)
+
+                if got_tabs is not None:
+                    self._call_main(lambda t=got_tabs: _reuse_or_open(t))
+                else:
+                    print("[gmail-open] debug port never came up within "
+                          f"{LAUNCH_POLL_TIMEOUT_S}s")
+
+                    def _last_resort():
+                        webbrowser.open("https://mail.google.com")
+                        self._append_iris(
+                            "Opening your email. (Chrome took longer than "
+                            "expected to start, so tab reuse may not work "
+                            "next time until it's fully up.)")
+                    self._call_main(_last_resort)
+            finally:
+                self._gmail_chrome_launching = False
+
+        threading.Thread(target=_launch_and_wait, daemon=True).start()
     def _do_action_start_video(self, app) -> None:
         stream = getattr(app, "stream", None)
         if stream is None:

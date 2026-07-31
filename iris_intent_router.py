@@ -98,8 +98,8 @@ APP_REGISTRY = {
     "spotify":   ("Spotify", "https://open.spotify.com"),
     "calendar":  ("Google Calendar", "https://calendar.google.com"),
     "drive":     ("Google Drive", "https://drive.google.com"),
-    "chatgpt":   ("ChatGPT", "https://chat.openai.com"),
-    "chat gpt":  ("ChatGPT", "https://chat.openai.com"),
+    "chatgpt":   ("ChatGPT", "https://chatgpt.com"),
+    "chat gpt":  ("ChatGPT", "https://chatgpt.com"),
     "discord":   ("Discord", "https://discord.com/app"),
     "google docs": ("Google Docs", "https://docs.google.com/document/u/0/"),
     "google doc": ("Google Docs", "https://docs.google.com/document/u/0/"),
@@ -110,6 +110,14 @@ APP_REGISTRY = {
     "x":         ("X", "https://x.com"),
     "reddit":    ("Reddit", "https://www.reddit.com"),
     "netflix":   ("Netflix", "https://www.netflix.com"),
+    # Windows can't launch the native Android apps, so these map to their
+    # web equivalents (both require the phone's account already linked in
+    # that browser profile, same as Gmail/Discord/etc.).
+    "whatsapp":  ("WhatsApp", "https://web.whatsapp.com"),
+    "whats app": ("WhatsApp", "https://web.whatsapp.com"),
+    "android messages": ("Google Messages", "https://messages.google.com/web"),
+    "android messaging": ("Google Messages", "https://messages.google.com/web"),
+    "google messages": ("Google Messages", "https://messages.google.com/web"),
     "chrome":    ("Chrome", None),
     "slack":     ("Slack", None),
     "spotify app": ("Spotify", None),
