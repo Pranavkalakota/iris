@@ -2970,7 +2970,7 @@ class ChatTab(QWidget):
         try:
             from iris_intent_router import route as _m2_route
             _m2i = _m2_route(text, use_llm=False)
-            if (_m2i.intent == "open_app" and _m2i.confidence >= 0.85
+            if (_m2i.intent in ("open_app", "close_app") and _m2i.confidence >= 0.85
                     and "mail.google.com" not in (_m2i.entities.get("url") or "")):
                 import iris_app_launcher as _m2l
                 _app = _m2i.entities.get("app", "it")
@@ -2996,7 +2996,7 @@ class ChatTab(QWidget):
                         else (_res[0] + (" - " + _res[1] if _res[1] else ""))
                 if _msg:
                     self._append_iris(_msg)
-                    print("[m2] opened via _route_command:", _app)
+                    print("[m2]", _m2i.intent, "->", _app)
                     return
         except Exception as _m2e:
             print("[m2] open-app gate failed:", _m2e)

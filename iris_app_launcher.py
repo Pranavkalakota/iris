@@ -51,7 +51,10 @@ CHROME_DEBUG_PROFILE = (
     r"C:\Users\delete me\AppData\Local\Google\ChromeDebugData")
 LAUNCH_POLL_TIMEOUT_S = 10.0
 LAUNCH_POLL_INTERVAL_S = 0.4
-REGULAR_CHROME_COOLDOWN_S = 600.0
+# Short on purpose: only long enough to swallow the speech-to-text echo that
+# re-hears one spoken command a few times. A longer window used to make
+# 'close a tab then open it again' wrongly say 'already open'.
+REGULAR_CHROME_COOLDOWN_S = 8.0
 
 _no_proxy_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -146,6 +149,85 @@ def _reuse_or_open(app: str, url: str, force_new: bool, tabs,
         post(msg)
 
 
+# ── desktop (non-URL) apps: launch a real Windows .exe, idempotently ─────────
+# proc = process image name (for the "already running?" check via tasklist);
+# paths = candidate install locations (first that exists is launched);
+# cmd  = optional shell fallback (e.g. VS Code's "code" on PATH).
+DESKTOP_APPS = {
+    "Chrome":  {"proc": "chrome.exe", "paths": [CHROME_EXE]},
+    "Slack":   {"proc": "slack.exe",
+                "paths": [r"%LOCALAPPDATA%\slack\slack.exe"]},
+    "VS Code": {"proc": "Code.exe",
+                "paths": [r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe"],
+                "cmd": "code"},
+    "Notion":  {"proc": "Notion.exe",
+                "paths": [r"%LOCALAPPDATA%\Programs\Notion\Notion.exe"]},
+}
+
+
+def _proc_running(procname: str) -> bool:
+    """True if a process with this image name is running (Windows tasklist)."""
+    try:
+        out = subprocess.check_output(
+            ["tasklist", "/FI", f"IMAGENAME eq {procname}"],
+            text=True, stderr=subprocess.DEVNULL, timeout=4)
+        return procname.lower() in out.lower()
+    except Exception:
+        return False
+
+
+def _launch_desktop(app: str, post=None) -> str:
+    """Open a desktop app by launching its .exe — but don't relaunch it if it's
+    already running (idempotent, like the tab reuse but for native apps)."""
+    spec = DESKTOP_APPS.get(app)
+    if not spec:
+        return f"I can't open the {app} app on this PC yet."
+    proc = spec.get("proc")
+    if proc and _proc_running(proc):
+        return f"{app} is already open."
+    for path in spec.get("paths", []):
+        ep = os.path.expandvars(path)
+        if os.path.exists(ep):
+            try:
+                subprocess.Popen([ep])
+                return f"Opening {app}."
+            except Exception as ex:
+                print(f"[app-open] desktop launch failed for {app}: {ex}")
+    cmd = spec.get("cmd")
+    if cmd:
+        try:
+            subprocess.Popen(cmd, shell=True)
+            return f"Opening {app}."
+        except Exception as ex:
+            print(f"[app-open] desktop cmd fallback failed for {app}: {ex}")
+    return (f"I couldn't find {app} where I expected on this PC — "
+            "you may need to open it manually (or tell me its install path).")
+
+
+def _close_tab(app: str, url: str, post=None) -> str:
+    """Close an app's Chrome tab via the debug port. Desktop apps aren't closed
+    here (only browser tabs)."""
+    if not url:
+        return f"I can close browser tabs, but not the {app} app yet."
+    tabs = _debug_json("/json")
+    if tabs is None:
+        return (f"I can't close {app} — that needs IRIS's Chrome "
+                "(debug mode) running.")
+    key = _normalize(url)
+    app_lower = app.lower()
+    target = next((t for t in tabs
+                   if t.get("type") == "page"
+                   and (_normalize(t.get("url", "")).startswith(key)
+                        or app_lower in t.get("title", "").lower())),
+                  None)
+    if target is None:
+        return f"{app} isn't open."
+    # Chrome's /json/close replies with plain text ("Target is closing"), not
+    # JSON, so _debug_json returns None even though the tab did close. Fire it
+    # and report success rather than misreading that None as a failure.
+    _debug_json(f"/json/close/{target['id']}", method="PUT")
+    return f"Closed {app}."
+
 def handle(intent, post: Optional[Callable[[str], None]] = None
            ) -> Optional[str]:
     """Generalized version of the Gmail opener for any URL-based app --
@@ -164,16 +246,19 @@ def handle(intent, post: Optional[Callable[[str], None]] = None
 
     Returns None for Gmail (`_SKIP_URLS`) so iris_gui.py's existing,
     separately-tested Gmail opener keeps owning that flow."""
+    kind = getattr(intent, "intent", "open_app")
     e = intent.entities or {}
     app = e.get("app", "App")
     url = (e.get("url") or "").strip()
     force_new = bool(e.get("new"))
 
+    if kind == "close_app":
+        return _close_tab(app, url, post)
+
     if any(s in url for s in _SKIP_URLS):
         return None  # let the dedicated handler (Gmail) own this
     if not url:
-        return (f"I can open websites for {app} for now — "
-                 "desktop apps come later")
+        return _launch_desktop(app, post)   # desktop exe (Chrome/Slack/VS Code/Notion)
 
     tabs = _debug_json("/json")
     if tabs is not None:

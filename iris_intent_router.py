@@ -70,6 +70,7 @@ except Exception:
 #    world: open apps, ask about what the camera sees, ask general questions) ─
 INTENTS = (
     "open_app",        # "open gmail", "open instagram", "open maps"
+    "close_app",       # "close instagram", "close youtube tab"
     "vision_query",    # "what am I looking at", "where did I leave my phone"
     "info",            # "what's the weather"
     "question",        # general Q&A → chat/LLM
@@ -139,6 +140,7 @@ _VISION_LOCATE_RE = re.compile(
 
 _CANCEL_RE = re.compile(r"\b(cancel|never mind|nevermind|stop|forget it|abort)\b", re.I)
 _OPEN_RE   = re.compile(r"\b(open|launch|go to|pull up|bring up|show me|start)\b", re.I)
+_CLOSE_RE  = re.compile(r"\b(close|quit|exit|shut)\b", re.I)
 _WEATHER_RE = re.compile(r"\bweather|forecast|temperature (outside|today)|how (hot|cold)\b", re.I)
 _NEW_RE    = re.compile(r"\b(new|another|fresh|second)\b", re.I)
 
@@ -215,6 +217,13 @@ def keyword_route(text: str) -> RouterIntent:
     # 1) cancel — highest priority
     if _CANCEL_RE.search(low):
         return R("cancel", 0.96)
+
+    # 1b) close app — "close/quit/exit <app>" (e.g. "close instagram")
+    if _CLOSE_RE.search(low):
+        _capp = _match_app(low)
+        if _capp:
+            _n, _u, _ = _capp
+            return R("close_app", 0.92, app=_n, url=_u or "")
 
     # 2) explicit app open — "open/launch/go to <app>"
     app = _match_app(low)
