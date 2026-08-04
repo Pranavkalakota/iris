@@ -1869,12 +1869,52 @@ class ChatTab(QWidget):
         # The currently-selected photo (clicked in the Photos tab, or
         # resolved by a chat query) — lets follow-ups reference "this photo".
         self._active_photo: Optional[object] = None
+        # --- IRIS M3 spotify: ADD ---
+        self._spotify_pending_track: Optional[dict] = None
+        self._spotify_last_track: Optional[dict] = None
+        # --- IRIS M3 spotify: END ---
         self._main_invoke.connect(lambda fn: fn())
         self._build_ui()
         self._init_ollama()
     # -- run something on the GUI thread from any thread --
     def _call_main(self, fn) -> None:
         self._main_invoke.emit(fn)
+    # --- IRIS M3 spotify: ADD ---
+    def _spotify_pull_up(self, artist: str, track: str) -> None:
+        import iris_spotify as _sp
+        ok, result = _sp.resolve_song(artist, track or None)
+        if not ok:
+            self._call_main(lambda: self._append_iris(result))
+            return
+        self._spotify_pending_track = result
+        self._spotify_last_track = result
+        msg = f"Found \"{result['name']}\" by {result['artist']}. Say " \
+              "\"play it now\" when you're ready."
+        self._call_main(lambda: self._append_iris(msg))
+    def _spotify_play_pending(self) -> None:
+        import iris_spotify as _sp
+        track = self._spotify_pending_track
+        if track is None:
+            self._call_main(lambda: self._append_iris(
+                "Nothing queued up right now."))
+            return
+        ok, msg = _sp.play_track(track["uri"])
+        if ok:
+            self._spotify_pending_track = None
+        self._call_main(lambda: self._append_iris(msg))
+    def _spotify_add_to_playlist(self, playlist_name: str,
+                                  track: dict) -> None:
+        import iris_spotify as _sp
+        playlist = _sp.match_playlist(playlist_name)
+        if playlist is None:
+            self._call_main(lambda: self._append_iris(
+                f"I couldn't find a playlist called \"{playlist_name}\"."))
+            return
+        ok, msg = _sp.add_to_playlist(playlist["id"], track["uri"])
+        result = (f"Added \"{track['name']}\" to {playlist['name']}."
+                   if ok else msg)
+        self._call_main(lambda: self._append_iris(result))
+    # --- IRIS M3 spotify: END ---
     # ── session logging ──────────────────────────────────────────────────
     def _log(self, role: str, content: str) -> None:
         if self._sessions is not None and self._session is not None:
@@ -3001,6 +3041,60 @@ class ChatTab(QWidget):
         except Exception as _m2e:
             print("[m2] open-app gate failed:", _m2e)
         # --- IRIS M2 open-app: END ---
+        # --- IRIS M3 spotify: ADD ---
+        try:
+            from iris_intent_router import keyword_route as _sp_kw
+            _kw = _sp_kw(text)
+            # confirm_play / add_to_playlist are fixed-phrase patterns —
+            # trust the keyword classifier directly and skip the LLM. The
+            # 1b router model isn't reliable disambiguating "play it now"
+            # from "play <song> by <artist>" — it tends to copy entity
+            # values from the nearest few-shot example instead of
+            # recognizing no artist was actually named.
+            if _kw.intent == "confirm_play":
+                if self._spotify_pending_track is not None:
+                    self._start_bg(self._spotify_play_pending)
+                else:
+                    self._append_iris(
+                        "Nothing queued up right now — pull up a song first.")
+                return
+            if _kw.intent == "add_to_playlist":
+                playlist_name = (_kw.entities.get("playlist") or "").strip()
+                track_ctx = (self._spotify_pending_track
+                             or self._spotify_last_track)
+                if track_ctx is None:
+                    self._append_iris(
+                        "I don't have a song queued up — pull one up first.")
+                    return
+                if not playlist_name:
+                    import config_phase9 as _spc
+                    playlist_name = getattr(
+                        _spc, "SPOTIFY_DEFAULT_PLAYLIST_NAME", "").strip()
+                if not playlist_name:
+                    self._append_iris("Which playlist should I add it to?")
+                    return
+                self._start_bg(
+                    lambda: self._spotify_add_to_playlist(
+                        playlist_name, track_ctx))
+                return
+            # play_song genuinely needs NLU for artist/track extraction —
+            # LLM-assisted here, unlike the two branches above.
+            from iris_intent_router import route as _sp_route
+            _spi = _sp_route(text, use_llm=True)
+            if _spi.intent == "play_song" and _spi.confidence >= 0.6:
+                artist = (_spi.entities.get("artist") or "").strip()
+                track = (_spi.entities.get("track") or "").strip()
+                if not artist:
+                    self._append_iris("Which artist did you want?")
+                    return
+                self._append_iris(
+                    f"Pulling up {(track + ' by ') if track else ''}"
+                    f"{artist}…" if track else f"Pulling up a song by {artist}…")
+                self._start_bg(lambda: self._spotify_pull_up(artist, track))
+                return
+        except Exception as _spe:
+            print("[spotify] gate failed:", _spe)
+        # --- IRIS M3 spotify: END ---
         # --- IRIS meta-question: ADD ---
         if iq is not None and iq.is_meta_question(text):
             provider, model = self._resolve_current_model()

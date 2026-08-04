@@ -80,6 +80,9 @@ INTENTS = (
     "start_video",     # start recording video
     "start_audio",     # start recording audio
     "cancel",          # "cancel" / "stop" / "never mind"
+    "play_song",       # "pull up a kendrick lamar song", "play something by drake"
+    "confirm_play",    # "you can play it now", "go ahead and play it"
+    "add_to_playlist", # "add it to my workout playlist"
     "none",            # nothing actionable
 )
 
@@ -143,6 +146,23 @@ _OPEN_RE   = re.compile(r"\b(open|launch|go to|pull up|bring up|show me|start)\b
 _CLOSE_RE  = re.compile(r"\b(close|quit|exit|shut)\b", re.I)
 _WEATHER_RE = re.compile(r"\bweather|forecast|temperature (outside|today)|how (hot|cold)\b", re.I)
 _NEW_RE    = re.compile(r"\b(new|another|fresh|second)\b", re.I)
+
+# --- IRIS M3 spotify: ADD ---
+_PLAY_SONG_RE = re.compile(
+    r"\b(play|pull up|put on|throw on|queue up)\b.*\b(song|track|music)\b|"
+    r"\b(play|pull up|put on|throw on|queue up)\b.+\bby\s+\w+", re.I)
+_CONFIRM_PLAY_RE = re.compile(
+    r"\b(you can play it( now)?|play it now|go ahead and play( it)?|"
+    r"play (it|that)( now)?)\b", re.I)
+_ADD_PLAYLIST_RE = re.compile(
+    r"\badd (it|that|this) to\b", re.I)
+_BY_ARTIST_RE = re.compile(r"\bby\s+([a-z][a-z0-9 .'\-&]*)$", re.I)
+_SONG_BEFORE_KEYWORD_RE = re.compile(
+    r"(?:play|pull up|put on|throw on|queue up)\s+(?:a|an|some)?\s*"
+    r"([a-z][a-z0-9 .'\-&]*?)\s+(?:song|track)\b", re.I)
+_PLAYLIST_NAME_RE = re.compile(
+    r"\badd (?:it|that|this) to (?:my )?(.+?)(?:\s+playlist)?$", re.I)
+# --- IRIS M3 spotify: END ---
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -248,8 +268,25 @@ def keyword_route(text: str) -> RouterIntent:
         name, url, _alias = app
         return R("open_app", 0.72, app=name, url=url, new=bool(_NEW_RE.search(low)))
 
-    # 5) existing iris_query classifiers (video/audio/email/memory/photo)
-    if _iq is not None:
+    # --- IRIS M3 spotify: ADD ---
+    if _CONFIRM_PLAY_RE.search(low):
+        return R("confirm_play", 0.75)
+    if _ADD_PLAYLIST_RE.search(low):
+        m = _PLAYLIST_NAME_RE.search(low)
+        playlist = m.group(1).strip() if m else ""
+        return R("add_to_playlist", 0.8, playlist=playlist)
+    if _PLAY_SONG_RE.search(low):
+        artist = ""
+        m = _BY_ARTIST_RE.search(low)
+        if m:
+            artist = m.group(1).strip()
+        else:
+            m2 = _SONG_BEFORE_KEYWORD_RE.search(low)
+            if m2:
+                artist = m2.group(1).strip()
+        return R("play_song", 0.7, artist=artist, track="")
+    # --- IRIS M3 spotify: END ---
+    # 5) existing iris_query classifiers (video/audio/email/memory/photo)    if _iq is not None:
         try:
             ai = _iq.classify_action(text)
             k = getattr(ai, "kind", "none")
@@ -290,13 +327,22 @@ _LLM_SYSTEM = (
     "Classify the user's single utterance into ONE intent and return ONLY a "
     "compact JSON object, no prose. Schema:\n"
     '{"intent": "<one of: open_app, vision_query, info, question, '
-    'memory_recall, email, photo, start_video, start_audio, cancel, none>", '
+    'memory_recall, email, photo, start_video, start_audio, cancel, '
+    'play_song, confirm_play, add_to_playlist, none>", '
     '"confidence": <0..1>, "entities": {<optional: app, url, kind, topic, '
-    'question, query>}}\n'
+    'question, query, artist, track, playlist>}}\n'
     "Guidance: 'open/launch/go to <app>' -> open_app (entities.app). "
     "'what am I looking at' / 'what is this' -> vision_query kind=identify. "
     "'where did I leave/put my X' -> vision_query kind=locate. "
     "'what's the weather' -> info topic=weather. "
+    "'play/pull up/put on <a song / a song by X / X's song>' -> play_song "
+    "with entities.artist (required) and entities.track (only if a "
+    "specific song title was named, else omit it). "
+    "'you can play it now' / 'play it now' / 'go ahead and play it' -> "
+    "confirm_play (no entities needed — this refers to whatever was just "
+    "pulled up). "
+    "'add it to my <playlist> playlist' -> add_to_playlist with "
+    "entities.playlist (the playlist name only, no filler words). "
     "A general knowledge or chat question -> question. "
     "'cancel/stop/never mind' -> cancel. Unclear -> none with low confidence."
 )
@@ -312,6 +358,14 @@ _LLM_FEWSHOT = [
      '{"intent":"question","confidence":0.9,"entities":{}}'),
     ("open instagram",
      '{"intent":"open_app","confidence":0.96,"entities":{"app":"Instagram"}}'),
+    ("pull up a kendrick lamar song",
+     '{"intent":"play_song","confidence":0.93,"entities":{"artist":"Kendrick Lamar"}}'),
+    ("play alright by kendrick lamar",
+     '{"intent":"play_song","confidence":0.95,"entities":{"artist":"Kendrick Lamar","track":"Alright"}}'),
+    ("you can play it now",
+     '{"intent":"confirm_play","confidence":0.95,"entities":{}}'),
+    ("add it to my workout playlist",
+     '{"intent":"add_to_playlist","confidence":0.92,"entities":{"playlist":"workout"}}'),
 ]
 
 

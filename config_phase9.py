@@ -56,6 +56,12 @@ AUTO_SUMMARIZE       = True
 OLLAMA_URL           = "http://localhost:11434"
 OLLAMA_MODEL         = "llama3.2:3b"
 OLLAMA_TIMEOUT_S     = 120.0
+
+SPOTIFY_CLIENT_ID     = os.environ.get("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")
+SPOTIFY_REDIRECT_URI  = "http://127.0.0.1:8888/callback"
+SPOTIFY_DEFAULT_PLAYLIST_NAME = ""   # e.g. "Liked Vibes" — used only if the
+                                      # user says "add it" with no playlist named
 # --- Diagnostics ---
 STATS_INTERVAL_S     = 1.0
 SHOW_REC_DURATION    = True

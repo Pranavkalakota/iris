@@ -8,3 +8,5 @@ __pycache__/
 credentials.json
 token.json
 iris_api_keys.json
+
+.spotify_cache
