@@ -10061,6 +10061,11 @@ class AudioTab(QWidget):
             _wi = _wr(text, use_llm=False)
             if _wi.intent in ("open_app", "close_app") and _wi.confidence >= 0.85:
                 return True
+            # --- IRIS M3 spotify: ADD ---
+            if _wi.intent in ("play_song", "confirm_play",
+                              "add_to_playlist") and _wi.confidence >= 0.6:
+                return True
+            # --- IRIS M3 spotify: END ---
         except Exception:
             pass
         if iq.is_photo_trigger(text):

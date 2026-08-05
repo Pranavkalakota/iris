@@ -1,0 +1,49 @@
+{
+  "audio_file": "live_2026-08-04_12-59-26.wav",
+  "model": "medium.en",
+  "duration_seconds": 40.4694375,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.30036735534668,
+  "realtime_factor": 0.2051021182428513,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 2.0,
+      "text": "Yeah, um...",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 2.0,
+      "end": 3.0,
+      "text": "Let's go here.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 3.0,
+      "end": 9.09,
+      "text": "Um...",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 9.09,
+      "end": 12.56,
+      "text": "Play God's Plan by Drake.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

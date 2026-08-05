@@ -1,0 +1,76 @@
+{
+  "audio_file": "live_2026-08-04_13-01-09.wav",
+  "model": "medium.en",
+  "duration_seconds": 174.0775,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 11.858881711959839,
+  "realtime_factor": 0.06812414994447784,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.8,
+      "text": "Can you just say- I think I just hardcoded to a version of how you say it, which I'll fix later, but let's just see if it works.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 6
+    },
+    {
+      "start": 7.26,
+      "end": 9.26,
+      "text": "Can you pull up a Drake song?",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 10.7,
+      "end": 70.97,
+      "text": "What? Pull up a Drake song.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 70.97,
+      "end": 87.28,
+      "text": "Pull up a Drake song.",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 168.07,
+      "end": 170.07,
+      "text": "Nah, it's not doing it.",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 170.35,
+      "end": 172.35,
+      "text": "Okay, wait. Can I have control?",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 172.35,
+      "end": 174.35,
+      "text": "Yeah, you're in control.",
+      "speaker": "Unknown 7",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

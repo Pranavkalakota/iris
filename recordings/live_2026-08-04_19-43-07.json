@@ -1,0 +1,67 @@
+{
+  "audio_file": "live_2026-08-04_19-43-07.wav",
+  "model": "medium.en",
+  "duration_seconds": 2536.1368125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 10.8493332862854,
+  "realtime_factor": 0.004277897482821779,
+  "segments": [
+    {
+      "start": 1.2,
+      "end": 4.7,
+      "text": "Open Spotify",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 4.76,
+      "end": 25.3,
+      "text": "Open Spotify play a Kendrick Lamar song",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 64.79,
+      "end": 66.29,
+      "text": "Play it now",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 66.29,
+      "end": 196.95,
+      "text": "Play it now a a song from humza's walk playlist add money tree money trees the humzas walk",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 197.41,
+      "end": 237.65,
+      "text": "playlist eat trees",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 237.93,
+      "end": 240.85,
+      "text": "to humza walk playlist",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.628,
+      "speaker_kind": "weak",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}
