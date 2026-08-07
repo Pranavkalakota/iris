@@ -1,0 +1,22 @@
+{
+  "audio_file": "live_2026-08-06_21-37-11.wav",
+  "model": "medium.en",
+  "duration_seconds": 175.178625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 5.728331089019775,
+  "realtime_factor": 0.03269994320950844,
+  "segments": [
+    {
+      "start": 34.16,
+      "end": 132.03,
+      "text": "hole up a drake song hole up a drake song play it a drake song up a drake song",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

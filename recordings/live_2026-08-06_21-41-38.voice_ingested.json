@@ -1,0 +1,36 @@
+{
+  "ingested_at": 1786077876.0423453,
+  "wav_path": "C:\\audio_stream_glass_version\\recordings\\live_2026-08-06_21-41-38.wav",
+  "clusters_total": 3,
+  "clusters_matched": 3,
+  "clusters_enrolled": 0,
+  "people": [
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.899,
+      "cluster_id": 0,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    },
+    {
+      "person_id": 71,
+      "name": "Humza",
+      "similarity": 0.605,
+      "cluster_id": 1,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": false
+    },
+    {
+      "person_id": 132,
+      "name": "Unknown 63",
+      "similarity": 0.945,
+      "cluster_id": 2,
+      "diarizer_kind": "unknown",
+      "new": false,
+      "reinforced": true
+    }
+  ]
+}

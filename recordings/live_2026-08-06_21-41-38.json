@@ -1,0 +1,49 @@
+{
+  "audio_file": "live_2026-08-06_21-41-38.wav",
+  "model": "medium.en",
+  "duration_seconds": 377.5605625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 8.337993144989014,
+  "realtime_factor": 0.02208385613629605,
+  "segments": [
+    {
+      "start": 23.63,
+      "end": 127.41,
+      "text": "Play a Kendrick Lamar song. Play a Kendrick Lamar song. Play a Kendrick Lamar song.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 150.63,
+      "end": 153.43,
+      "text": "Open Spotify. Play a Kendrick Lamar song.",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 183.65,
+      "end": 305.59,
+      "text": "Play it now.",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 305.59,
+      "end": 375.47,
+      "text": "Play it now. Just to let you know you're a motherfucking piece of shit.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

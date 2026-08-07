@@ -1,0 +1,94 @@
+{
+  "audio_file": "live_2026-08-06_21-32-44.wav",
+  "model": "medium.en",
+  "duration_seconds": 829.45925,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 9.719727993011475,
+  "realtime_factor": 0.011718150099611855,
+  "segments": [
+    {
+      "start": 9.1,
+      "end": 19.1,
+      "text": "Open Spotify",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 5
+    },
+    {
+      "start": 19.1,
+      "end": 375.73,
+      "text": "Open Spotify",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 375.73,
+      "end": 527.23,
+      "text": "Play a Kendrick Lamar song",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 527.23,
+      "end": 529.23,
+      "text": "Play 20 Cigarettes by Morgan Wallen",
+      "speaker": "Unknown 3",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 4
+    },
+    {
+      "start": 529.23,
+      "end": 568.93,
+      "text": "Play",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 568.93,
+      "end": 570.93,
+      "text": "20 Cigarettes",
+      "speaker": "Unknown 4",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 3
+    },
+    {
+      "start": 570.93,
+      "end": 689.7,
+      "text": "by Morgan Wallen",
+      "speaker": "Unknown 2",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 689.7,
+      "end": 691.7,
+      "text": "Play Johnny Dang",
+      "speaker": "Unknown 5",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 2
+    },
+    {
+      "start": 691.7,
+      "end": 693.7,
+      "text": "by the Mexican OT",
+      "speaker": "Unknown 6",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

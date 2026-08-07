@@ -1,0 +1,31 @@
+{
+  "audio_file": "live_2026-08-06_21-38-41.wav",
+  "model": "medium.en",
+  "duration_seconds": 346.1178125,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 6.855628728866577,
+  "realtime_factor": 0.019807211536871067,
+  "segments": [
+    {
+      "start": 14.19,
+      "end": 165.72,
+      "text": "Pull up a Drake song, play a Kendrick Lamar song, play a Drake song, piece of motherfucking",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    },
+    {
+      "start": 165.72,
+      "end": 226.82,
+      "text": "shit, fucking work you bitch, play a Drake song.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

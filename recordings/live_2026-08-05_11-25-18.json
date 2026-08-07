@@ -1,0 +1,85 @@
+{
+  "audio_file": "live_2026-08-05_11-25-18.wav",
+  "model": "medium.en",
+  "duration_seconds": 166.8255625,
+  "language": "en",
+  "language_probability": 1,
+  "transcription_seconds": 17.59667158126831,
+  "realtime_factor": 0.10547946799980555,
+  "segments": [
+    {
+      "start": 1.68,
+      "end": 84.95,
+      "text": "Book a meeting with Zane at 3pm this Saturday.",
+      "speaker": "Unknown 1",
+      "speaker_confidence": 0.0,
+      "speaker_kind": "unknown",
+      "_cluster": 1
+    },
+    {
+      "start": 84.95,
+      "end": 87.95,
+      "text": "What is my schedule looking like for today?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 87.95,
+      "end": 95.88,
+      "text": "Do I have any meetings in the next 4 hours?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 95.88,
+      "end": 100.61,
+      "text": "Can you free up my schedule on Saturday?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 100.61,
+      "end": 108.83,
+      "text": "Do I have any important meetings up and coming?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 108.83,
+      "end": 116.2,
+      "text": "Where is the location to my 5pm meeting tonight?",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 116.2,
+      "end": 151.13,
+      "text": "Let's meet back up on Thursday at 3pm EST time.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    },
+    {
+      "start": 151.13,
+      "end": 156.24,
+      "text": "At Big Apple Bagels.",
+      "speaker": "Humza?",
+      "speaker_confidence": 0.667,
+      "speaker_kind": "weak",
+      "_cluster": 0
+    }
+  ],
+  "diarized": true,
+  "diarizer": "speechbrain-ecapa"
+}

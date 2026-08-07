@@ -83,6 +83,29 @@ INTENTS = (
     "play_song",       # "pull up a kendrick lamar song", "play something by drake"
     "confirm_play",    # "you can play it now", "go ahead and play it"
     "add_to_playlist", # "add it to my workout playlist"
+    # --- IRIS M2 youtube: ADD ---
+    "yt_search",       # "search youtube for python tutorials"
+    "yt_play",         # "play the latest veritasium video"
+    "yt_pause",        # "pause the video" / "resume"
+    "yt_seek",         # "skip ahead 30 seconds" / "go back 10 seconds"
+    "yt_speed",        # "set speed to 1.5x"
+    "yt_captions",     # "enable captions" / "turn off subtitles"
+    "yt_subscribe",    # "subscribe to MKBHD"
+    "yt_like",         # "like this video"
+    "yt_channel",      # "open the fireship channel"
+    "yt_watch_later",  # "show my watch later playlist"
+    # --- IRIS M2 youtube: END ---
+    # --- IRIS M2 gdocs: ADD ---
+    "gdocs_create",    # "create a new document"
+    "gdocs_search",    # "find documents about marketing"
+    "gdocs_edit",      # "replace AI with Artificial Intelligence"
+    "gdocs_heading",   # "add a heading 2"
+    "gdocs_bullets",   # "turn this into bullets"
+    "gdocs_comment",   # "comment: review this section"
+    "gdocs_share",     # "share this with Alex"
+    "gdocs_rename",    # "rename it to Project Proposal"
+    "gdocs_export",    # "download this as a PDF"
+    # --- IRIS M2 gdocs: END ---
     "none",            # nothing actionable
 )
 
@@ -163,6 +186,87 @@ _SONG_BEFORE_KEYWORD_RE = re.compile(
 _PLAYLIST_NAME_RE = re.compile(
     r"\badd (?:it|that|this) to (?:my )?(.+?)(?:\s+playlist)?$", re.I)
 # --- IRIS M3 spotify: END ---
+
+# --- IRIS M2 youtube: ADD ---
+# Disambiguation: "play/watch/pause/resume/skip" → YouTube playback.
+#                 "record/start recording/capture" → ESP32 video (start_video).
+# Generic phrases like "play a video" or bare "pause" go to YouTube because
+# the ESP32 recording path has its own verbs (record, capture, start recording).
+_YT_SEARCH_RE = re.compile(
+    r"\b(?:search|find|look up|look for)\b.*\b(?:youtube|yt|videos?)\b|"
+    r"\b(?:youtube|yt)\b.*\b(?:search|find|look up|look for)\b", re.I)
+_YT_PLAY_RE = re.compile(
+    r"\b(?:play|watch|put on|throw on)\b.*\b(?:on youtube|youtube|videos?)\b|"
+    r"\b(?:youtube|yt)\b.*\b(?:play|watch)\b|"
+    # Generic: "play a video", "watch a video", "play something"
+    r"\b(?:play|watch)\s+(?:a|the|some|this|that|next|another)\s+video\b|"
+    r"\b(?:play|watch)\s+(?:something|anything)\b|"
+    # "next video" / "previous video"
+    r"\b(?:next|previous|prev)\s+video\b", re.I)
+_YT_PAUSE_RE = re.compile(
+    # Bare "pause", "resume", "unpause" → YouTube (ESP32 uses "stop recording")
+    r"\b(?:pause|unpause|resume)\b(?:\s+(?:the\s+)?(?:video|playback|it|this))?\s*$|"
+    r"\b(?:pause|unpause|resume)\b.*\b(?:video|youtube|yt|playback)\b", re.I)
+_YT_SEEK_RE = re.compile(
+    r"\b(?:skip|seek|jump|fast\s*forward|rewind|go\s*back|go\s*forward)\b.*?"
+    r"\b(\d+)\s*(?:seconds?|secs?|minutes?|mins?)\b", re.I)
+# Generic seek without explicit seconds (defaults to 10s in keyword_route)
+_YT_SEEK_GENERIC_RE = re.compile(
+    r"\b(?:skip\s*(?:ahead|forward)|fast\s*forward|jump\s*(?:ahead|forward))\b|"
+    r"\b(?:go\s*back|rewind|skip\s*back(?:ward)?)\b", re.I)
+_YT_SPEED_RE = re.compile(
+    r"\b(?:speed|playback\s*(?:speed|rate))\b.*?(\d+\.?\d*)\s*x?\b|"
+    r"\b(\d+\.?\d*)\s*x\s*(?:speed)?\b|"
+    # Generic: "make it faster", "slow it down", "speed up", "slow down"
+    r"\b(?:make\s+it\s+)?(?:faster|speed\s*up)\b|"
+    r"\b(?:make\s+it\s+)?(?:slower|slow\s*(?:it\s+)?down)\b", re.I)
+_YT_CAPTIONS_RE = re.compile(
+    r"\b(?:captions?|subtitles?|cc|closed\s*captions?)\b|"
+    r"\b(?:turn\s+(?:on|off)\s+(?:the\s+)?subs?)\b", re.I)
+_YT_SUBSCRIBE_RE = re.compile(
+    r"\bsubscribe\b(?!\s+to\s+(?:a\s+)?(?:plan|service|newsletter))", re.I)
+_YT_LIKE_RE = re.compile(
+    r"\blike\b.*\b(?:this|the|that)\s*(?:video)\b|"
+    r"\b(?:thumbs?\s*up)\b|"
+    r"\blike\s+(?:this|it)\b", re.I)
+_YT_CHANNEL_RE = re.compile(
+    r"\b(?:open|go to|visit|show|pull up)\b.*\bchannel\b", re.I)
+_YT_WATCH_LATER_RE = re.compile(
+    r"\bwatch\s*later\b|"
+    r"\b(?:save|add)\s+(?:this\s+)?(?:to\s+)?watch\s*later\b", re.I)
+# --- IRIS M2 youtube: END ---
+
+# --- IRIS M2 gdocs: ADD ---
+_GDOCS_CREATE_RE = re.compile(
+    r"\b(?:create|make|new|start|open)\b.*\b(?:new\s+)?(?:doc(?:ument)?|google\s*doc)\b|"
+    r"\bnew\s+doc(?:ument)?\b", re.I)
+_GDOCS_SEARCH_RE = re.compile(
+    r"\b(?:search|find|look for|look up)\b.*\b(?:doc(?:ument)?s?|google\s*doc|drive)\b", re.I)
+_GDOCS_EDIT_RE = re.compile(
+    r"\b(?:find\s*(?:and\s*)?replace|replace)\b.*\bwith\b", re.I)
+_GDOCS_HEADING_RE = re.compile(
+    r"\b(?:heading|header)\b.*?(\d)?\b|"
+    r"\b(?:add|insert|make|set)\b.*\b(?:heading|header|title|h[1-6])\b|"
+    r"\bmake\s+(?:this|it)\s+(?:a\s+)?heading\b", re.I)
+_GDOCS_BULLETS_RE = re.compile(
+    r"\bbullet(?:s|ed)?\s*(?:list|point|points)?\b|"
+    r"\b(?:toggle|add|insert|make)\b.*\bbullet\b|"
+    r"\b(?:add|make|turn\s+(?:this|it)\s+into)\b.*\b(?:bullet|list)\b", re.I)
+_GDOCS_COMMENT_RE = re.compile(
+    r"\b(?:add|insert|leave|make|put)\b.*\bcomment\b|"
+    r"\bcomment\b.*\b(?:on|about|this|here)\b", re.I)
+_GDOCS_SHARE_RE = re.compile(
+    r"\bshare\b.*\b(?:doc(?:ument)?|this|it)\b|"
+    r"\bshare\s+(?:with|to)\b", re.I)
+_GDOCS_RENAME_RE = re.compile(
+    r"\brename\b.*\b(?:doc(?:ument)?|this|it)\b|"
+    r"\brename\s+(?:to|it)\b|"
+    r"\b(?:change|update)\s+(?:the\s+)?(?:title|name)\b", re.I)
+_GDOCS_EXPORT_RE = re.compile(
+    r"\b(?:export|download)\b.*\b(?:pdf|doc(?:ument)?|this)\b|"
+    r"\b(?:save|download)\s+(?:(?:it|this)\s+)?as\s+(?:a\s+)?pdf\b|"
+    r"\b(?:convert|turn)\b.*\bpdf\b", re.I)
+# --- IRIS M2 gdocs: END ---
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -263,6 +367,89 @@ def keyword_route(text: str) -> RouterIntent:
     if _WEATHER_RE.search(low):
         return R("info", 0.8, topic="weather")
 
+    # --- IRIS M2 youtube: ADD (before weak app-name so "search youtube"
+    #     doesn't fall into the open_app bucket) ---
+    # Pause/resume — bare "pause"/"resume" goes here (ESP32 uses "stop recording")
+    if _YT_PAUSE_RE.search(low):
+        return R("yt_pause", 0.90)
+    # Seek with explicit seconds
+    if _YT_SEEK_RE.search(low):
+        m = _YT_SEEK_RE.search(low)
+        secs = int(m.group(1))
+        if "min" in low:
+            secs *= 60
+        if any(w in low for w in ("back", "rewind", "behind")):
+            secs = -secs
+        return R("yt_seek", 0.88, seconds=secs)
+    # Generic seek: "skip ahead", "go back", "fast forward" without seconds → default 10s
+    if _YT_SEEK_GENERIC_RE.search(low):
+        secs = 10
+        if any(w in low for w in ("back", "rewind")):
+            secs = -10
+        return R("yt_seek", 0.85, seconds=secs)
+    # Speed with explicit rate OR generic "faster"/"slower"
+    if _YT_SPEED_RE.search(low):
+        m = re.search(r"(\d+\.?\d*)\s*x", low, re.I)
+        if not m:
+            m = re.search(r"(?:speed|rate)\b.*?(\d+\.?\d*)", low, re.I)
+        if m:
+            rate = float(m.group(1))
+        elif any(w in low for w in ("faster", "speed up")):
+            rate = 1.5
+        elif any(w in low for w in ("slower", "slow")):
+            rate = 0.75
+        else:
+            rate = 1.0
+        return R("yt_speed", 0.88, rate=rate)
+    if _YT_CAPTIONS_RE.search(low):
+        return R("yt_captions", 0.88)
+    if _YT_SUBSCRIBE_RE.search(low):
+        return R("yt_subscribe", 0.88)
+    if _YT_LIKE_RE.search(low):
+        return R("yt_like", 0.88)
+    if _YT_WATCH_LATER_RE.search(low):
+        return R("yt_watch_later", 0.88)
+    if _YT_CHANNEL_RE.search(low):
+        ch = re.sub(r".*\b(?:open|go to|visit|show|pull up)\b\s*(?:the\s*)?", "", low, flags=re.I)
+        ch = re.sub(r"\s*\bchannel\b.*", "", ch, flags=re.I).strip()
+        return R("yt_channel", 0.85, channel=ch)
+    if _YT_SEARCH_RE.search(low):
+        q = re.sub(r"\b(?:search|find|look up|look for|on|youtube|yt|for|videos?)\b", "", low, flags=re.I).strip()
+        return R("yt_search", 0.88, query=q)
+    if _YT_PLAY_RE.search(low):
+        q = re.sub(r"\b(?:play|watch|put on|throw on|on youtube|youtube|yt|videos?|the|a|some|next|another|something|anything)\b", "", low, flags=re.I).strip()
+        return R("yt_play", 0.85, query=q)
+    # --- IRIS M2 youtube: END ---
+
+    # --- IRIS M2 gdocs: ADD ---
+    if _GDOCS_CREATE_RE.search(low):
+        title = re.sub(r".*\b(?:create|make|new|start)\s+(?:a\s+)?(?:new\s+)?(?:google\s+)?doc(?:ument)?\s*(?:called|named|titled)?\s*", "", low, flags=re.I).strip()
+        return R("gdocs_create", 0.88, title=title)
+    if _GDOCS_EDIT_RE.search(low):
+        m = re.search(r"(?:find\s*(?:and\s*)?replace|replace)\s+(.+?)\s+with\s+(.+)", low, re.I)
+        find_t = m.group(1).strip() if m else ""
+        repl_t = m.group(2).strip() if m else ""
+        return R("gdocs_edit", 0.88, find=find_t, replace=repl_t)
+    if _GDOCS_HEADING_RE.search(low):
+        m = re.search(r"(\d)", low)
+        level = int(m.group(1)) if m else 2
+        return R("gdocs_heading", 0.88, level=level)
+    if _GDOCS_BULLETS_RE.search(low):
+        return R("gdocs_bullets", 0.88)
+    if _GDOCS_COMMENT_RE.search(low):
+        return R("gdocs_comment", 0.88)
+    if _GDOCS_SHARE_RE.search(low):
+        return R("gdocs_share", 0.88)
+    if _GDOCS_RENAME_RE.search(low):
+        name = re.sub(r".*\brename\s+(?:it\s+|this\s+|the\s+doc(?:ument)?\s+)?(?:to\s+)?", "", low, flags=re.I).strip()
+        return R("gdocs_rename", 0.88, name=name)
+    if _GDOCS_EXPORT_RE.search(low):
+        return R("gdocs_export", 0.88)
+    if _GDOCS_SEARCH_RE.search(low):
+        q = re.sub(r"\b(?:search|find|look for|look up|in|on|my|google|drive|doc(?:ument)?s?|for)\b", "", low, flags=re.I).strip()
+        return R("gdocs_search", 0.88, query=q)
+    # --- IRIS M2 gdocs: END ---
+
     # 4b) a known app named without an open verb ("gmail", "youtube") — weak
     if app and app[1]:
         name, url, _alias = app
@@ -286,7 +473,9 @@ def keyword_route(text: str) -> RouterIntent:
                 artist = m2.group(1).strip()
         return R("play_song", 0.7, artist=artist, track="")
     # --- IRIS M3 spotify: END ---
-    # 5) existing iris_query classifiers (video/audio/email/memory/photo)    if _iq is not None:
+
+    # 5) existing iris_query classifiers (video/audio/email/memory/photo)
+    if _iq is not None:
         try:
             ai = _iq.classify_action(text)
             k = getattr(ai, "kind", "none")
@@ -328,9 +517,14 @@ _LLM_SYSTEM = (
     "compact JSON object, no prose. Schema:\n"
     '{"intent": "<one of: open_app, vision_query, info, question, '
     'memory_recall, email, photo, start_video, start_audio, cancel, '
-    'play_song, confirm_play, add_to_playlist, none>", '
+    'play_song, confirm_play, add_to_playlist, '
+    'yt_search, yt_play, yt_pause, yt_seek, yt_speed, yt_captions, '
+    'yt_subscribe, yt_like, yt_channel, yt_watch_later, '
+    'gdocs_create, gdocs_search, gdocs_edit, gdocs_heading, gdocs_bullets, '
+    'gdocs_comment, gdocs_share, gdocs_rename, gdocs_export, none>", '
     '"confidence": <0..1>, "entities": {<optional: app, url, kind, topic, '
-    'question, query, artist, track, playlist>}}\n'
+    'question, query, artist, track, playlist, seconds, rate, level, '
+    'channel, find, replace, name, title>}}\n'
     "Guidance: 'open/launch/go to <app>' -> open_app (entities.app). "
     "'what am I looking at' / 'what is this' -> vision_query kind=identify. "
     "'where did I leave/put my X' -> vision_query kind=locate. "
@@ -343,6 +537,26 @@ _LLM_SYSTEM = (
     "pulled up). "
     "'add it to my <playlist> playlist' -> add_to_playlist with "
     "entities.playlist (the playlist name only, no filler words). "
+    "'search youtube for X' -> yt_search with entities.query. "
+    "'play X on youtube' / 'watch X' -> yt_play with entities.query. "
+    "'pause the video' / 'resume' -> yt_pause. "
+    "'skip ahead 30 seconds' / 'go back 10 seconds' -> yt_seek with "
+    "entities.seconds (negative = backward). "
+    "'set speed to 1.5x' -> yt_speed with entities.rate. "
+    "'turn on captions' / 'enable subtitles' -> yt_captions. "
+    "'subscribe to this channel' -> yt_subscribe. "
+    "'like this video' / 'thumbs up' -> yt_like. "
+    "'open the fireship channel' -> yt_channel with entities.channel. "
+    "'show my watch later' -> yt_watch_later. "
+    "'create a new document' -> gdocs_create with optional entities.title. "
+    "'find documents about marketing' -> gdocs_search with entities.query. "
+    "'replace X with Y' -> gdocs_edit with entities.find and entities.replace. "
+    "'add a heading 2' -> gdocs_heading with entities.level. "
+    "'turn this into bullets' -> gdocs_bullets. "
+    "'add a comment' -> gdocs_comment. "
+    "'share this document' -> gdocs_share. "
+    "'rename it to X' -> gdocs_rename with entities.name. "
+    "'export as PDF' / 'download as PDF' -> gdocs_export. "
     "A general knowledge or chat question -> question. "
     "'cancel/stop/never mind' -> cancel. Unclear -> none with low confidence."
 )
@@ -366,6 +580,46 @@ _LLM_FEWSHOT = [
      '{"intent":"confirm_play","confidence":0.95,"entities":{}}'),
     ("add it to my workout playlist",
      '{"intent":"add_to_playlist","confidence":0.92,"entities":{"playlist":"workout"}}'),
+    # --- IRIS M2 youtube few-shot ---
+    ("search youtube for python tutorials",
+     '{"intent":"yt_search","confidence":0.95,"entities":{"query":"python tutorials"}}'),
+    ("play the latest veritasium video",
+     '{"intent":"yt_play","confidence":0.93,"entities":{"query":"latest veritasium"}}'),
+    ("pause the video",
+     '{"intent":"yt_pause","confidence":0.95,"entities":{}}'),
+    ("skip ahead 30 seconds",
+     '{"intent":"yt_seek","confidence":0.94,"entities":{"seconds":30}}'),
+    ("set speed to 1.5x",
+     '{"intent":"yt_speed","confidence":0.94,"entities":{"rate":1.5}}'),
+    ("turn on captions",
+     '{"intent":"yt_captions","confidence":0.93,"entities":{}}'),
+    ("subscribe to this channel",
+     '{"intent":"yt_subscribe","confidence":0.93,"entities":{}}'),
+    ("like this video",
+     '{"intent":"yt_like","confidence":0.94,"entities":{}}'),
+    ("open the fireship channel",
+     '{"intent":"yt_channel","confidence":0.92,"entities":{"channel":"fireship"}}'),
+    ("show my watch later",
+     '{"intent":"yt_watch_later","confidence":0.93,"entities":{}}'),
+    # --- IRIS M2 gdocs few-shot ---
+    ("create a new document called Project Proposal",
+     '{"intent":"gdocs_create","confidence":0.94,"entities":{"title":"Project Proposal"}}'),
+    ("find documents about marketing",
+     '{"intent":"gdocs_search","confidence":0.92,"entities":{"query":"marketing"}}'),
+    ("replace AI with Artificial Intelligence",
+     '{"intent":"gdocs_edit","confidence":0.93,"entities":{"find":"AI","replace":"Artificial Intelligence"}}'),
+    ("add a heading 2",
+     '{"intent":"gdocs_heading","confidence":0.93,"entities":{"level":2}}'),
+    ("turn this into bullets",
+     '{"intent":"gdocs_bullets","confidence":0.93,"entities":{}}'),
+    ("add a comment",
+     '{"intent":"gdocs_comment","confidence":0.92,"entities":{}}'),
+    ("share this document",
+     '{"intent":"gdocs_share","confidence":0.92,"entities":{}}'),
+    ("rename it to Project Proposal",
+     '{"intent":"gdocs_rename","confidence":0.93,"entities":{"name":"Project Proposal"}}'),
+    ("export as PDF",
+     '{"intent":"gdocs_export","confidence":0.94,"entities":{}}'),
 ]
 
 

@@ -3095,6 +3095,111 @@ class ChatTab(QWidget):
         except Exception as _spe:
             print("[spotify] gate failed:", _spe)
         # --- IRIS M3 spotify: END ---
+        # --- IRIS M2 youtube: ADD ---
+        try:
+            from iris_intent_router import keyword_route as _yt_kw
+            _ykw = _yt_kw(text)
+            if _ykw.intent.startswith("yt_") and _ykw.confidence >= 0.80:
+                import iris_youtube as _yt
+                if _ykw.intent == "yt_search":
+                    q = (_ykw.entities.get("query") or "").strip()
+                    ok, msg = _yt.search(q)
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_play":
+                    q = (_ykw.entities.get("query") or "").strip()
+                    ok, msg = _yt.play_video_by_query(q)
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_pause":
+                    ok, msg = _yt.pause_resume()
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_seek":
+                    secs = _ykw.entities.get("seconds", 10)
+                    ok, msg = _yt.seek(secs)
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_speed":
+                    rate = _ykw.entities.get("rate", 1.0)
+                    ok, msg = _yt.set_speed(rate)
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_captions":
+                    ok, msg = _yt.toggle_captions()
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_subscribe":
+                    ok, msg = _yt.subscribe()
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_like":
+                    ok, msg = _yt.like_video()
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_channel":
+                    ch = (_ykw.entities.get("channel") or "").strip()
+                    ok, msg = _yt.open_channel(ch)
+                    self._append_iris(msg)
+                    return
+                elif _ykw.intent == "yt_watch_later":
+                    ok, msg = _yt.open_watch_later()
+                    self._append_iris(msg)
+                    return
+        except Exception as _yte:
+            print("[youtube] gate failed:", _yte)
+        # --- IRIS M2 youtube: END ---
+        # --- IRIS M2 gdocs: ADD ---
+        try:
+            from iris_intent_router import keyword_route as _gd_kw
+            _gkw = _gd_kw(text)
+            if _gkw.intent.startswith("gdocs_") and _gkw.confidence >= 0.80:
+                import iris_gdocs as _gd
+                if _gkw.intent == "gdocs_create":
+                    title = (_gkw.entities.get("title") or "").strip()
+                    ok, msg = _gd.create_document(title)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_search":
+                    q = (_gkw.entities.get("query") or "").strip()
+                    ok, msg = _gd.search_documents(q)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_edit":
+                    f_text = (_gkw.entities.get("find") or "").strip()
+                    r_text = (_gkw.entities.get("replace") or "").strip()
+                    ok, msg = _gd.find_replace(f_text, r_text)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_heading":
+                    level = _gkw.entities.get("level", 2)
+                    ok, msg = _gd.insert_heading(level)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_bullets":
+                    ok, msg = _gd.toggle_bullets()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_comment":
+                    ok, msg = _gd.insert_comment()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_share":
+                    ok, msg = _gd.share_document()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_rename":
+                    name = (_gkw.entities.get("name") or "").strip()
+                    ok, msg = _gd.rename_document(name)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_export":
+                    ok, msg = _gd.export_pdf()
+                    self._append_iris(msg)
+                    return
+        except Exception as _gde:
+            print("[gdocs] gate failed:", _gde)
+        # --- IRIS M2 gdocs: END ---
         # --- IRIS meta-question: ADD ---
         if iq is not None and iq.is_meta_question(text):
             provider, model = self._resolve_current_model()
@@ -10066,6 +10171,12 @@ class AudioTab(QWidget):
                               "add_to_playlist") and _wi.confidence >= 0.6:
                 return True
             # --- IRIS M3 spotify: END ---
+            # --- IRIS M2 youtube/gdocs: ADD ---
+            if _wi.intent.startswith("yt_") and _wi.confidence >= 0.75:
+                return True
+            if _wi.intent.startswith("gdocs_") and _wi.confidence >= 0.75:
+                return True
+            # --- IRIS M2 youtube/gdocs: END ---
         except Exception:
             pass
         if iq.is_photo_trigger(text):

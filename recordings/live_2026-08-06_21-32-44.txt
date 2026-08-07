@@ -1,0 +1,9 @@
+[00:09.10 -> 00:19.10]  Open Spotify
+[00:19.10 -> 06:15.73]  Open Spotify
+[06:15.73 -> 08:47.23]  Play a Kendrick Lamar song
+[08:47.23 -> 08:49.23]  Play 20 Cigarettes by Morgan Wallen
+[08:49.23 -> 09:28.93]  Play
+[09:28.93 -> 09:30.93]  20 Cigarettes
+[09:30.93 -> 11:29.70]  by Morgan Wallen
+[11:29.70 -> 11:31.70]  Play Johnny Dang
+[11:31.70 -> 11:33.70]  by the Mexican OT
