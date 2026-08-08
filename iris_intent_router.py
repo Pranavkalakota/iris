@@ -101,10 +101,23 @@ INTENTS = (
     "gdocs_edit",      # "replace AI with Artificial Intelligence"
     "gdocs_heading",   # "add a heading 2"
     "gdocs_bullets",   # "turn this into bullets"
+    "gdocs_numbered",  # "make it a numbered list"
     "gdocs_comment",   # "comment: review this section"
     "gdocs_share",     # "share this with Alex"
     "gdocs_rename",    # "rename it to Project Proposal"
     "gdocs_export",    # "download this as a PDF"
+    "gdocs_bold",      # "bold this" / "make it bold"
+    "gdocs_italic",    # "italicize this"
+    "gdocs_underline", # "underline this"
+    "gdocs_strikethrough",  # "strikethrough this"
+    "gdocs_align",     # "center this" / "align left"
+    "gdocs_clear_format",  # "clear formatting"
+    "gdocs_undo",      # "undo that"
+    "gdocs_redo",      # "redo that"
+    "gdocs_insert_text",   # "type hello world" / "write introduction"
+    "gdocs_link",      # "insert a link"
+    "gdocs_font_size", # "make the font bigger" / "font size 14"
+    "gdocs_color",     # "make the text red" / "change color to blue"
     # --- IRIS M2 gdocs: END ---
     "none",            # nothing actionable
 )
@@ -266,6 +279,62 @@ _GDOCS_EXPORT_RE = re.compile(
     r"\b(?:export|download)\b.*\b(?:pdf|doc(?:ument)?|this)\b|"
     r"\b(?:save|download)\s+(?:(?:it|this)\s+)?as\s+(?:a\s+)?pdf\b|"
     r"\b(?:convert|turn)\b.*\bpdf\b", re.I)
+_GDOCS_NUMBERED_RE = re.compile(
+    r"\bnumber(?:ed)?\s+(?:\w+\s+)*list\b|"
+    r"\bordered\s*list\b|"
+    r"\b(?:add|insert|make|toggle|turn\s+(?:this|it)\s+into)\b.*\bnumber(?:ed)?\s*list\b|"
+    r"\b(?:add|insert|make|toggle)\b.*\bordered\s*list\b", re.I)
+_GDOCS_BOLD_RE = re.compile(
+    r"\bbold\b.*\b(?:this|it|text|selection)?\b|"
+    r"\b(?:make|set)\b.*\bbold\b|"
+    r"\btoggle\s+bold\b", re.I)
+_GDOCS_ITALIC_RE = re.compile(
+    r"\bitalic(?:ize|s)?\b.*\b(?:this|it|text|selection)?\b|"
+    r"\b(?:make|set)\b.*\bitalic\b|"
+    r"\btoggle\s+italic\b", re.I)
+_GDOCS_UNDERLINE_RE = re.compile(
+    r"\bunderline\b.*\b(?:this|it|text|selection)?\b|"
+    r"\b(?:make|set|add)\b.*\bunderline\b|"
+    r"\btoggle\s+underline\b", re.I)
+_GDOCS_STRIKETHROUGH_RE = re.compile(
+    r"\bstrike\s*through\b|"
+    r"\bcross\s+(?:this\s+|it\s+)?out\b|"
+    r"\b(?:cross|strike)\s*(?:out|through)\b.*\b(?:this|it|text)?\b|"
+    r"\b(?:make|add)\b.*\bstrike\s*through\b", re.I)
+_GDOCS_ALIGN_RE = re.compile(
+    r"\b(?:align|alignment)\s+(?:left|right|center|centre|justify)\b|"
+    r"\b(?:center|centre)\s+(?:this|it|text|the\s+text|align)\b|"
+    r"\b(?:left|right)\s+align\b|"
+    r"\bjustify\s+(?:this|it|text|the\s+text)?\b", re.I)
+_GDOCS_CLEAR_FORMAT_RE = re.compile(
+    r"\bclear\s+format(?:ting)?\b|"
+    r"\b(?:remove|reset|strip)\s+format(?:ting)?\b|"
+    r"\bnormal\s+text\b|"
+    r"\bplain\s+text\b", re.I)
+_GDOCS_UNDO_RE = re.compile(
+    r"\bundo\b(?:\s+(?:that|this|it|last|change))?\b", re.I)
+_GDOCS_REDO_RE = re.compile(
+    r"\bredo\b(?:\s+(?:that|this|it|last|change))?\b", re.I)
+_GDOCS_INSERT_TEXT_RE = re.compile(
+    r"\b(?:type|write|insert|add|put)\b.*\b(?:in(?:to)?|on|to)\s+(?:the\s+)?doc(?:ument)?\b|"
+    r"\b(?:type|write|insert)\s+(?!a\s+(?:heading|comment|link|bullet|number))(?:in\s+)?(?:the\s+doc(?:ument)?\s+)?(.+)", re.I)
+_GDOCS_LINK_RE = re.compile(
+    r"\b(?:add|insert)\s+(?:a\s+)?link\b|"
+    r"\binsert\s+(?:a\s+)?(?:hyper)?link\b|"
+    r"\b(?:add|create)\s+(?:a\s+)?(?:hyper)?link\b", re.I)
+_GDOCS_FONT_SIZE_RE = re.compile(
+    r"\bfont\s*size\s*(?:to\s+)?(\d+)\b|"
+    r"\b(?:make|set)\s+(?:the\s+)?(?:font|text)\s+(?:size\s+)?(?:to\s+)?(\d+)\b|"
+    r"\b(?:make|set)\s+(?:the\s+)?(?:font|text)\s+(?:bigger|larger|smaller|huge|tiny)\b|"
+    r"\b(?:increase|decrease|enlarge|shrink)\s+(?:the\s+)?(?:font|text)\s*(?:size)?\b|"
+    r"\bbigger\s+(?:font|text)\b|\bsmaller\s+(?:font|text)\b", re.I)
+_GDOCS_COLOR_RE = re.compile(
+    r"\b(?:text|font)\s+colou?r\s+(?:to\s+)?(\w+)\b|"
+    r"\b(?:make|change|set)\s+(?:the\s+)?(?:text|font|it|colou?r)\s+(?:colou?r\s+)?(?:to\s+)?"
+    r"(red|blue|green|black|white|orange|purple|yellow|pink|gray|grey|brown|cyan|magenta)\b|"
+    r"\bcolou?r\s+(?:the\s+)?(?:text|this|it)\s+(\w+)\b|"
+    r"\bchange\s+(?:the\s+)?colou?r\s+(?:to\s+)?"
+    r"(red|blue|green|black|white|orange|purple|yellow|pink|gray|grey|brown|cyan|magenta)\b", re.I)
 # --- IRIS M2 gdocs: END ---
 
 
@@ -423,8 +492,14 @@ def keyword_route(text: str) -> RouterIntent:
 
     # --- IRIS M2 gdocs: ADD ---
     if _GDOCS_CREATE_RE.search(low):
-        title = re.sub(r".*\b(?:create|make|new|start)\s+(?:a\s+)?(?:new\s+)?(?:google\s+)?doc(?:ument)?\s*(?:called|named|titled)?\s*", "", low, flags=re.I).strip()
-        return R("gdocs_create", 0.88, title=title)
+        # Extract title (before "with"/"containing") and content (after)
+        remainder = re.sub(r".*\b(?:create|make|new|start)\s+(?:a\s+)?(?:new\s+)?(?:google\s+)?doc(?:ument)?\s*(?:called|named|titled)?\s*", "", low, flags=re.I).strip()
+        content = ""
+        cm = re.search(r"\s+(?:with|containing|that (?:says|has|includes|contains))\s+(.+)", remainder, re.I)
+        if cm:
+            content = cm.group(1).strip()
+            remainder = remainder[:cm.start()].strip()
+        return R("gdocs_create", 0.88, title=remainder, content=content)
     if _GDOCS_EDIT_RE.search(low):
         m = re.search(r"(?:find\s*(?:and\s*)?replace|replace)\s+(.+?)\s+with\s+(.+)", low, re.I)
         find_t = m.group(1).strip() if m else ""
@@ -434,6 +509,8 @@ def keyword_route(text: str) -> RouterIntent:
         m = re.search(r"(\d)", low)
         level = int(m.group(1)) if m else 2
         return R("gdocs_heading", 0.88, level=level)
+    if _GDOCS_NUMBERED_RE.search(low):
+        return R("gdocs_numbered", 0.88)
     if _GDOCS_BULLETS_RE.search(low):
         return R("gdocs_bullets", 0.88)
     if _GDOCS_COMMENT_RE.search(low):
@@ -441,13 +518,67 @@ def keyword_route(text: str) -> RouterIntent:
     if _GDOCS_SHARE_RE.search(low):
         return R("gdocs_share", 0.88)
     if _GDOCS_RENAME_RE.search(low):
-        name = re.sub(r".*\brename\s+(?:it\s+|this\s+|the\s+doc(?:ument)?\s+)?(?:to\s+)?", "", low, flags=re.I).strip()
+        # Extract the new name — everything after "to" in "rename ... to <new name>"
+        m = re.search(r"\brename\s+.*?\s+to\s+(.+)", low, re.I)
+        if m:
+            name = m.group(1).strip()
+        else:
+            # "rename to X" or just "rename X"
+            name = re.sub(r".*\brename\s+(?:it\s+|this\s+|the\s+doc(?:ument)?\s+)?(?:to\s+)?", "", low, flags=re.I).strip()
         return R("gdocs_rename", 0.88, name=name)
     if _GDOCS_EXPORT_RE.search(low):
         return R("gdocs_export", 0.88)
     if _GDOCS_SEARCH_RE.search(low):
         q = re.sub(r"\b(?:search|find|look for|look up|in|on|my|google|drive|doc(?:ument)?s?|for)\b", "", low, flags=re.I).strip()
         return R("gdocs_search", 0.88, query=q)
+    if _GDOCS_BOLD_RE.search(low):
+        return R("gdocs_bold", 0.88)
+    if _GDOCS_ITALIC_RE.search(low):
+        return R("gdocs_italic", 0.88)
+    if _GDOCS_UNDERLINE_RE.search(low):
+        return R("gdocs_underline", 0.88)
+    if _GDOCS_STRIKETHROUGH_RE.search(low):
+        return R("gdocs_strikethrough", 0.88)
+    if _GDOCS_ALIGN_RE.search(low):
+        align = "center"
+        if re.search(r"\bleft\b", low, re.I):
+            align = "left"
+        elif re.search(r"\bright\b", low, re.I):
+            align = "right"
+        elif re.search(r"\bjustify\b", low, re.I):
+            align = "justify"
+        return R("gdocs_align", 0.88, align=align)
+    if _GDOCS_CLEAR_FORMAT_RE.search(low):
+        return R("gdocs_clear_format", 0.88)
+    if _GDOCS_UNDO_RE.search(low):
+        return R("gdocs_undo", 0.88)
+    if _GDOCS_REDO_RE.search(low):
+        return R("gdocs_redo", 0.88)
+    if _GDOCS_LINK_RE.search(low):
+        return R("gdocs_link", 0.88)
+    if _GDOCS_FONT_SIZE_RE.search(low):
+        m = re.search(r"(\d+)", low)
+        size = int(m.group(1)) if m else 0
+        direction = ""
+        if not size:
+            if any(w in low for w in ("bigger", "larger", "increase", "enlarge", "huge")):
+                direction = "increase"
+            elif any(w in low for w in ("smaller", "decrease", "shrink", "tiny")):
+                direction = "decrease"
+        return R("gdocs_font_size", 0.88, size=size, direction=direction)
+    if _GDOCS_COLOR_RE.search(low):
+        m = _GDOCS_COLOR_RE.search(low)
+        color = (m.group(1) or m.group(2) or m.group(3) or m.group(4) or "").strip().lower()
+        return R("gdocs_color", 0.88, color=color)
+    if _GDOCS_INSERT_TEXT_RE.search(low):
+        # Extract the text to insert — everything after the verb
+        text_to_insert = re.sub(
+            r"^.*?\b(?:type|write|insert|add|put)\s+(?:in\s+(?:the\s+)?doc(?:ument)?\s+)?",
+            "", low, flags=re.I).strip()
+        # Remove trailing "in the document" / "into the doc"
+        text_to_insert = re.sub(r"\s+(?:in(?:to)?|on|to)\s+(?:the\s+)?doc(?:ument)?$", "", text_to_insert, flags=re.I).strip()
+        if text_to_insert:
+            return R("gdocs_insert_text", 0.85, text=text_to_insert)
     # --- IRIS M2 gdocs: END ---
 
     # 4b) a known app named without an open verb ("gmail", "youtube") — weak
@@ -521,10 +652,14 @@ _LLM_SYSTEM = (
     'yt_search, yt_play, yt_pause, yt_seek, yt_speed, yt_captions, '
     'yt_subscribe, yt_like, yt_channel, yt_watch_later, '
     'gdocs_create, gdocs_search, gdocs_edit, gdocs_heading, gdocs_bullets, '
-    'gdocs_comment, gdocs_share, gdocs_rename, gdocs_export, none>", '
+    'gdocs_numbered, gdocs_comment, gdocs_share, gdocs_rename, gdocs_export, '
+    'gdocs_bold, gdocs_italic, gdocs_underline, gdocs_strikethrough, '
+    'gdocs_align, gdocs_clear_format, gdocs_undo, gdocs_redo, '
+    'gdocs_insert_text, gdocs_link, gdocs_font_size, gdocs_color, none>", '
     '"confidence": <0..1>, "entities": {<optional: app, url, kind, topic, '
     'question, query, artist, track, playlist, seconds, rate, level, '
-    'channel, find, replace, name, title>}}\n'
+    'channel, find, replace, name, title, content, align, size, direction, '
+    'color, text>}}\n'
     "Guidance: 'open/launch/go to <app>' -> open_app (entities.app). "
     "'what am I looking at' / 'what is this' -> vision_query kind=identify. "
     "'where did I leave/put my X' -> vision_query kind=locate. "
@@ -553,6 +688,19 @@ _LLM_SYSTEM = (
     "'replace X with Y' -> gdocs_edit with entities.find and entities.replace. "
     "'add a heading 2' -> gdocs_heading with entities.level. "
     "'turn this into bullets' -> gdocs_bullets. "
+    "'make it a numbered list' -> gdocs_numbered. "
+    "'bold this' / 'make it bold' -> gdocs_bold. "
+    "'italicize this' -> gdocs_italic. "
+    "'underline this' -> gdocs_underline. "
+    "'strikethrough this' -> gdocs_strikethrough. "
+    "'center this' / 'align left' -> gdocs_align with entities.align. "
+    "'clear formatting' -> gdocs_clear_format. "
+    "'undo' / 'undo that' -> gdocs_undo. "
+    "'redo' / 'redo that' -> gdocs_redo. "
+    "'type hello world' / 'write introduction' -> gdocs_insert_text with entities.text. "
+    "'insert a link' -> gdocs_link. "
+    "'font size 14' / 'make the font bigger' -> gdocs_font_size with entities.size or entities.direction. "
+    "'make the text red' / 'change color to blue' -> gdocs_color with entities.color. "
     "'add a comment' -> gdocs_comment. "
     "'share this document' -> gdocs_share. "
     "'rename it to X' -> gdocs_rename with entities.name. "
@@ -620,6 +768,42 @@ _LLM_FEWSHOT = [
      '{"intent":"gdocs_rename","confidence":0.93,"entities":{"name":"Project Proposal"}}'),
     ("export as PDF",
      '{"intent":"gdocs_export","confidence":0.94,"entities":{}}'),
+    ("make it a numbered list",
+     '{"intent":"gdocs_numbered","confidence":0.93,"entities":{}}'),
+    ("bold this",
+     '{"intent":"gdocs_bold","confidence":0.93,"entities":{}}'),
+    ("italicize this text",
+     '{"intent":"gdocs_italic","confidence":0.93,"entities":{}}'),
+    ("underline this",
+     '{"intent":"gdocs_underline","confidence":0.93,"entities":{}}'),
+    ("strikethrough this",
+     '{"intent":"gdocs_strikethrough","confidence":0.93,"entities":{}}'),
+    ("center this text",
+     '{"intent":"gdocs_align","confidence":0.93,"entities":{"align":"center"}}'),
+    ("align left",
+     '{"intent":"gdocs_align","confidence":0.93,"entities":{"align":"left"}}'),
+    ("clear formatting",
+     '{"intent":"gdocs_clear_format","confidence":0.93,"entities":{}}'),
+    ("undo that",
+     '{"intent":"gdocs_undo","confidence":0.94,"entities":{}}'),
+    ("redo",
+     '{"intent":"gdocs_redo","confidence":0.94,"entities":{}}'),
+    ("type hello world",
+     '{"intent":"gdocs_insert_text","confidence":0.92,"entities":{"text":"hello world"}}'),
+    ("write introduction paragraph in the document",
+     '{"intent":"gdocs_insert_text","confidence":0.92,"entities":{"text":"introduction paragraph"}}'),
+    ("insert a link",
+     '{"intent":"gdocs_link","confidence":0.93,"entities":{}}'),
+    ("font size 14",
+     '{"intent":"gdocs_font_size","confidence":0.93,"entities":{"size":14}}'),
+    ("make the font bigger",
+     '{"intent":"gdocs_font_size","confidence":0.92,"entities":{"direction":"increase"}}'),
+    ("make the text red",
+     '{"intent":"gdocs_color","confidence":0.93,"entities":{"color":"red"}}'),
+    ("change color to blue",
+     '{"intent":"gdocs_color","confidence":0.93,"entities":{"color":"blue"}}'),
+    ("create a document called Meeting Notes with the agenda for tomorrow",
+     '{"intent":"gdocs_create","confidence":0.94,"entities":{"title":"Meeting Notes","content":"the agenda for tomorrow"}}'),
 ]
 
 

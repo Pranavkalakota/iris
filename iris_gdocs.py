@@ -2,12 +2,13 @@
 iris_gdocs.py — M2: Google Docs voice-control via Docs/Drive API + Chrome DevTools.
 
 Hybrid approach:
-  • Create, search, find/replace, rename, export → Google Docs & Drive APIs
-    (reliable, works without a tab open). Falls back to Chrome navigation
-    if OAuth credentials are missing.
-  • UI-only actions (heading, bullets, comment, share dialog) → Chrome
-    DevTools keyboard shortcut injection (these have no API equivalent that
-    maps to a single voice command).
+  • Create, search, find/replace, rename, export, insert text →
+    Google Docs & Drive APIs (reliable, structured).
+  • Formatting (bold, italic, headings, lists, alignment, etc.) →
+    Chrome DevTools Protocol Input.dispatchKeyEvent (sends REAL
+    keystrokes through the browser input pipeline — Google Docs
+    treats these as genuine user input, unlike JavaScript
+    KeyboardEvent which Docs ignores).
 
 Every public function returns (True, message) | (False, reason).
 
@@ -107,7 +108,7 @@ def _get_drive():
         return None
 
 
-# ── Chrome debug helpers (fallback + UI actions) ────────────────────────────
+# ── Chrome debug helpers ──────────────────────────────────────────────────
 
 def _debug_json(path: str, method: str = "GET", timeout: float = 2.0):
     try:
@@ -166,20 +167,246 @@ def _navigate_docs(url: str) -> bool:
     return True
 
 
+# ── CDP keyboard input (the key fix) ─────────────────────────────────────
+#
+# Google Docs ignores JavaScript KeyboardEvent and DOM .click() on toolbar
+# buttons. The ONLY reliable way to trigger shortcuts is via CDP's
+# Input.dispatchKeyEvent, which feeds real keystrokes through the browser's
+# input pipeline — Google Docs treats them as genuine user input.
+
+def _cdp_key_combo(tab: dict, key_char: str,
+                   ctrl: bool = False, shift: bool = False,
+                   alt: bool = False, timeout: float = 3.0) -> bool:
+    """Send a real keyboard shortcut via CDP Input.dispatchKeyEvent."""
+    ws_url = tab.get("webSocketDebuggerUrl")
+    if not ws_url:
+        return False
+
+    # Modifier bitmask: Alt=1, Ctrl=2, Meta=4, Shift=8
+    modifiers = 0
+    if alt:   modifiers |= 1
+    if ctrl:  modifiers |= 2
+    if shift: modifiers |= 8
+
+    # Map key to virtual key code and code string
+    _SPECIAL_KEYS = {
+        '\\': (220, "Backslash", "\\"),
+        '.':  (190, "Period",    "."),
+        ',':  (188, "Comma",     ","),
+        '/':  (191, "Slash",     "/"),
+        ';':  (186, "Semicolon", ";"),
+        "'":  (222, "Quote",     "'"),
+        '[':  (219, "BracketLeft", "["),
+        ']':  (221, "BracketRight", "]"),
+        '-':  (189, "Minus",     "-"),
+        '=':  (187, "Equal",     "="),
+    }
+
+    if key_char in _SPECIAL_KEYS:
+        vk, code, key_val = _SPECIAL_KEYS[key_char]
+    elif len(key_char) == 1 and key_char.isalpha():
+        vk = ord(key_char.upper())
+        code = f"Key{key_char.upper()}"
+        key_val = key_char.lower()
+    elif len(key_char) == 1 and key_char.isdigit():
+        vk = ord(key_char)
+        code = f"Digit{key_char}"
+        key_val = key_char
+    else:
+        print(f"[gdocs] Unknown key: {key_char!r}")
+        return False
+
+    try:
+        import websocket  # type: ignore
+        ws = websocket.create_connection(ws_url, timeout=timeout)
+
+        # keyDown
+        ws.send(json.dumps({
+            "id": 1,
+            "method": "Input.dispatchKeyEvent",
+            "params": {
+                "type": "rawKeyDown",
+                "modifiers": modifiers,
+                "windowsVirtualKeyCode": vk,
+                "key": key_val,
+                "code": code,
+            }
+        }))
+        ws.recv()
+
+        # keyUp
+        ws.send(json.dumps({
+            "id": 2,
+            "method": "Input.dispatchKeyEvent",
+            "params": {
+                "type": "keyUp",
+                "modifiers": modifiers,
+                "windowsVirtualKeyCode": vk,
+                "key": key_val,
+                "code": code,
+            }
+        }))
+        ws.recv()
+
+        ws.close()
+        return True
+    except Exception as e:
+        print(f"[gdocs] CDP key combo failed: {e}")
+        return False
+
+
+def _cdp_type_text(tab: dict, text: str, timeout: float = 3.0) -> bool:
+    """Type text into a focused element via CDP Input.insertText."""
+    ws_url = tab.get("webSocketDebuggerUrl")
+    if not ws_url:
+        return False
+    try:
+        import websocket  # type: ignore
+        ws = websocket.create_connection(ws_url, timeout=timeout)
+        ws.send(json.dumps({
+            "id": 1,
+            "method": "Input.insertText",
+            "params": {"text": text}
+        }))
+        ws.recv()
+        ws.close()
+        return True
+    except Exception as e:
+        print(f"[gdocs] CDP type failed: {e}")
+        return False
+
+
+def _cdp_click_at(tab: dict, x: float, y: float, timeout: float = 3.0) -> bool:
+    """Send a real mouse click at (x, y) via CDP Input.dispatchMouseEvent.
+    Google Docs ignores JS .click() on toolbar buttons but responds to
+    real mouse events dispatched through CDP."""
+    ws_url = tab.get("webSocketDebuggerUrl")
+    if not ws_url:
+        return False
+    try:
+        import websocket  # type: ignore
+        ws = websocket.create_connection(ws_url, timeout=timeout)
+        # mousePressed
+        ws.send(json.dumps({
+            "id": 1,
+            "method": "Input.dispatchMouseEvent",
+            "params": {
+                "type": "mousePressed",
+                "x": int(x), "y": int(y),
+                "button": "left",
+                "clickCount": 1,
+            }
+        }))
+        ws.recv()
+        # mouseReleased
+        ws.send(json.dumps({
+            "id": 2,
+            "method": "Input.dispatchMouseEvent",
+            "params": {
+                "type": "mouseReleased",
+                "x": int(x), "y": int(y),
+                "button": "left",
+                "clickCount": 1,
+            }
+        }))
+        ws.recv()
+        ws.close()
+        return True
+    except Exception as e:
+        print(f"[gdocs] CDP click failed: {e}")
+        return False
+
+
+def _get_element_center(tab: dict, js_selector: str) -> Optional[Tuple[float, float]]:
+    """Run JS to find an element and return its center (x, y) coordinates."""
+    js = f"""
+    (function() {{
+        var el = {js_selector};
+        if (!el) return null;
+        var rect = el.getBoundingClientRect();
+        return JSON.stringify({{x: rect.x + rect.width / 2,
+                               y: rect.y + rect.height / 2}});
+    }})()
+    """
+    result = _ws_eval(tab, js)
+    if result:
+        try:
+            pos = json.loads(result)
+            return (pos["x"], pos["y"])
+        except Exception:
+            pass
+    return None
+
+
+def _cdp_press_enter(tab: dict, timeout: float = 3.0) -> bool:
+    """Press Enter via CDP."""
+    ws_url = tab.get("webSocketDebuggerUrl")
+    if not ws_url:
+        return False
+    try:
+        import websocket  # type: ignore
+        ws = websocket.create_connection(ws_url, timeout=timeout)
+        for i, evt_type in enumerate(["rawKeyDown", "keyUp"], 1):
+            ws.send(json.dumps({
+                "id": i,
+                "method": "Input.dispatchKeyEvent",
+                "params": {
+                    "type": evt_type,
+                    "modifiers": 0,
+                    "windowsVirtualKeyCode": 13,
+                    "key": "Enter",
+                    "code": "Enter",
+                }
+            }))
+            ws.recv()
+        ws.close()
+        return True
+    except Exception as e:
+        print(f"[gdocs] CDP enter failed: {e}")
+        return False
+
+
+def _ensure_docs_tab() -> Optional[dict]:
+    """Find and activate the Docs tab, returning it. None if not found."""
+    tab = _find_docs_tab()
+    if not tab:
+        return None
+    _debug_json(f"/json/activate/{tab['id']}")
+    time.sleep(0.15)  # give tab a moment to come to front
+    return tab
+
+
 # ── Public Google Docs actions ──────────────────────────────────────────────
 
-def create_document(title: str = "") -> Tuple[bool, str]:
-    """Create a new Google Doc. Uses API if available."""
+# ---------- Document management (API-based) ----------
+
+def create_document(title: str = "", content: str = "") -> Tuple[bool, str]:
+    """Create a new Google Doc. Uses API if available.
+    If content is provided, inserts it into the document body."""
     docs = _get_docs()
     if docs:
         try:
             body = {"title": title or "Untitled document"}
             doc = docs.documents().create(body=body).execute()
             doc_id = doc["documentId"]
+
+            # Insert content if provided
+            if content:
+                requests = [{
+                    "insertText": {
+                        "location": {"index": 1},
+                        "text": content
+                    }
+                }]
+                docs.documents().batchUpdate(
+                    documentId=doc_id, body={"requests": requests}
+                ).execute()
+
             url = f"https://docs.google.com/document/d/{doc_id}/edit"
             _navigate_docs(url)
             name = title or "Untitled document"
-            return True, f"Created \"{name}\"."
+            detail = " with your content" if content else ""
+            return True, f"Created \"{name}\"{detail}."
         except Exception as e:
             print(f"[gdocs] API create failed: {e}")
 
@@ -220,7 +447,6 @@ def search_documents(query: str) -> Tuple[bool, str]:
             ).execute()
             files = resp.get("files", [])
             if files:
-                # Open the first result in browser
                 first = files[0]
                 url = f"https://docs.google.com/document/d/{first['id']}/edit"
                 _navigate_docs(url)
@@ -259,7 +485,6 @@ def find_replace(find_text: str, replace_text: str) -> Tuple[bool, str]:
     if not find_text:
         return False, "What should I find?"
 
-    # Try API — need the document ID from the current tab URL
     tab = _find_docs_tab()
     if tab:
         import re
@@ -282,111 +507,21 @@ def find_replace(find_text: str, replace_text: str) -> Tuple[bool, str]:
                 ).execute()
                 count = 0
                 for reply in result.get("replies", []):
-                    count += reply.get("replaceAllText", {}).get("occurrencesChanged", 0)
-                # Reload the tab so changes are visible
+                    count += reply.get("replaceAllText", {}).get(
+                        "occurrencesChanged", 0)
                 _ws_eval(tab, "window.location.reload()")
-                return True, f"Replaced {count} occurrence(s) of \"{find_text}\" with \"{replace_text}\"."
+                return True, (f"Replaced {count} occurrence(s) of "
+                              f"\"{find_text}\" with \"{replace_text}\".")
             except Exception as e:
                 print(f"[gdocs] API find/replace failed: {e}")
 
-    # Fallback: open Find & Replace dialog via keyboard shortcut
+    # Fallback: open Find & Replace with real Ctrl+H
     if not tab:
         return False, "No Google Doc is open."
     _debug_json(f"/json/activate/{tab['id']}")
-    js = """
-    (function() {
-        var e = new KeyboardEvent('keydown', {
-            key: 'h', code: 'KeyH', keyCode: 72,
-            ctrlKey: true, bubbles: true
-        });
-        document.dispatchEvent(e);
-        return 'opened';
-    })()
-    """
-    _ws_eval(tab, js)
-    return True, f"Opened Find & Replace — look for \"{find_text}\" → \"{replace_text}\"."
-
-
-def insert_heading(level: int = 2) -> Tuple[bool, str]:
-    """Apply a heading style (1-6) via keyboard shortcut Ctrl+Alt+<N>."""
-    tab = _find_docs_tab()
-    if not tab:
-        return False, "No Google Doc is open."
-    level = max(1, min(6, level))
-    _debug_json(f"/json/activate/{tab['id']}")
-    js = f"""
-    (function() {{
-        var e = new KeyboardEvent('keydown', {{
-            key: '{level}', code: 'Digit{level}', keyCode: {48 + level},
-            ctrlKey: true, altKey: true, bubbles: true
-        }});
-        document.dispatchEvent(e);
-        return 'heading_{level}';
-    }})()
-    """
-    _ws_eval(tab, js)
-    return True, f"Applied Heading {level}."
-
-
-def toggle_bullets() -> Tuple[bool, str]:
-    """Toggle bullet list on selected text (Ctrl+Shift+8)."""
-    tab = _find_docs_tab()
-    if not tab:
-        return False, "No Google Doc is open."
-    _debug_json(f"/json/activate/{tab['id']}")
-    js = """
-    (function() {
-        var e = new KeyboardEvent('keydown', {
-            key: '8', code: 'Digit8', keyCode: 56,
-            ctrlKey: true, shiftKey: true, bubbles: true
-        });
-        document.dispatchEvent(e);
-        return 'toggled';
-    })()
-    """
-    _ws_eval(tab, js)
-    return True, "Toggled bullet list."
-
-
-def insert_comment() -> Tuple[bool, str]:
-    """Open the comment dialog (Ctrl+Alt+M)."""
-    tab = _find_docs_tab()
-    if not tab:
-        return False, "No Google Doc is open."
-    _debug_json(f"/json/activate/{tab['id']}")
-    js = """
-    (function() {
-        var e = new KeyboardEvent('keydown', {
-            key: 'm', code: 'KeyM', keyCode: 77,
-            ctrlKey: true, altKey: true, bubbles: true
-        });
-        document.dispatchEvent(e);
-        return 'comment';
-    })()
-    """
-    _ws_eval(tab, js)
-    return True, "Comment dialog opened — type your comment."
-
-
-def share_document() -> Tuple[bool, str]:
-    """Open the Share dialog."""
-    tab = _find_docs_tab()
-    if not tab:
-        return False, "No Google Doc is open."
-    _debug_json(f"/json/activate/{tab['id']}")
-    js = """
-    (function() {
-        var btn = document.querySelector('[data-tooltip="Share"]') ||
-                  document.querySelector('.docs-titlebar-share-client-button') ||
-                  document.querySelector('[aria-label="Share"]');
-        if (btn) { btn.click(); return 'opened'; }
-        return 'no_btn';
-    })()
-    """
-    result = _ws_eval(tab, js)
-    if result == "opened":
-        return True, "Share dialog opened."
-    return False, "I couldn't find the Share button."
+    _cdp_key_combo(tab, 'h', ctrl=True)
+    return True, (f"Opened Find & Replace — look for "
+                  f"\"{find_text}\" → \"{replace_text}\".")
 
 
 def rename_document(new_name: str) -> Tuple[bool, str]:
@@ -394,7 +529,6 @@ def rename_document(new_name: str) -> Tuple[bool, str]:
     if not new_name:
         return False, "What should I rename it to?"
 
-    # Try API — need doc ID from current tab
     tab = _find_docs_tab()
     if tab:
         import re
@@ -407,13 +541,11 @@ def rename_document(new_name: str) -> Tuple[bool, str]:
                     fileId=doc_id,
                     body={"name": new_name}
                 ).execute()
-                # Reload tab so title updates
                 _ws_eval(tab, "window.location.reload()")
                 return True, f"Renamed to \"{new_name}\"."
             except Exception as e:
                 print(f"[gdocs] API rename failed: {e}")
 
-    # Fallback: click title and type
     if not tab:
         return False, "No Google Doc is open."
     _debug_json(f"/json/activate/{tab['id']}")
@@ -450,17 +582,13 @@ def export_pdf() -> Tuple[bool, str]:
     drive = _get_drive()
     if drive:
         try:
-            # Get filename
             meta = drive.files().get(fileId=doc_id, fields="name").execute()
             filename = meta.get("name", "document") + ".pdf"
-
-            # Export as PDF
             from googleapiclient.http import MediaIoBaseDownload  # type: ignore
             import io
             request = drive.files().export_media(
                 fileId=doc_id, mimeType="application/pdf"
             )
-            # Save to user's Downloads folder
             downloads = os.path.join(os.path.expanduser("~"), "Downloads")
             filepath = os.path.join(downloads, filename)
             fh = io.FileIO(filepath, "wb")
@@ -477,7 +605,9 @@ def export_pdf() -> Tuple[bool, str]:
     _debug_json(f"/json/activate/{tab['id']}")
     js = f"""
     (function() {{
-        window.open('https://docs.google.com/document/d/{doc_id}/export?format=pdf', '_blank');
+        window.open(
+            'https://docs.google.com/document/d/{doc_id}/export?format=pdf',
+            '_blank');
         return 'exporting';
     }})()
     """
@@ -485,3 +615,458 @@ def export_pdf() -> Tuple[bool, str]:
     if result == "exporting":
         return True, "Downloading as PDF."
     return False, "I couldn't export this document."
+
+
+def insert_text(text: str) -> Tuple[bool, str]:
+    """Insert text into the current document via the Docs API (appends at end)."""
+    if not text:
+        return False, "What should I type?"
+
+    tab = _find_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+
+    import re as _re
+    url = tab.get("url", "")
+    m = _re.search(r"/document/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        return False, "I couldn't identify the document."
+
+    docs = _get_docs()
+    if docs:
+        doc_id = m.group(1)
+        try:
+            doc = docs.documents().get(documentId=doc_id).execute()
+            body_content = doc.get("body", {}).get("content", [{}])
+            end_index = body_content[-1].get("endIndex", 1) - 1
+            if end_index < 1:
+                end_index = 1
+            requests = [{
+                "insertText": {
+                    "location": {"index": end_index},
+                    "text": text + "\n"
+                }
+            }]
+            docs.documents().batchUpdate(
+                documentId=doc_id, body={"requests": requests}
+            ).execute()
+            _ws_eval(tab, "window.location.reload()")
+            preview = text[:50] + ("..." if len(text) > 50 else "")
+            return True, f"Inserted \"{preview}\"."
+        except Exception as e:
+            print(f"[gdocs] API insert_text failed: {e}")
+
+    return False, "I couldn't insert text — make sure you're signed in."
+
+
+def share_document() -> Tuple[bool, str]:
+    """Open the Share dialog via JS click (Share button is a standard DOM button)."""
+    tab = _find_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    _debug_json(f"/json/activate/{tab['id']}")
+    js = """
+    (function() {
+        var btn = document.querySelector('[data-tooltip="Share"]') ||
+                  document.querySelector('.docs-titlebar-share-client-button') ||
+                  document.querySelector('[aria-label="Share"]') ||
+                  document.querySelector('[aria-label="Share. Private to only me."]');
+        if (btn) { btn.click(); return 'opened'; }
+        // Try broader search
+        var all = document.querySelectorAll('[role="button"]');
+        for (var b of all) {
+            var lbl = (b.getAttribute('aria-label') || '').toLowerCase();
+            if (lbl.startsWith('share')) { b.click(); return 'opened'; }
+        }
+        return 'no_btn';
+    })()
+    """
+    result = _ws_eval(tab, js)
+    if result == "opened":
+        return True, "Share dialog opened."
+    return False, "I couldn't find the Share button."
+
+
+# ---------- Formatting (CDP keyboard shortcut-based) ----------
+#
+# Google Docs keyboard shortcuts (same on Windows/Linux/ChromeOS):
+#   Bold:            Ctrl+B
+#   Italic:          Ctrl+I
+#   Underline:       Ctrl+U
+#   Strikethrough:   Alt+Shift+5
+#   Heading 1-6:     Ctrl+Alt+1-6
+#   Normal text:     Ctrl+Alt+0
+#   Bullet list:     Ctrl+Shift+8
+#   Numbered list:   Ctrl+Shift+7
+#   Insert comment:  Ctrl+Alt+M
+#   Insert link:     Ctrl+K
+#   Align left:      Ctrl+Shift+L
+#   Align center:    Ctrl+Shift+E
+#   Align right:     Ctrl+Shift+R
+#   Align justify:   Ctrl+Shift+J
+#   Clear format:    Ctrl+\
+#   Undo:            Ctrl+Z
+#   Redo:            Ctrl+Y
+#   Increase font:   Ctrl+Shift+.
+#   Decrease font:   Ctrl+Shift+,
+
+def toggle_bold() -> Tuple[bool, str]:
+    """Toggle bold (Ctrl+B)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'b', ctrl=True):
+        return True, "Toggled bold."
+    return False, "Couldn't toggle bold."
+
+
+def toggle_italic() -> Tuple[bool, str]:
+    """Toggle italic (Ctrl+I)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'i', ctrl=True):
+        return True, "Toggled italic."
+    return False, "Couldn't toggle italic."
+
+
+def toggle_underline() -> Tuple[bool, str]:
+    """Toggle underline (Ctrl+U)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'u', ctrl=True):
+        return True, "Toggled underline."
+    return False, "Couldn't toggle underline."
+
+
+def toggle_strikethrough() -> Tuple[bool, str]:
+    """Toggle strikethrough (Alt+Shift+5)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, '5', alt=True, shift=True):
+        return True, "Toggled strikethrough."
+    return False, "Couldn't toggle strikethrough."
+
+
+def insert_heading(level: int = 2) -> Tuple[bool, str]:
+    """Apply heading style 1-6 (Ctrl+Alt+1-6), or normal text (Ctrl+Alt+0)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    level = max(0, min(6, level))
+    if _cdp_key_combo(tab, str(level), ctrl=True, alt=True):
+        if level == 0:
+            return True, "Applied Normal text."
+        return True, f"Applied Heading {level}."
+    return False, f"Couldn't apply Heading {level}."
+
+
+def toggle_bullets() -> Tuple[bool, str]:
+    """Toggle bullet list (Ctrl+Shift+8)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, '8', ctrl=True, shift=True):
+        return True, "Toggled bullet list."
+    return False, "Couldn't toggle bullets."
+
+
+def toggle_numbered_list() -> Tuple[bool, str]:
+    """Toggle numbered list (Ctrl+Shift+7)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, '7', ctrl=True, shift=True):
+        return True, "Toggled numbered list."
+    return False, "Couldn't toggle numbered list."
+
+
+def insert_comment() -> Tuple[bool, str]:
+    """Open comment dialog (Ctrl+Alt+M)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'm', ctrl=True, alt=True):
+        return True, "Comment dialog opened — type your comment."
+    return False, "Couldn't open comment dialog."
+
+
+def insert_link() -> Tuple[bool, str]:
+    """Open Insert Link dialog (Ctrl+K)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'k', ctrl=True):
+        return True, "Link dialog opened — paste or type the URL."
+    return False, "Couldn't open link dialog."
+
+
+def set_alignment(align: str = "center") -> Tuple[bool, str]:
+    """Set text alignment: left (Ctrl+Shift+L), center (E), right (R), justify (J)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    align_keys = {
+        "left":    "l",
+        "center":  "e",
+        "right":   "r",
+        "justify": "j",
+    }
+    key = align_keys.get(align, "e")
+    if _cdp_key_combo(tab, key, ctrl=True, shift=True):
+        return True, f"Aligned text to {align}."
+    return False, f"Couldn't set {align} alignment."
+
+
+def clear_formatting() -> Tuple[bool, str]:
+    r"""Clear formatting (Ctrl+\\)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, '\\', ctrl=True):
+        return True, "Cleared formatting."
+    return False, "Couldn't clear formatting."
+
+
+def undo() -> Tuple[bool, str]:
+    """Undo (Ctrl+Z)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'z', ctrl=True):
+        return True, "Undone."
+    return False, "Couldn't undo."
+
+
+def redo() -> Tuple[bool, str]:
+    """Redo (Ctrl+Y)."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+    if _cdp_key_combo(tab, 'y', ctrl=True):
+        return True, "Redone."
+    return False, "Couldn't redo."
+
+
+def change_font_size(size: int = 0, direction: str = "") -> Tuple[bool, str]:
+    """Change font size — increase (Ctrl+Shift+.), decrease (Ctrl+Shift+,),
+    or set to a specific number by typing into the font size box."""
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+
+    if direction == "increase":
+        if _cdp_key_combo(tab, '.', ctrl=True, shift=True):
+            return True, "Increased font size."
+        return False, "Couldn't increase font size."
+
+    if direction == "decrease":
+        if _cdp_key_combo(tab, ',', ctrl=True, shift=True):
+            return True, "Decreased font size."
+        return False, "Couldn't decrease font size."
+
+    if size > 0:
+        # Use CDP real mouse click on the font size box, then type the value.
+        # JS .focus() doesn't work — Google Docs needs a real click.
+        font_size_js = """
+        (function() {
+            // Try aria-label "Font size" first
+            var el = document.querySelector('[aria-label="Font size"]');
+            if (el) {
+                var rect = el.getBoundingClientRect();
+                return JSON.stringify({x: rect.x + rect.width/2,
+                                       y: rect.y + rect.height/2});
+            }
+            // Try finding the font size combo button
+            var combos = document.querySelectorAll('.goog-toolbar-combo-button');
+            for (var c of combos) {
+                var lbl = (c.getAttribute('aria-label') || '');
+                if (lbl.includes('Font size')) {
+                    var rect = c.getBoundingClientRect();
+                    return JSON.stringify({x: rect.x + rect.width/2,
+                                           y: rect.y + rect.height/2});
+                }
+            }
+            // Last resort: find the element showing the current size (a number)
+            var inputs = document.querySelectorAll(
+                '.goog-toolbar-combo-button input');
+            for (var inp of inputs) {
+                if (/^\d+$/.test(inp.value.trim())) {
+                    var rect = inp.getBoundingClientRect();
+                    return JSON.stringify({x: rect.x + rect.width/2,
+                                           y: rect.y + rect.height/2});
+                }
+            }
+            return null;
+        })()
+        """
+        result = _ws_eval(tab, font_size_js)
+        if result:
+            try:
+                pos = json.loads(result)
+                # Real CDP click on the font size box
+                _cdp_click_at(tab, pos["x"], pos["y"])
+                time.sleep(0.3)
+                # Select all text in the now-focused input
+                _cdp_key_combo(tab, 'a', ctrl=True)
+                time.sleep(0.1)
+                # Type the new size
+                _cdp_type_text(tab, str(size))
+                time.sleep(0.1)
+                # Press Enter to apply
+                _cdp_press_enter(tab)
+                time.sleep(0.2)
+                # Click back into the document body so future commands work
+                doc_body_js = """
+                (function() {
+                    var page = document.querySelector('.kix-page-content-wrapper');
+                    if (page) {
+                        var rect = page.getBoundingClientRect();
+                        return JSON.stringify({x: rect.x + rect.width/2,
+                                               y: rect.y + 100});
+                    }
+                    return null;
+                })()
+                """
+                body_pos = _ws_eval(tab, doc_body_js)
+                if body_pos:
+                    bp = json.loads(body_pos)
+                    _cdp_click_at(tab, bp["x"], bp["y"])
+                return True, f"Font size set to {size}."
+            except Exception as e:
+                print(f"[gdocs] Font size error: {e}")
+        return False, "I couldn't find the font size input."
+
+    return False, "Specify a size (e.g. 'font size 14') or say 'bigger' / 'smaller'."
+
+
+def set_text_color(color: str) -> Tuple[bool, str]:
+    """Change text color using CDP mouse clicks on toolbar button + palette."""
+    if not color:
+        return False, "What color? Try 'make the text red'."
+
+    tab = _ensure_docs_tab()
+    if not tab:
+        return False, "No Google Doc is open."
+
+    color_map = {
+        "red":     (255, 0, 0),
+        "blue":    (0, 0, 255),
+        "green":   (0, 128, 0),
+        "black":   (0, 0, 0),
+        "white":   (255, 255, 255),
+        "orange":  (255, 165, 0),
+        "purple":  (128, 0, 128),
+        "yellow":  (255, 255, 0),
+        "pink":    (255, 105, 180),
+        "gray":    (128, 128, 128),
+        "grey":    (128, 128, 128),
+        "brown":   (140, 69, 19),
+        "cyan":    (0, 255, 255),
+        "magenta": (255, 0, 255),
+    }
+
+    if color.lower() not in color_map:
+        return False, (f"I don't know the color '{color}'. "
+                       "Try red, blue, green, orange, purple, etc.")
+
+    r_int, g_int, b_int = color_map[color.lower()]
+
+    # Step 1: Find the text color button and get its position
+    btn_js = """
+    (function() {
+        var btns = document.querySelectorAll(
+            '[role="button"], .goog-toolbar-button,  .goog-toolbar-menu-button');
+        for (var btn of btns) {
+            var lbl = (btn.getAttribute('aria-label')
+                    || btn.getAttribute('data-tooltip') || '').toLowerCase();
+            if (lbl.includes('text color') && !lbl.includes('highlight')) {
+                var rect = btn.getBoundingClientRect();
+                return JSON.stringify({x: rect.x + rect.width/2,
+                                       y: rect.y + rect.height/2});
+            }
+        }
+        return null;
+    })()
+    """
+    btn_pos = _ws_eval(tab, btn_js)
+    if not btn_pos:
+        return False, ("I couldn't find the text color button. "
+                       "Use the toolbar's A button with the color bar.")
+
+    try:
+        pos = json.loads(btn_pos)
+    except Exception:
+        return False, "I couldn't locate the text color button."
+
+    # Step 2: CDP real click on the text color button to open the palette
+    _cdp_click_at(tab, pos["x"], pos["y"])
+    time.sleep(0.6)
+
+    # Step 3: Find the closest color in the palette and get its position
+    color_js = f"""
+    (function() {{
+        var cells = document.querySelectorAll(
+            '[role="gridcell"], .goog-palette-cell,  '
+            + '.docs-material-colorpalette-cell, '
+            + '.docs-colormenuitems [role="listitem"]');
+        var target_r = {r_int}, target_g = {g_int}, target_b = {b_int};
+        var best = null, bestDist = 999999;
+        for (var cell of cells) {{
+            var el = cell.querySelector('div') || cell;
+            var bg = window.getComputedStyle(el).backgroundColor;
+            var match = bg.match(/rgb\\((\\d+),\\s*(\\d+),\\s*(\\d+)\\)/);
+            if (match) {{
+                var r = parseInt(match[1]), g = parseInt(match[2]),
+                    b = parseInt(match[3]);
+                var dist = Math.abs(r - target_r)
+                         + Math.abs(g - target_g)
+                         + Math.abs(b - target_b);
+                if (dist < bestDist) {{ bestDist = dist; best = cell; }}
+            }}
+        }}
+        if (best && bestDist < 200) {{
+            var rect = best.getBoundingClientRect();
+            return JSON.stringify({{x: rect.x + rect.width/2,
+                                    y: rect.y + rect.height/2,
+                                    dist: bestDist}});
+        }}
+        return null;
+    }})()
+    """
+    color_pos = _ws_eval(tab, color_js)
+    if color_pos:
+        try:
+            cpos = json.loads(color_pos)
+            # Step 4: CDP real click on the color cell
+            _cdp_click_at(tab, cpos["x"], cpos["y"])
+            return True, f"Changed text color to {color}."
+        except Exception as e:
+            print(f"[gdocs] Color click error: {e}")
+
+    # If palette didn't open or color not found, close by pressing Escape
+    _cdp_key_combo(tab, '\\', ctrl=False)  # won't work, use Escape
+    # Send Escape key
+    ws_url = tab.get("webSocketDebuggerUrl")
+    if ws_url:
+        try:
+            import websocket  # type: ignore
+            ws = websocket.create_connection(ws_url, timeout=3)
+            for etype in ["rawKeyDown", "keyUp"]:
+                ws.send(json.dumps({
+                    "id": 1,
+                    "method": "Input.dispatchKeyEvent",
+                    "params": {"type": etype,
+                               "windowsVirtualKeyCode": 27,
+                               "key": "Escape", "code": "Escape",
+                               "modifiers": 0}
+                }))
+                ws.recv()
+            ws.close()
+        except Exception:
+            pass
+
+    return False, (f"I couldn't find {color} in the color palette. "
+                   f"Try selecting text and using the text color button manually.")

@@ -110,7 +110,7 @@ def _cfg(attr: str, default):
 OLLAMA_URL   = _cfg("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = _cfg("OLLAMA_MODEL", "llama3.2:3b")
 
-# ═════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════â• ═══════════════════════════════════════════════
 # --- IRIS cloud-provider feature: ADD ---
 # Unified chat client that routes to a cloud provider (OpenAI, Anthropic,
 # Google Gemini, Azure OpenAI) when configured, falling back to local Ollama
@@ -284,7 +284,7 @@ class _UnifiedChatClient:
                 api_key, api_keys, messages, **kwargs)
         raise ValueError(f"unknown provider: {provider}")
 
-    # ── Cache + model override helpers ────────────────────────────────────
+    # ── Cache + model override helpers ───────────────────â”€────────────────
     def _get_cached_client(self, key, factory):
         with self._cache_lock:
             if key not in self._client_cache:
@@ -3157,7 +3157,8 @@ class ChatTab(QWidget):
                 import iris_gdocs as _gd
                 if _gkw.intent == "gdocs_create":
                     title = (_gkw.entities.get("title") or "").strip()
-                    ok, msg = _gd.create_document(title)
+                    content = (_gkw.entities.get("content") or "").strip()
+                    ok, msg = _gd.create_document(title, content)
                     self._append_iris(msg)
                     return
                 elif _gkw.intent == "gdocs_search":
@@ -3178,6 +3179,63 @@ class ChatTab(QWidget):
                     return
                 elif _gkw.intent == "gdocs_bullets":
                     ok, msg = _gd.toggle_bullets()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_numbered":
+                    ok, msg = _gd.toggle_numbered_list()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_bold":
+                    ok, msg = _gd.toggle_bold()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_italic":
+                    ok, msg = _gd.toggle_italic()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_underline":
+                    ok, msg = _gd.toggle_underline()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_strikethrough":
+                    ok, msg = _gd.toggle_strikethrough()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_align":
+                    align = (_gkw.entities.get("align") or "center").strip()
+                    ok, msg = _gd.set_alignment(align)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_clear_format":
+                    ok, msg = _gd.clear_formatting()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_undo":
+                    ok, msg = _gd.undo()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_redo":
+                    ok, msg = _gd.redo()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_insert_text":
+                    insert_t = (_gkw.entities.get("text") or "").strip()
+                    ok, msg = _gd.insert_text(insert_t)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_link":
+                    ok, msg = _gd.insert_link()
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_font_size":
+                    fs_size = _gkw.entities.get("size", 0)
+                    fs_dir = (_gkw.entities.get("direction") or "").strip()
+                    ok, msg = _gd.change_font_size(fs_size, fs_dir)
+                    self._append_iris(msg)
+                    return
+                elif _gkw.intent == "gdocs_color":
+                    clr = (_gkw.entities.get("color") or "").strip()
+                    ok, msg = _gd.set_text_color(clr)
                     self._append_iris(msg)
                     return
                 elif _gkw.intent == "gdocs_comment":
@@ -8844,7 +8902,7 @@ class StreamTab(QWidget):
             print(f"[location] inference failed for "
                   f"{os.path.basename(filepath)}: {e}")
 
-        # ── event boundary detection ─────────────────────────────────────
+        # ── event boundary detection ────────â”€────────────────────────────
         try:
             import event_boundary_phase9 as ebd     # type: ignore
             enabled = True
@@ -12354,3 +12412,4 @@ def main() -> int:
             pass
 if __name__ == "__main__":
     sys.exit(main())
+
