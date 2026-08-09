@@ -3181,6 +3181,20 @@ class ChatTab(QWidget):
         except Exception as _yte:
             print("[youtube] gate failed:", _yte)
         # --- IRIS M2 youtube: END ---
+        # --- IRIS ChatGPT: ADD ---
+        try:
+            from iris_intent_router import keyword_route as _gpt_kw
+            _gkw = _gpt_kw(text)
+            if _gkw.intent.startswith("gpt_") and _gkw.confidence >= 0.80:
+                import iris_chatgpt as _gpt
+                _gmsg = _gpt.handle(_gkw.intent, _gkw.entities)
+                if _gmsg:
+                    self._append_iris(_gmsg)
+                    print("[chatgpt]", _gkw.intent)
+                    return
+        except Exception as _gpte:
+            print("[chatgpt] gate failed:", _gpte)
+        # --- IRIS ChatGPT: END ---
         # --- IRIS M2 gdocs: ADD ---
         try:
             from iris_intent_router import keyword_route as _gd_kw
@@ -10265,6 +10279,8 @@ class AudioTab(QWidget):
             # --- IRIS M3 spotify: END ---
             # --- IRIS M2 youtube/gdocs: ADD ---
             if _wi.intent.startswith("yt_") and _wi.confidence >= 0.75:
+                return True
+            if _wi.intent.startswith("gpt_") and _wi.confidence >= 0.80:
                 return True
             if _wi.intent.startswith("gdocs_") and _wi.confidence >= 0.75:
                 return True

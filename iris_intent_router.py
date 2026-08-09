@@ -99,6 +99,10 @@ INTENTS = (
     "yt_channel",      # "open the fireship channel"
     "yt_watch_later",  # "show my watch later playlist"
     # --- IRIS M2 youtube: END ---
+    # --- IRIS ChatGPT: ADD ---
+    "gpt_ask", "gpt_code", "gpt_summarize", "gpt_rewrite", "gpt_new",
+    "gpt_continue", "gpt_copy", "gpt_regenerate", "gpt_search", "gpt_upload",
+    # --- IRIS ChatGPT: END ---
     # --- IRIS M2 gdocs: ADD ---
     "gdocs_create",    # "create a new document"
     "gdocs_search",    # "find documents about marketing"
@@ -448,6 +452,62 @@ def _calendar_route(low, text):
     return None
 
 
+# ── ChatGPT agent detection (requires a ChatGPT cue so IRIS's own chat is
+#    never hijacked by a bare question) ──────────────────────────────────────
+_GPT_CUE = re.compile(r"\b(chat\s?gpt|gpt)\b", re.I)
+
+
+def _gpt_query(text: str) -> str:
+    """Strip a leading 'ask chatgpt to' / 'on chatgpt' etc. to get the prompt."""
+    q = re.sub(
+        r"^\s*(hey\s+)?(iris[, ]+)?(can you |could you |please |would you )?"
+        r"(ask|have|tell|get|use|on|in|open|go to)?\s*(chat\s?gpt|gpt)\s*"
+        r"(to|,|:|and)?\s*", "", text, flags=re.I).strip()
+    q = re.sub(r"\b(on|in|using|with)\s+(chat\s?gpt|gpt)\b", "", q,
+               flags=re.I).strip(" ,.")
+    return q
+
+
+def _chatgpt_route(low, text):
+    R = lambda intent, conf, **e: RouterIntent(
+        intent=intent, confidence=conf, entities=e, source="keyword",
+        raw_text=text, corrected_text=text)
+    if not _GPT_CUE.search(low):
+        return None                      # no ChatGPT cue -> not ours
+    # "open/close chatgpt" are app open/close (M2), not agent actions.
+    if re.search(r"\b(open|launch|go to|pull up|close|quit|exit|shut)\b", low):
+        return None
+    if re.search(r"\bcopy\b.*\b(last|latest|answer|response|reply|message)\b", low) \
+            or re.search(r"\bcopy (that|it)\b", low):
+        return R("gpt_copy", 0.92)
+    if re.search(r"\bregenerate\b|\btry (again|answering)\b|"
+                 r"\banswer (it |that )?(again|differently)\b|"
+                 r"\btry (a )?different", low):
+        return R("gpt_regenerate", 0.9)
+    if re.search(r"\b(upload|attach)\b", low):
+        return R("gpt_upload", 0.9)
+    if re.search(r"\b(search|find|look up)\b.*\b(chat|conversation|chats|conversations)\b", low):
+        m = re.search(r"\b(?:about|for|regarding|on)\b\s+(.*)$", text, flags=re.I)
+        return R("gpt_search", 0.9, query=(m.group(1).strip() if m else ""))
+    if re.search(r"\b(new|start a new|create a new|begin a new)\b.*\b(chat|conversation)\b", low):
+        return R("gpt_new", 0.9)
+    if re.search(r"\bcontinue\b", low):
+        return R("gpt_continue", 0.88)
+    if re.search(r"\bsummari[sz]e\b.*\b(conversation|chat|this)\b", low) \
+            or re.search(r"\bsummari[sz]e (this|the) (conversation|chat)\b", low):
+        return R("gpt_summarize", 0.9)
+    if re.search(r"\brewrite\b", low):
+        return R("gpt_rewrite", 0.9)
+    if re.search(r"\b(write|generate|create|make)\b", low) and re.search(
+            r"\b(code|script|function|program|python|javascript|java|c\+\+|"
+            r"html|css|scraper|app|website|api|regex|sql)\b", low):
+        return R("gpt_code", 0.88, query=_gpt_query(text))
+    q = _gpt_query(text)
+    if q:
+        return R("gpt_ask", 0.85, query=q)
+    return None
+
+
 def keyword_route(text: str) -> RouterIntent:
     low = text.lower().strip()
     R = lambda intent, conf, **ent: RouterIntent(
@@ -462,6 +522,11 @@ def keyword_route(text: str) -> RouterIntent:
     _cal = _calendar_route(low, text)
     if _cal is not None:
         return _cal
+
+    # 0b) ChatGPT agent (needs a ChatGPT cue) — before open/close and chat.
+    _gpt = _chatgpt_route(low, text)
+    if _gpt is not None:
+        return _gpt
 
     # 1) cancel — highest priority
     if _CANCEL_RE.search(low):
