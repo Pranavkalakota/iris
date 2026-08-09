@@ -71,6 +71,10 @@ except Exception:
 INTENTS = (
     "open_app",        # "open gmail", "open instagram", "open maps"
     "close_app",       # "close instagram", "close youtube tab"
+    "calendar_read",   # "what's my day", "what's on my calendar tomorrow"
+    "calendar_create", # "book 30 min with Jack Tuesday", "I have an exam Thursday"
+    "calendar_delete", # "cancel my 3pm", "remove my exam"
+    "calendar_edit",   # "move my 3pm to 4", "reschedule my meeting to Friday"
     "vision_query",    # "what am I looking at", "where did I leave my phone"
     "info",            # "what's the weather"
     "question",        # general Q&A → chat/LLM
@@ -398,6 +402,52 @@ def _match_app(low: str) -> Optional[tuple]:
 
 
 # ── keyword fallback router (the safety net; also grounds M2 later) ──────────
+# ── calendar agent detection (read / create / delete / edit) ────────────────
+_CAL_READ_RE = re.compile(
+    r"(what('?s| is| does)?\s+(my\s+|the\s+)?(day|schedule|agenda|calendar)\b"
+    r"|what('?s| is)\s+on\s+(my\s+)?(calendar|schedule|agenda)"
+    r"|what do i have\b|am i (free|busy)\b"
+    r"|do i have (anything|any \w+)\b|my (schedule|agenda)\b"
+    r"|anything (on my calendar|planned)\b|what'?s (going on|happening) (today|tomorrow))",
+    re.I)
+_CAL_CREATE_VERB = re.compile(
+    r"\b(book|schedule|set ?up|add|create|put|pencil in|block off|"
+    r"remind me|i have|i've got|i got|new)\b", re.I)
+_CAL_DELETE_VERB = re.compile(
+    r"\b(cancel|delete|remove|clear|drop|call off)\b", re.I)
+_CAL_EDIT_VERB = re.compile(
+    r"\b(move|reschedule|push|shift|bump|change)\b", re.I)
+_HAS_WHEN = re.compile(
+    r"\b(today|tonight|tomorrow|next week|monday|tuesday|tues|wednesday|wed|"
+    r"thursday|thurs|friday|saturday|sunday|mon|tue|thu|fri|sat|sun|morning|"
+    r"afternoon|evening|noon|at \d|\d\s*(am|pm)|\d+\s*(min|minutes|hour|hours|hr)"
+    r"|in \d+ days|:\d\d)\b", re.I)
+_CAL_NOUN = re.compile(
+    r"\b(meeting|appointment|event|exam|call|reminder|deadline|birthday|"
+    r"dentist|doctor|interview|class|lecture|flight)\b", re.I)
+
+
+def _calendar_route(low, text):
+    R = lambda intent, conf, **e: RouterIntent(
+        intent=intent, confidence=conf, entities=e, source="keyword",
+        raw_text=text, corrected_text=text)
+    if _CAL_READ_RE.search(low):
+        return R("calendar_read", 0.9, query=text)
+    # edit: "move/reschedule ... to <when>" (before delete; needs a 'to' target)
+    if _CAL_EDIT_VERB.search(low) and " to " in low and (
+            _CAL_NOUN.search(low) or _HAS_WHEN.search(low)
+            or re.search(r"\bmy\b", low)):
+        return R("calendar_edit", 0.9, query=text)
+    if _CAL_DELETE_VERB.search(low) and (
+            _HAS_WHEN.search(low) or _CAL_NOUN.search(low)
+            or re.search(r"\bmy\b", low)):
+        return R("calendar_delete", 0.9, query=text)
+    if _CAL_CREATE_VERB.search(low) and (
+            _HAS_WHEN.search(low) or _CAL_NOUN.search(low)):
+        return R("calendar_create", 0.9, query=text)
+    return None
+
+
 def keyword_route(text: str) -> RouterIntent:
     low = text.lower().strip()
     R = lambda intent, conf, **ent: RouterIntent(
@@ -406,6 +456,12 @@ def keyword_route(text: str) -> RouterIntent:
 
     if not low:
         return R("none", 0.0)
+
+    # 0) calendar agent — before cancel/open/close so "cancel my 3pm" is a
+    #    calendar delete (not the generic abort) and "what's my day" is caught.
+    _cal = _calendar_route(low, text)
+    if _cal is not None:
+        return _cal
 
     # 1) cancel — highest priority
     if _CANCEL_RE.search(low):

@@ -3038,6 +3038,38 @@ class ChatTab(QWidget):
                     self._append_iris(_msg)
                     print("[m2]", _m2i.intent, "->", _app)
                     return
+            # ── Calendar agent (read / create / delete / edit) ────────────
+            #    Runs on a bg thread (Google API) and posts back to the chat.
+            if (_m2i.intent in ("calendar_read", "calendar_create",
+                                 "calendar_delete", "calendar_edit")
+                    and _m2i.confidence >= 0.85):
+                import iris_calendar as _cal
+                _q = _m2i.entities.get("query", text)
+                # Look up ONLY the handler we need (getattr, not an eager dict),
+                # so an out-of-date iris_calendar.py missing one function (e.g.
+                # handle_edit) can't break the others.
+                _fn_name = {"calendar_read": "handle_read",
+                            "calendar_create": "handle_create",
+                            "calendar_delete": "handle_delete",
+                            "calendar_edit": "handle_edit"}[_m2i.intent]
+                _fn = getattr(_cal, _fn_name, None)
+                if _fn is None:
+                    self._append_iris(
+                        "Your iris_calendar.py is out of date (missing "
+                        + _fn_name + ") \u2014 replace it with the latest version.")
+                    return
+                self._append_iris("Checking your calendar\u2026")
+
+                def _cal_run(f=_fn, q=_q):
+                    try:
+                        _r = f(q)
+                    except Exception as _e:
+                        _r = "Calendar error: " + str(_e)
+                    self._call_main(lambda m=_r: self._append_iris(m))
+
+                self._start_bg(_cal_run)
+                print("[cal]", _m2i.intent)
+                return
         except Exception as _m2e:
             print("[m2] open-app gate failed:", _m2e)
         # --- IRIS M2 open-app: END ---
@@ -10222,7 +10254,9 @@ class AudioTab(QWidget):
         try:
             from iris_intent_router import route as _wr
             _wi = _wr(text, use_llm=False)
-            if _wi.intent in ("open_app", "close_app") and _wi.confidence >= 0.85:
+            if _wi.intent in ("open_app", "close_app", "calendar_read",
+                              "calendar_create", "calendar_delete",
+                              "calendar_edit") and _wi.confidence >= 0.85:
                 return True
             # --- IRIS M3 spotify: ADD ---
             if _wi.intent in ("play_song", "confirm_play",
@@ -12412,4 +12446,3 @@ def main() -> int:
             pass
 if __name__ == "__main__":
     sys.exit(main())
-

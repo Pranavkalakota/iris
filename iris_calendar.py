@@ -135,15 +135,48 @@ def _parse_time(low: str) -> Optional[tuple]:
     return None
 
 
+def _parse_time_range(low: str):
+    """'from 12pm to 3pm', '12 to 3', '2-4', 'between 1 and 2' -> ((h,m),(h,m))."""
+    m = re.search(
+        r"\b(?:from\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*"
+        r"(?:to|until|till|through|thru|-|–|—)\s*"
+        r"(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b", low)
+    if not m:
+        m = re.search(
+            r"\bbetween\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*and\s*"
+            r"(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b", low)
+    if not m:
+        return None
+    a, b = _parse_time(m.group(1)), _parse_time(m.group(2))
+    return (a, b) if a and b else None
+
+
 def parse_when(text: str, now: Optional[datetime] = None) -> dict:
     """Return {'start': datetime, 'end': datetime, 'all_day': bool}.
 
-    Rule: a stated time (or morning/afternoon/evening) -> timed event; a stated
-    duration but no time -> timed at a default hour; neither -> all-day."""
+    Rule: a time range ('from 12 to 3') -> that span; a stated time -> timed
+    event; a stated duration but no time -> timed at a default hour; neither ->
+    all-day."""
     now = now or datetime.now()
     low = " " + text.lower().strip() + " "
+    # Whisper often writes "p.m." / "a. m." — normalize to pm/am so the time
+    # regexes match. Require the dot so we never touch "a meeting" -> "am...".
+    low = re.sub(r"\b([ap])\.\s*m\.?", r"\1m", low, flags=re.I)
 
     day = _parse_day(low, now) or now.date()
+
+    # Time RANGE first ("from 12pm to 3pm" -> start 12:00, end 15:00).
+    rng = _parse_time_range(low)
+    if rng is not None:
+        (h1, m1), (h2, m2) = rng
+        start = datetime.combine(day, _time(h1, m1))
+        end = datetime.combine(day, _time(h2, m2))
+        if end <= start:                      # e.g. "10 to 2" read as 10am..2(→14)
+            end += timedelta(hours=12)
+            if end <= start:
+                end = start + timedelta(minutes=DEFAULT_DURATION_MIN)
+        return {"start": start, "end": end, "all_day": False}
+
     dur = _parse_duration(low)
     # strip the duration span before reading a clock time so "30 minutes" can't
     # be misread as "30 o'clock".
@@ -174,21 +207,44 @@ _WHEN_STRIP = re.compile(
     r"\d{1,2}(:\d{2})?\s*(am|pm)?)\b", re.I)
 
 
+_CREATE_VERB_CUT = re.compile(
+    r"\b(book|schedule|set ?up|add|create|put|pencil in|block off|"
+    r"remind me(?: to)?|new (?:event|meeting|appointment))\b", re.I)
+
+
 def extract_title(text: str) -> str:
-    """Best-effort event title: strip command + time words, keep the subject.
+    """Best-effort event title. Voice transcripts often ramble before the
+    command ('uh let's grab lunch... book a meeting with Jack'), so keep only
+    the text from the last create verb onward, then strip time/command words.
     'book 30 min with Jack Tuesday' -> 'Meeting with Jack';
-    'I have an exam on Thursday'      -> 'Exam'."""
+    'I have an exam on Thursday'     -> 'Exam'."""
     low = text.strip()
+    low = re.sub(r"\b([ap])\.\s*m\.?", r"\1m", low, flags=re.I)  # "p.m." -> "pm"
+    # ignore anything before the last create verb (drops leading chatter)
+    vm = None
+    for vm in _CREATE_VERB_CUT.finditer(low):
+        pass
+    if vm is not None:
+        low = low[vm.end():].strip()
+
     has_with = re.search(
         r"\bwith\s+(?:the\s+|my\s+|a\s+|an\s+)?([A-Za-z][\w'-]*)", low, re.I)
     t = _WHEN_STRIP.sub(" ", low)
     t = _CMD_STRIP.sub(" ", t)
     t = re.sub(r"\bwith\b.*$", "", t, flags=re.I)     # drop trailing "with Jack"
+    t = re.sub(r"\b(between|and|from|to|until|till|through|thru)\b", " ", t,
+               flags=re.I)                             # drop range connectors
+    t = re.sub(r"[^A-Za-z0-9 '&-]", " ", t)           # drop stray punctuation
     t = re.sub(r"\s+", " ", t).strip(" .,-")
     if has_with:
         who = has_with.group(1).strip().title()
-        return (f"{t.title()} with {who}").strip() if t else f"Meeting with {who}"
-    return t.title() if t else "Event"
+        # only keep a subject if it's short/clean; otherwise just "Meeting with X"
+        if t and len(t.split()) <= 3:
+            return f"{t.title()} with {who}"
+        return f"Meeting with {who}"
+    if t and len(t.split()) <= 6:                     # avoid rambling titles
+        return t.title()
+    return "Event"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -289,6 +345,21 @@ class CalendarService:
     def delete_event(self, event_id: str):
         self._svc().events().delete(calendarId="primary", eventId=event_id).execute()
 
+    def update_event(self, event_id: str, start, end, all_day=False,
+                     summary=None):
+        """Partial-update (patch) an event's time (and optionally title)."""
+        body = {}
+        if summary is not None:
+            body["summary"] = summary
+        if all_day:
+            body["start"] = {"date": start.date().isoformat()}
+            body["end"] = {"date": end.date().isoformat()}
+        else:
+            body["start"] = {"dateTime": start.astimezone().isoformat()}
+            body["end"] = {"dateTime": end.astimezone().isoformat()}
+        return self._svc().events().patch(
+            calendarId="primary", eventId=event_id, body=body).execute()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # High-level handlers (return a screen-ready message string)
@@ -344,24 +415,61 @@ def handle_create(text: str, now: Optional[datetime] = None) -> str:
     return f"Booked “{title}” — {s} for {mins} min."
 
 
+# words that carry no meaning when matching an event to delete / edit
+_DELETE_STOPWORDS = {
+    "remove", "delete", "cancel", "clear", "drop", "call", "off", "my", "the",
+    "a", "an", "on", "at", "for", "me", "please", "can", "you", "i", "have",
+    "got", "with", "to", "from", "event", "events", "meeting", "meetings",
+    "appointment", "appointments", "reminder", "that", "this", "scheduled",
+    "get", "rid", "of",
+    # edit/move verbs (so "move my 3pm to 4" matches by time, not the word "move")
+    "move", "moved", "reschedule", "rescheduled", "push", "pushed", "shift",
+    "shifted", "bump", "bumped", "change", "changed",
+}
+
+
+def _delete_keywords(text: str) -> list:
+    """Meaningful words to match against an event summary (e.g. 'jack'),
+    with day/time/duration words stripped out first."""
+    kw_text = _WHEN_STRIP.sub(" ", text.lower())
+    return [w for w in re.findall(r"[a-z][a-z0-9']+", kw_text)
+            if w not in _DELETE_STOPWORDS and len(w) > 1]
+
+
+def _match_events(text: str, events, now: datetime, tag: str = "match") -> list:
+    """Find events matching a phrase by keywords (e.g. 'jack') plus optional
+    day/time. Shared by delete and edit."""
+    low = text.lower()
+    day = _parse_day(" " + low + " ", now)
+    tm = _parse_time(re.sub(r"\b\d+\s*(minutes?|mins?)\b", " ", low))
+    kws = _delete_keywords(text)
+    print(f"[cal] {tag}: kws={kws} day={day} time={tm} "
+          f"({len(events)} events in window)")
+    matches = []
+    for ev in events:
+        summ = ev.summary.lower()
+        if day and ev.start.date() != day:
+            continue
+        if tm and not ev.all_day and (ev.start.hour, ev.start.minute) != tm:
+            continue
+        if kws:
+            if not any(k in summ for k in kws):
+                continue
+        elif not (day or tm):
+            continue
+        matches.append(ev)
+    return matches
+
+
 def handle_delete(text: str, now: Optional[datetime] = None) -> str:
     now = now or datetime.now()
-    # search a wide window (today .. +30 days) for a title/time match
     start = datetime.combine(now.date(), _time(0, 0))
-    end = start + timedelta(days=30)
+    end = start + timedelta(days=45)
     try:
         events = get_calendar().list_events(start, end, max_results=100)
     except Exception as e:
         return _setup_hint(e)
-    title = extract_title(text).lower()
-    tm = _parse_time(re.sub(r"\b\d+\s*(minutes?|mins?)\b", " ", text.lower()))
-    matches = []
-    for ev in events:
-        if title and title not in ev.summary.lower() and \
-                ev.summary.lower() not in title:
-            if not (tm and not ev.all_day and (ev.start.hour, ev.start.minute) == tm):
-                continue
-        matches.append(ev)
+    matches = _match_events(text, events, now, tag="delete")
     if not matches:
         return "I couldn't find a matching event to remove."
     if len(matches) > 1:
@@ -373,6 +481,56 @@ def handle_delete(text: str, now: Optional[datetime] = None) -> str:
     except Exception as e:
         return _setup_hint(e)
     return f"Removed “{ev.summary}” ({ev.when_str()})."
+
+
+def _apply_new_when(right: str, ev: "CalEvent", now: datetime) -> tuple:
+    """Given the '...to <when>' part of a move command, compute the event's new
+    (start, end, all_day). Only the parts you named change."""
+    low = right.lower()
+    day = _parse_day(" " + low + " ", now)
+    tm = _parse_time(re.sub(r"\b\d+\s*(minutes?|mins?)\b", " ", low))
+    new_day = day or ev.start.date()
+    if ev.all_day and tm is None:
+        s = datetime.combine(new_day, _time(0, 0))
+        return s, s + timedelta(days=1), True
+    hh, mm = tm if tm is not None else (ev.start.hour, ev.start.minute)
+    s = datetime.combine(new_day, _time(hh, mm))
+    dur = ev.end - ev.start
+    if dur.total_seconds() <= 0:
+        dur = timedelta(minutes=DEFAULT_DURATION_MIN)
+    return s, s + dur, False
+
+
+def handle_edit(text: str, now: Optional[datetime] = None) -> str:
+    """'move my 3pm to 4', 'reschedule my meeting with Jack to Friday'."""
+    now = now or datetime.now()
+    low = text.lower()
+    if " to " not in low:
+        return "Tell me what to move and when — e.g. “move my 3pm to 4”."
+    idx = low.rfind(" to ")
+    left, right = text[:idx], text[idx + 4:]
+    start = datetime.combine(now.date(), _time(0, 0))
+    end = start + timedelta(days=45)
+    try:
+        events = get_calendar().list_events(start, end, max_results=100)
+    except Exception as e:
+        return _setup_hint(e)
+    matches = _match_events(left, events, now, tag="edit")
+    if not matches:
+        return "I couldn't find that event to move."
+    if len(matches) > 1:
+        opts = "\n".join(f"• {m.summary} ({m.when_str()})" for m in matches[:5])
+        return f"Which one do you mean?\n{opts}"
+    ev = matches[0]
+    new_start, new_end, all_day = _apply_new_when(right, ev, now)
+    try:
+        get_calendar().update_event(ev.id, new_start, new_end, all_day=all_day)
+    except Exception as e:
+        return _setup_hint(e)
+    if all_day:
+        return f"Moved “{ev.summary}” to {new_start.strftime('%A, %b %d')}."
+    s = new_start.strftime("%A, %b %d at %I:%M %p").replace(" 0", " ")
+    return f"Moved “{ev.summary}” to {s}."
 
 
 def _setup_hint(err: Exception) -> str:
